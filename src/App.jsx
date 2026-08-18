@@ -17,9 +17,7 @@ import {
   Eye, 
   GraduationCap,
   ArrowRight,
-  CheckCircle2,
-  ExternalLink,
-  ShieldAlert
+  CheckCircle2
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -225,8 +223,8 @@ export default function App() {
   // 공휴일 여부 확인
   const holidayName = getHolidayInfo(currentDate);
 
-  // 💡 Cloudflare Worker 프록시 주소를 적용합니다 (방금 생성한 Worker 주소를 넣어주세요)
-  const comciStudentUrl = 'ygm-comci-proxy.muntang711.workers.dev';
+  // HTTPS 통신을 위한 Cloudflare Worker 프록시 주소
+  const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
   // 최초 알림 확인 후 단계 이동 및 localStorage 저장
   const confirmComciStep = (nextStep) => {
@@ -725,7 +723,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* 📚 시간표 Card (Worker HTTPS 프록시 적용) */}
+          {/* 📚 시간표 Card (Worker HTTPS 프록시 연동) */}
           <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col justify-between ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
           }`}>
@@ -813,21 +811,19 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 (프록시 적용) */}
+              {/* 3단계: 시간표 웹뷰 출력 */}
               {webviewStep === 2 && (
-                <div className="flex flex-col gap-2">
-                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[380px] relative w-full">
-                    <iframe
-                      src={comciStudentUrl}
-                      title="컴시간알리미 실시간 시간표 웹뷰"
-                      className="w-full h-full border-0"
-                      style={{
-                        zoom: '0.85',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale'
-                      }}
-                    />
-                  </div>
+                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[380px] relative w-full">
+                  <iframe
+                    src={comciStudentUrl}
+                    title="컴시간알리미 실시간 시간표 웹뷰"
+                    className="w-full h-full border-0"
+                    style={{
+                      zoom: '0.85',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale'
+                    }}
+                  />
                 </div>
               )}
             </div>

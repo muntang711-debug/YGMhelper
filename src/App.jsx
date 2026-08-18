@@ -18,7 +18,8 @@ import {
   GraduationCap,
   ArrowRight,
   CheckCircle2,
-  Download
+  Download,
+  Share
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -200,8 +201,9 @@ export default function App() {
   const [neverShowChecked, setNeverShowChecked] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
 
-  // PWA 앱 설치 이벤트 프롬프트 저장 상태
+  // PWA 앱 설치 관련 상태
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   // 2. 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
   const [webviewStep, setWebviewStep] = useState(() => {
@@ -249,11 +251,15 @@ export default function App() {
 
   // [앱 설치] 버튼 클릭 실행 함수
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      // 자동 설치 프롬프트가 지원되지 않는 환경(아이폰, Safari, 조건 미충족)에서는 안내 모달 출력
+      setShowInstallGuide(true);
     }
   };
 
@@ -432,6 +438,65 @@ export default function App() {
         }
       `}</style>
 
+      {/* 📱 PWA 앱 설치 수동 안내 모달 팝업 */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+            isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
+                  <Download className="w-5 h-5" />
+                </div>
+                <h2 className="font-bold text-base">YGMhelper 앱 설치 방법</h2>
+              </div>
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs sm:text-sm font-medium leading-relaxed">
+              <div className={`p-3.5 rounded-2xl border ${
+                isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <p className="font-bold text-blue-500 flex items-center gap-1.5 mb-1">
+                  <Share className="w-4 h-4" /> 아이폰 (iOS Safari) 사용자
+                </p>
+                <p className="text-slate-600 dark:text-neutral-400">
+                  사파리 하단 중앙의 <strong>공유 버튼(↑)</strong>을 누른 후 <strong>[홈 화면에 추가]</strong>를 선택하시면 앱처럼 설치됩니다.
+                </p>
+              </div>
+
+              <div className={`p-3.5 rounded-2xl border ${
+                isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <p className="font-bold text-emerald-500 flex items-center gap-1.5 mb-1">
+                  📱 안드로이드 (Chrome) 사용자
+                </p>
+                <p className="text-slate-600 dark:text-neutral-400">
+                  브라우저 우측 상단 <strong>메뉴 버튼(⋮)</strong>을 누른 후 <strong>[앱 설치]</strong> 또는 <strong>[홈 화면에 추가]</strong>를 누르시면 됩니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+              >
+                확인
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* 📢 공지사항 모달 팝업 */}
       {showNotice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -560,17 +625,15 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 유튜브 스타일 PWA [앱 설치] 버튼 (설치 가능한 환경에서만 노출됨) */}
-            {deferredPrompt && (
-              <button
-                onClick={handleInstallClick}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
-                title="앱으로 설치하기"
-              >
-                <Download className="w-4 h-4" />
-                <span>앱 설치</span>
-              </button>
-            )}
+            {/* 📲 유튜브 스타일 PWA [앱 설치] 버튼 (항상 노출되며 클릭 시 알맞게 동작) */}
+            <button
+              onClick={handleInstallClick}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
+              title="앱으로 설치하기"
+            >
+              <Download className="w-4 h-4" />
+              <span>앱 설치</span>
+            </button>
 
             {/* 공지사항 다시보기 버튼 */}
             <button

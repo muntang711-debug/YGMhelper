@@ -2,31 +2,21 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YGMhelper - 용곡중학교 스마트 도우미</title>
-    <!-- Tailwind CSS CDN (스타일 유실 방지 구원책) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              brand: {
-                50: '#f0f7ff',
-                100: '#e0effe',
-                500: '#3b82f6',
-                600: '#2563eb',
-                700: '#1d4ed8',
-                900: '#1e3a8a',
-              }
-            }
-          }
-        }
-      }
-    </script>
+    <title>YGMhelper</title>
+
+    <!-- PWA 웹 앱 매니페스트 설정 -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- iOS (아이폰/아이패드) 홈 화면 추가 전용 메타 태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="YGMhelper" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -417,7 +417,7 @@ export default function App() {
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
                   <Megaphone className="w-5 h-5" />
                 </div>
-                <h2 className="font-extrabold text-lg">YGM헬퍼 안내사항</h2>
+                <h2 className="font-bold text-base">YGM헬퍼 안내사항</h2>
               </div>
               <button
                 onClick={handleCloseNotice}
@@ -429,14 +429,14 @@ export default function App() {
             </div>
 
             {/* 모달 본문 */}
-            <div className={`text-sm sm:text-base leading-relaxed space-y-2.5 mb-6 font-medium ${
+            <div className={`text-xs sm:text-sm leading-relaxed space-y-2.5 mb-6 font-medium ${
               isDarkMode ? 'text-neutral-300' : 'text-slate-700'
             }`}>
               <p>안녕하세요, YGM헬퍼 개발자입니다.</p>
               <p>저희 YGM헬퍼에서는 시간표 기능을 제공하고 있습니다.</p>
               <p>원래는 컴시간 api를 가져오려고 했으나, api를 가져오는데 어려움을 겪고 결국 webview방식으로 구현했습니다.</p>
               <p>이에 따라 컴시간 창에서 최초 1회만 학교 이름과 자신의 학년/반을 선택해주시면, 다음 접속부터는 선택한 내용이 저장되어 다시 선택할 필요가 없습니다.</p>
-              <p className="text-xs sm:text-sm opacity-75 pt-1">이용에 불편을 드려 죄송합니다.</p>
+              <p className="text-xs opacity-75 pt-1">이용에 불편을 드려 죄송합니다.</p>
             </div>
 
             {/* 모달 푸터 (체크박스 + 닫기 버튼) */}
@@ -453,7 +453,7 @@ export default function App() {
 
               <button
                 onClick={handleCloseNotice}
-                className="text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 닫기
               </button>
@@ -475,7 +475,7 @@ export default function App() {
                 <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600">
                   <Info className="w-5 h-5" />
                 </div>
-                <h2 className="font-extrabold text-lg">알러지 정보 (NEIS 기준)</h2>
+                <h2 className="font-bold text-base">알러지 정보 (NEIS 기준)</h2>
               </div>
               <button
                 onClick={() => setShowAllergyModal(false)}
@@ -485,7 +485,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm font-bold py-2 max-h-[320px] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 text-xs font-semibold py-2 max-h-[320px] overflow-y-auto">
               {ALLERGY_LIST.map((item, idx) => (
                 <div key={idx} className={`p-2.5 rounded-xl border ${
                   isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
@@ -498,7 +498,7 @@ export default function App() {
             <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
               <button
                 onClick={() => setShowAllergyModal(false)}
-                className="text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 확인
               </button>
@@ -519,10 +519,10 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className={`font-black text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                <h1 className={`font-bold text-base tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   YGMhelper
                 </h1>
-                <span className={`text-[11px] px-2 py-0.5 rounded-md font-extrabold ${
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
                   isDarkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-slate-200 text-slate-700'
                 }`}>
                   YGM
@@ -535,7 +535,7 @@ export default function App() {
             {/* 공지사항 다시보기 버튼 */}
             <button
               onClick={openNoticeModal}
-              className={`flex items-center gap-1.5 text-xs sm:text-sm px-3 py-2 rounded-xl font-extrabold border transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold border transition-colors ${
                 isDarkMode 
                   ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                   : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
@@ -565,7 +565,7 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모달 전용 탭 선택 상자 (모바일에서만 보임) */}
+        {/* 📱 모바일 전용 탭 선택 상자 (굵기 유지) */}
         <div className="flex md:hidden p-1.5 mb-4 rounded-2xl bg-slate-200/80 dark:bg-neutral-800 border border-slate-300/60 dark:border-neutral-700/80">
           <button
             onClick={() => setActiveTab('meal')}
@@ -610,7 +610,7 @@ export default function App() {
                     <Utensils className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className={`font-black text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <h2 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       오늘의 급식
                     </h2>
                     <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 식단표</p>
@@ -629,14 +629,14 @@ export default function App() {
                   className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none flex-wrap"
                 >
                   <CalendarIcon className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${holidayName ? 'text-red-500' : 'text-blue-500'}`} />
-                  <span className={`text-sm sm:text-base font-black tracking-tight ${
+                  <span className={`text-xs sm:text-sm font-bold tracking-tight ${
                     holidayName 
                       ? 'text-red-700 dark:text-red-400' 
                       : isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
                     {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-lg font-black ${
+                  <span className={`text-[11px] px-2 py-0.5 rounded-lg font-bold ${
                     holidayName
                       ? 'bg-red-600 text-white'
                       : isDarkMode ? 'bg-neutral-800 text-blue-400' : 'bg-blue-100 text-blue-800'
@@ -646,7 +646,7 @@ export default function App() {
 
                   {/* 공휴일 뱃지 */}
                   {holidayName && (
-                    <span className={`text-xs px-2 py-0.5 rounded-lg font-extrabold border ${
+                    <span className={`text-[11px] px-2 py-0.5 rounded-lg font-bold border ${
                       isDarkMode 
                         ? 'bg-red-900/60 text-red-300 border-red-800' 
                         : 'bg-red-100 text-red-700 border-red-200'
@@ -667,7 +667,7 @@ export default function App() {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={resetToToday}
-                    className={`text-xs px-2.5 py-1.5 rounded-xl font-extrabold border transition-colors ${
+                    className={`text-xs px-2.5 py-1.5 rounded-xl font-bold border transition-colors ${
                       isDarkMode 
                         ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                         : 'border-slate-300 hover:bg-slate-200 text-slate-700'
@@ -707,7 +707,7 @@ export default function App() {
                   <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
                     선택한 날짜 총 칼로리
                   </span>
-                  <span className={`text-xs sm:text-sm px-3 py-1 rounded-full font-extrabold ${
+                  <span className={`text-xs sm:text-sm px-3 py-1 rounded-full font-bold ${
                     isDarkMode ? 'bg-neutral-800 text-orange-400' : 'bg-orange-100 text-orange-800 border border-orange-200'
                   }`}>
                     {meal.calories}
@@ -719,16 +719,16 @@ export default function App() {
               {mealLoading ? (
                 <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2.5">
                   <Sparkles className="w-6 h-6 animate-spin text-orange-500" />
-                  <span className="text-sm font-bold">급식 데이터 불러오는 중...</span>
+                  <span className="text-sm font-semibold">급식 데이터 불러오는 중...</span>
                 </div>
               ) : holidayName ? (
                 /* 공휴일 안내 상자 */
-                <div className={`p-8 sm:p-10 rounded-2xl text-center text-sm font-bold border flex flex-col items-center justify-center gap-2 ${
+                <div className={`p-8 sm:p-10 rounded-2xl text-center text-sm font-semibold border flex flex-col items-center justify-center gap-2 ${
                   isDarkMode 
                     ? 'bg-red-950/40 border-red-900/50 text-red-300' 
                     : 'bg-red-50 border-red-200 text-red-800'
                 }`}>
-                  <p className={`font-black text-base sm:text-lg ${
+                  <p className={`font-bold text-sm sm:text-base ${
                     isDarkMode ? 'text-red-400' : 'text-red-700'
                   }`}>
                     🎈 오늘은 공휴일입니다 ({holidayName})
@@ -752,12 +752,12 @@ export default function App() {
                     >
                       {/* 메뉴 이름 및 옆에 표시되는 회색 카테고리 태그 */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-black text-sm sm:text-base ${
+                        <span className={`font-bold text-xs sm:text-sm ${
                           isDarkMode ? 'text-white' : 'text-slate-900'
                         }`}>
                           {dish.name}
                         </span>
-                        <span className={`text-xs font-bold ${
+                        <span className={`text-xs font-medium ${
                           isDarkMode ? 'text-neutral-500' : 'text-slate-400'
                         }`}>
                           {getDishCategory(dish.name)}
@@ -766,7 +766,7 @@ export default function App() {
 
                       {/* 알러지 정보 배지 */}
                       {dish.allergy && (
-                        <span className={`text-xs font-black px-2 py-1 rounded-lg border shrink-0 ${
+                        <span className={`text-xs font-bold px-2 py-1 rounded-lg border shrink-0 ${
                           isDarkMode 
                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
                             : 'bg-amber-100 text-amber-900 border-amber-300'
@@ -790,7 +790,7 @@ export default function App() {
             <div className="mt-5 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
               <button
                 onClick={() => setShowAllergyModal(true)}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm border transition-colors ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-colors ${
                   isDarkMode 
                     ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -803,7 +803,7 @@ export default function App() {
               <button
                 onClick={loadMealData}
                 disabled={mealLoading}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm border transition-colors ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-colors ${
                   isDarkMode 
                     ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -830,7 +830,7 @@ export default function App() {
                     <BookOpen className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className={`font-black text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <h2 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       실시간 시간표
                     </h2>
                     <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
@@ -839,7 +839,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <span className="text-xs px-2.5 py-1 rounded-lg font-black bg-blue-600 text-white shadow-sm flex items-center gap-1">
+                <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-blue-600 text-white shadow-sm flex items-center gap-1">
                   <Monitor className="w-3.5 h-3.5" /> 실시간
                 </span>
               </div>
@@ -853,7 +853,7 @@ export default function App() {
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className={`font-black text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
+                    <h3 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
                       학교 및 학년/반 선택 안내
                     </h3>
                     <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
@@ -865,14 +865,14 @@ export default function App() {
                     {isDarkMode ? (
                       <button
                         onClick={() => confirmComciStep(1)}
-                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                       >
                         다음으로 <ArrowRight className="w-4 h-4" />
                       </button>
                     ) : (
                       <button
                         onClick={() => confirmComciStep(2)}
-                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                       >
                         <Eye className="w-4 h-4" /> 표시하기
                       </button>
@@ -888,7 +888,7 @@ export default function App() {
                     <AlertCircle className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="font-black text-base text-neutral-200">컴시간은 다크 모드를 지원하지 않습니다</h3>
+                    <h3 className="font-bold text-sm sm:text-base text-neutral-200">컴시간은 다크 모드를 지원하지 않습니다</h3>
                     <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed">
                       밝은 하얀색 화면이 노출될 수 있으니 아래 버튼을 눌러 이용해 주세요.
                     </p>
@@ -897,7 +897,7 @@ export default function App() {
                   <div className="flex items-center justify-center mt-3">
                     <button
                       onClick={() => setWebviewStep(2)}
-                      className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                      className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                     >
                       <Eye className="w-4 h-4" /> 표시하기
                     </button>
@@ -905,7 +905,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 */}
+              {/* 3단계: 시간표 웹뷰 출력 (배율 0.78 적용) */}
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] sm:h-[450px] relative w-full">
                   <iframe
@@ -913,7 +913,7 @@ export default function App() {
                     title="컴시간알리미 실시간 시간표 웹뷰"
                     className="w-full h-full border-0"
                     style={{
-                      zoom: '0.95',
+                      zoom: '0.78',
                       WebkitFontSmoothing: 'antialiased',
                       MozOsxFontSmoothing: 'grayscale'
                     }}

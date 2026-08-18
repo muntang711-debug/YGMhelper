@@ -17,7 +17,9 @@ import {
   Eye, 
   GraduationCap,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink,
+  ShieldAlert
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -723,7 +725,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* 📚 시간표 Card (단계별 가림막 커버 제어) */}
+          {/* 📚 시간표 Card (웹뷰 차단 안내 대응) */}
           <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col justify-between ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
           }`}>
@@ -787,7 +789,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 2단계: 다크모드 경고 커버 (다크모드일 때만 도달) */}
+              {/* 2단계: 다크모드 경고 커버 */}
               {webviewStep === 1 && (
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950/90 h-[380px] p-5 flex flex-col items-center justify-center text-center gap-3">
                   <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -811,19 +813,39 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 */}
+              {/* 3단계: 시간표 웹뷰 출력 + 차단 시 대응 배너 */}
               {webviewStep === 2 && (
-                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[380px] relative w-full">
-                  <iframe
-                    src={comciStudentUrl}
-                    title="컴시간알리미 실시간 시간표 웹뷰"
-                    className="w-full h-full border-0"
-                    style={{
-                      zoom: '0.85',
-                      WebkitFontSmoothing: 'antialiased',
-                      MozOsxFontSmoothing: 'grayscale'
-                    }}
-                  />
+                <div className="flex flex-col gap-2">
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[320px] relative w-full">
+                    <iframe
+                      src={comciStudentUrl}
+                      title="컴시간알리미 실시간 시간표 웹뷰"
+                      className="w-full h-full border-0"
+                      style={{
+                        zoom: '0.85',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale'
+                      }}
+                    />
+                  </div>
+
+                  {/* 웹뷰(HTTP) 보안 차단 시 이용할 수 있는 새 창 안내 박스 */}
+                  <div className={`p-2.5 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 ${
+                    isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                  }`}>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>화면이 하얗게 안 뜨시나요?</span>
+                    </div>
+                    <a
+                      href={comciStudentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-1 font-bold shrink-0"
+                    >
+                      새 창으로 열기 <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               )}
             </div>

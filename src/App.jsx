@@ -17,7 +17,8 @@ import {
   Eye, 
   GraduationCap,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -199,6 +200,9 @@ export default function App() {
   const [neverShowChecked, setNeverShowChecked] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
 
+  // PWA 앱 설치 이벤트 프롬프트 저장 상태
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
   // 2. 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
   const [webviewStep, setWebviewStep] = useState(() => {
     const isConfirmed = localStorage.getItem('ygm_comci_confirmed') === 'true';
@@ -228,6 +232,30 @@ export default function App() {
 
   // HTTPS 통신을 위한 Cloudflare Worker 프록시 주소
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
+
+  // PWA 설치 감지 이벤트 등록
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // [앱 설치] 버튼 클릭 실행 함수
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // 최초 알림 확인 후 단계 이동 및 localStorage 저장
   const confirmComciStep = (nextStep) => {
@@ -532,6 +560,18 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 📲 유튜브 스타일 PWA [앱 설치] 버튼 (설치 가능한 환경에서만 노출됨) */}
+            {deferredPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
+                title="앱으로 설치하기"
+              >
+                <Download className="w-4 h-4" />
+                <span>앱 설치</span>
+              </button>
+            )}
+
             {/* 공지사항 다시보기 버튼 */}
             <button
               onClick={openNoticeModal}
@@ -565,7 +605,7 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 탭 선택 상자 (굵기 유지) */}
+        {/* 📱 모바일 전용 탭 선택 상자 */}
         <div className="flex md:hidden p-1.5 mb-4 rounded-2xl bg-slate-200/80 dark:bg-neutral-800 border border-slate-300/60 dark:border-neutral-700/80">
           <button
             onClick={() => setActiveTab('meal')}
@@ -905,7 +945,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 (배율 0.78 적용) */}
+              {/* 3단계: 시간표 웹뷰 출력 */}
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] sm:h-[450px] relative w-full">
                   <iframe

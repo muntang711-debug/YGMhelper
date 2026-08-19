@@ -258,7 +258,6 @@ export default function App() {
         setDeferredPrompt(null);
       }
     } else {
-      // 자동 설치 프롬프트가 지원되지 않는 환경(아이폰, Safari, 조건 미충족)에서는 안내 모달 출력
       setShowInstallGuide(true);
     }
   };
@@ -497,7 +496,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📢 공지사항 모달 팝업 */}
+      {/* 📢 패치노트 모달 팝업 */}
       {showNotice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
@@ -510,7 +509,9 @@ export default function App() {
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
                   <Megaphone className="w-5 h-5" />
                 </div>
-                <h2 className="font-bold text-base">YGM헬퍼 안내사항</h2>
+                <h2 className="font-bold text-sm sm:text-base">
+                  버전 1.0.12 업데이트: 모바일 UI 최적화 및 다크모드 디자인 개선
+                </h2>
               </div>
               <button
                 onClick={handleCloseNotice}
@@ -521,15 +522,16 @@ export default function App() {
               </button>
             </div>
 
-            {/* 모달 본문 */}
+            {/* 모달 본문 (패치노트 내용) */}
             <div className={`text-xs sm:text-sm leading-relaxed space-y-2.5 mb-6 font-medium ${
               isDarkMode ? 'text-neutral-300' : 'text-slate-700'
             }`}>
-              <p>안녕하세요, YGM헬퍼 개발자입니다.</p>
-              <p>저희 YGM헬퍼에서는 시간표 기능을 제공하고 있습니다.</p>
-              <p>원래는 컴시간 api를 가져오려고 했으나, api를 가져오는데 어려움을 겪고 결국 webview방식으로 구현했습니다.</p>
-              <p>이에 따라 컴시간 창에서 최초 1회만 학교 이름과 자신의 학년/반을 선택해주시면, 다음 접속부터는 선택한 내용이 저장되어 다시 선택할 필요가 없습니다.</p>
-              <p className="text-xs opacity-75 pt-1">이용에 불편을 드려 죄송합니다.</p>
+              <p className="font-bold text-sm text-blue-500">📌 주요 변경 사항</p>
+              <ul className="list-disc list-inside space-y-1.5 pl-1">
+                <li>모바일 탭 바 다크모드 배경 색상 오류 수정</li>
+                <li>모바일 헤더 공지 버튼 크기 최적화 (줄바꿈 현상 개선)</li>
+                <li>업데이트 패치노트 시스템 도입</li>
+              </ul>
             </div>
 
             {/* 모달 푸터 (체크박스 + 닫기 버튼) */}
@@ -625,7 +627,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 유튜브 스타일 PWA [앱 설치] 버튼 (항상 노출되며 클릭 시 알맞게 동작) */}
+            {/* 📲 PWA [앱 설치] 버튼 */}
             <button
               onClick={handleInstallClick}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
@@ -635,10 +637,10 @@ export default function App() {
               <span>앱 설치</span>
             </button>
 
-            {/* 공지사항 다시보기 버튼 */}
+            {/* 공지사항(패치노트) 아이콘 전용 버튼 (글자 제거하여 공간 확보) */}
             <button
               onClick={openNoticeModal}
-              className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold border transition-colors ${
+              className={`p-2 rounded-xl border transition-colors ${
                 isDarkMode 
                   ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                   : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
@@ -646,7 +648,6 @@ export default function App() {
               title="공지사항 보기"
             >
               <Megaphone className="w-4 h-4 text-blue-500" />
-              <span>공지</span>
             </button>
 
             {/* 다크/라이트모드 토글 */}
@@ -668,14 +669,22 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 탭 선택 상자 */}
-        <div className="flex md:hidden p-1.5 mb-4 rounded-2xl bg-slate-200/80 dark:bg-neutral-800 border border-slate-300/60 dark:border-neutral-700/80">
+        {/* 📱 모바일 전용 탭 선택 상자 (다크모드 스타일 완전 적용) */}
+        <div className={`flex md:hidden p-1.5 mb-4 rounded-2xl border ${
+          isDarkMode 
+            ? 'bg-neutral-900 border-neutral-800' 
+            : 'bg-slate-200/80 border-slate-300/60'
+        }`}>
           <button
             onClick={() => setActiveTab('meal')}
             className={`flex-1 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all ${
               activeTab === 'meal'
-                ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-md'
-                : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200'
+                ? isDarkMode
+                  ? 'bg-neutral-800 text-white shadow-md'
+                  : 'bg-white text-slate-900 shadow-md'
+                : isDarkMode
+                  ? 'text-neutral-400 hover:text-neutral-200'
+                  : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Utensils className="w-4.5 h-4.5 text-orange-500" />
@@ -685,8 +694,12 @@ export default function App() {
             onClick={() => setActiveTab('schedule')}
             className={`flex-1 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all ${
               activeTab === 'schedule'
-                ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-md'
-                : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200'
+                ? isDarkMode
+                  ? 'bg-neutral-800 text-white shadow-md'
+                  : 'bg-white text-slate-900 shadow-md'
+                : isDarkMode
+                  ? 'text-neutral-400 hover:text-neutral-200'
+                  : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BookOpen className="w-4.5 h-4.5 text-blue-500" />

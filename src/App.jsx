@@ -27,11 +27,21 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.0.18';
+const CURRENT_VERSION = '1.0.19';
 const CURRENT_NOTICE_ID = 'notice_2026_08_20_1';
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.0.19',
+    date: '2026.08.20',
+    title: '버전 1.0.19 업데이트: 팝업 배경 스크롤 차단, 패치 버전 버튼 세로 크기 고정 및 팝업 가변 애니메이션 적용',
+    changes: [
+      '모달 팝업 오픈 시 뒷 배경(메인 스크롤) 터치 및 스크롤 완전 방지 처리',
+      '패치노트 내용 길이에 영향받던 버전 선택 버튼 높이(h-9) 완벽 고정',
+      '패치 내용 길이에 맞춰 모달 크기가 유연하고 자연스럽게 늘어나는 300ms 애니메이션 적용'
+    ]
+  },
   {
     version: '1.0.18',
     date: '2026.08.20',
@@ -383,6 +393,22 @@ export default function App() {
   const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
+  // 🔒 팝업 모달이 활성화된 경우 메인 화면(Body) 스크롤 차단
+  useEffect(() => {
+    const isAnyModalOpen = showNotice || showPatchModal || showAllergyModal || Boolean(selectedDishAllergy) || showInstallGuide;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [showNotice, showPatchModal, showAllergyModal, selectedDishAllergy, showInstallGuide]);
+
   const triggerCloseAnimation = (setClosingState, setModalState) => {
     setClosingState(true);
     setTimeout(() => {
@@ -684,7 +710,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingInstall ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
             isClosingInstall ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -745,7 +771,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingNotice ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
             isClosingNotice ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -803,12 +829,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 📜 2. 패치노트 전용 독립 모달 (완전한 독립 스크롤 & 모바일 크기 고정) */}
+      {/* 📜 2. 패치노트 전용 독립 모달 (가변 크기 확장 & 세로 버튼 완벽 고정) */}
       {showPatchModal && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md ${
           isClosingPatch ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-2xl h-[85vh] max-h-[550px] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all ${
+          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all duration-300 ease-out ${
             isClosingPatch ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -831,17 +857,17 @@ export default function App() {
             </div>
 
             {/* 본문 - 독립 스크롤 구조 (Left & Right) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-1 flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
               
-              {/* 좌측: 버전 목록 (독립 스크롤, 크기 고정) */}
-              <div className="sm:col-span-1 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto max-h-[100px] sm:max-h-none sm:h-full pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 shrink-0 min-h-0">
+              {/* 좌측: 버전 목록 (버튼 세로 높이 h-9 고정) */}
+              <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
                 <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2 shrink-0">버전 목록</div>
 
                 {PATCH_HISTORY.map((patch) => (
                   <button
                     key={patch.version}
                     onClick={() => setSelectedPatchVersion(patch.version)}
-                    className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 w-auto sm:w-full ${
+                    className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 whitespace-nowrap ${
                       selectedPatchVersion === patch.version
                         ? 'bg-blue-600 text-white shadow-md'
                         : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
@@ -849,17 +875,17 @@ export default function App() {
                   >
                     <div className="flex items-center gap-1.5">
                       <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                      <span className="whitespace-nowrap">v{patch.version}</span>
+                      <span>v{patch.version}</span>
                     </div>
                     {patch.version === CURRENT_VERSION && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold shrink-0 ml-1">최신</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold shrink-0 ml-1.5">최신</span>
                     )}
                   </button>
                 ))}
               </div>
 
-              {/* 우측: 선택된 패치노트 상세 내용 (독립 스크롤) */}
-              <div className="sm:col-span-2 pl-0 sm:pl-2 pt-1 sm:pt-0 overflow-y-auto h-full min-h-0 pr-1">
+              {/* 우측: 선택된 패치노트 상세 내용 (자연스러운 세로 확장) */}
+              <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1">
                 {(() => {
                   const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
                   if (!patch) return null;
@@ -918,7 +944,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingDishAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
             isClosingDishAllergy ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -978,7 +1004,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
             isClosingAllergy ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'

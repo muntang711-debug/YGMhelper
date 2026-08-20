@@ -20,12 +20,49 @@ import {
   ArrowRight,
   CheckCircle2,
   Download,
-  Share
+  Share,
+  History
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전
-const CURRENT_VERSION = '1.0.14';
+const CURRENT_VERSION = '1.0.15';
+
+// 패치노트 히스토리 데이터베이스 (누적 기록)
+const PATCH_HISTORY = [
+  {
+    version: '1.0.15',
+    date: '2026.08.20',
+    title: '버전 1.0.15 업데이트: 식단 카테고리 오분류 수정, 패치노트 시스템 및 모달 애니메이션 강화',
+    changes: [
+      '식단 카테고리 오분류 수정 (떡볶이→디저트, 차돌박이→음료, (국제)→국 오인식 완벽 방지)',
+      '공지사항 및 누적 패치노트 좌/우 분리 탭 모달 시스템 구현',
+      '다크모드 토글 버튼 상단 헤더 독립 재배치',
+      '모달 팝업 바운스/스케일 효과 및 로딩 오버레이 펄스/글로우 애니메이션 강화'
+    ]
+  },
+  {
+    version: '1.0.14',
+    date: '2026.08.19',
+    title: '버전 1.0.14 업데이트: 헤더 드롭다운 메뉴, PWA 감지, 시간표 블러 로딩 및 식단 카테고리 컬러링',
+    changes: [
+      '우측 상단 메뉴 드롭다운 통합',
+      'PWA 독립실행 모드 접속 시 [앱 설치] 버튼 자동 숨김',
+      '시간표 로딩 시 투명 블러(Blur) 오버레이 적용',
+      '식단 카테고리별 컬러풀 배지 적용'
+    ]
+  },
+  {
+    version: '1.0.13',
+    date: '2026.08.18',
+    title: '버전 1.0.13 업데이트: 급식표 UI 확대, 알러지 상세 팝업 및 컴시간 로딩 효과 추가',
+    changes: [
+      '급식표 텍스트 크기 확대 및 모바일 터치 편의성 강화',
+      '메뉴별 알러지 번호 클릭 시 개별 알러지 상세 팝업 추가',
+      '시간표 로딩 안내 레이어 추가'
+    ]
+  }
+];
 
 // NEIS 알러지 정보 19종 목록 및 맵
 const ALLERGY_MAP = {
@@ -131,66 +168,71 @@ const getHolidayInfo = (date) => {
   return null;
 };
 
-// 급식 메뉴명에 따른 카테고리 구분 함수
+// 정밀 급식 메뉴 카테고리 구분 함수 (오분류 방지 정제 로직 포함)
 const getDishCategory = (dishName) => {
   if (!dishName) return '반찬';
-  const name = dishName.trim();
+  
+  // 1. 괄호 및 원산지/알러지 표시(예: (국제), (초))를 완벽 제거한 순수 음식명 추출
+  const cleanName = dishName.replace(/\([^)]*\)/g, '').trim();
 
-  // 1. 디저트 (케이크, 빵, 쿠키, 파이, 푸딩 등)
+  // 2. 디저트 (떡볶이, 떡갈비, 떡꼬치, 떡국 등 식사류는 예외 처리)
+  const isExcludedRiceCake = cleanName.includes('떡볶이') || cleanName.includes('떡갈비') || cleanName.includes('떡꼬치') || cleanName.includes('떡국');
   const desserts = [
     '케이크', '케익', '빵', '쿠키', '파이', '도넛', '와플', '마카롱', 
-    '푸딩', '아이스크림', '타르트', '슈', '떡', '핫도그', '에그타르트'
+    '푸딩', '아이스크림', '타르트', '슈', '핫도그', '에그타르트',
+    '경단', '꿀떡', '인절미', '송편', '가래떡', '찹쌀떡'
   ];
-  if (desserts.some((d) => name.includes(d))) {
+  if (!isExcludedRiceCake && desserts.some((d) => cleanName.includes(d))) {
     return '디저트';
   }
 
-  // 2. 음료
+  // 3. 음료 ('차'로 끝나는 단어만 '차' 음료로 판단하여 '차돌박이' 오분류 완전 차단)
   if (
-    name.includes('우유') || 
-    name.includes('주스') || 
-    name.includes('쥬스') || 
-    name.includes('에이드') || 
-    name.includes('요구르트') || 
-    name.includes('야쿠르트') || 
-    name.includes('음료') ||
-    name.includes('라떼') ||
-    name.includes('차')
+    cleanName.endsWith('차') || 
+    cleanName.includes('주스') || 
+    cleanName.includes('쥬스') || 
+    cleanName.includes('에이드') || 
+    cleanName.includes('요구르트') || 
+    cleanName.includes('야쿠르트') || 
+    cleanName.includes('우유') || 
+    cleanName.includes('음료') ||
+    cleanName.includes('라떼')
   ) {
     return '음료';
   }
 
-  // 3. 과일
+  // 4. 과일
   const fruits = [
     '과일', '사과', '바나나', '포도', '귤', '수박', '참외', '딸기', 
     '키위', '오렌지', '파인애플', '멜론', '메론', '체리', '자두', 
     '한라봉', '천혜향', '레드향', '샤인머스캣', '샤인머스켓', '망고', 
     '청포도', '블루베리', '자몽'
   ];
-  if (fruits.some((f) => name.includes(f))) {
+  if (fruits.some((f) => cleanName.includes(f))) {
     return '과일';
   }
 
-  // 4. 밥
-  if (name.includes('밥') || name.includes('덮밥') || name.includes('볶음밥') || name.includes('비빔밥')) {
+  // 5. 밥
+  if (cleanName.includes('밥') || cleanName.includes('덮밥') || cleanName.includes('볶음밥') || cleanName.includes('비빔밥')) {
     return '밥';
   }
 
-  // 5. 국
+  // 6. 국 (마지막 글자가 '국'이거나 탕, 찌개, 스프, 수프, 우동, 라면, 국수, 전골)
   if (
-    name.includes('국') || 
-    name.includes('탕') || 
-    name.includes('찌개') || 
-    name.includes('스프') || 
-    name.includes('수프') ||
-    name.includes('우동') ||
-    name.includes('라면') ||
-    name.includes('국수')
+    cleanName.endsWith('국') || 
+    cleanName.endsWith('탕') || 
+    cleanName.endsWith('찌개') || 
+    cleanName.endsWith('스프') || 
+    cleanName.endsWith('수프') ||
+    cleanName.endsWith('우동') ||
+    cleanName.endsWith('라면') ||
+    cleanName.endsWith('국수') ||
+    cleanName.endsWith('전골')
   ) {
     return '국';
   }
 
-  // 6. 나머지는 반찬
+  // 7. 나머지는 반찬
   return '반찬';
 };
 
@@ -253,19 +295,20 @@ export default function App() {
     return today;
   });
 
-  // 공지사항 팝업 및 알러지 정보 모달 상태
+  // 공지사항 및 패치노트 모달 상태
   const [showNotice, setShowNotice] = useState(false);
   const [neverShowChecked, setNeverShowChecked] = useState(false);
-  const [showAllergyModal, setShowAllergyModal] = useState(false);
+  const [selectedNoticeTab, setSelectedNoticeTab] = useState('notice'); // 'notice' 또는 패치버전 (예: '1.0.15')
 
-  // 개별 급식 메뉴 알러지 상세 클릭 모달 상태
+  // 기타 정보 모달 상태
+  const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [selectedDishAllergy, setSelectedDishAllergy] = useState(null);
 
   // PWA 앱 설치 관련 상태
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
-  // 컴시간 로딩 상태 (2초 딜레이 블러 오버레이)
+  // 컴시간 로딩 상태 (2초 딜레이 풍부한 애니메이션 블러 오버레이)
   const [isWebviewLoading, setIsWebviewLoading] = useState(false);
 
   // 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
@@ -341,21 +384,23 @@ export default function App() {
     };
   }, []);
 
-  // 버전 변경 시 공지 팝업 자동 초기화 및 노출 로직
+  // 새 버전 배포 시 공지 팝업 자동 초기화 및 자동 노출 로직
   useEffect(() => {
     const savedNoticeVersion = localStorage.getItem('ygm_notice_version');
     if (savedNoticeVersion !== CURRENT_VERSION) {
       localStorage.removeItem('ygm_hide_notice');
+      setSelectedNoticeTab('notice'); // 항상 공지가 먼저 노출
       setShowNotice(true);
     } else {
       const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
       if (!isNeverShow) {
+        setSelectedNoticeTab('notice');
         setShowNotice(true);
       }
     }
   }, []);
 
-  // 컴시간 웹뷰 단계가 2로 전환될 때 2초간 블러 오버레이 작동
+  // 컴시간 웹뷰 단계가 2로 전환될 때 2초간 고화질 블러 오버레이 작동
   useEffect(() => {
     if (webviewStep === 2) {
       setIsWebviewLoading(true);
@@ -401,10 +446,11 @@ export default function App() {
     });
   };
 
-  // 공지 모달 열기
+  // 공지 및 패치노트 모달 열기
   const openNoticeModal = () => {
     const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
     setNeverShowChecked(isNeverShow);
+    setSelectedNoticeTab('notice'); // 공지가 먼저 뜨도록 설정
     setShowNotice(true);
     setIsMenuOpen(false);
   };
@@ -485,7 +531,7 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative ${
       isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
     }`}>
-      {/* 🎨 Pretendard 폰트 및 애니메이션 동적 주입 */}
+      {/* 🎨 Pretendard 폰트 및 화려한 모달/로딩 애니메이션 동적 주입 */}
       <style>{`
         @font-face {
             font-family: 'Pretendard';
@@ -546,6 +592,28 @@ export default function App() {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
         }
 
+        @keyframes modalPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.92) translateY(12px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+        }
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -557,6 +625,14 @@ export default function App() {
             }
         }
 
+        .animate-modal-pop {
+            animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-pulse-glow {
+            animation: pulseGlow 1.8s ease-in-out infinite;
+        }
+
         .animate-item-fade {
             animation: fadeInUp 0.3s ease-out forwards;
         }
@@ -564,8 +640,8 @@ export default function App() {
 
       {/* 📱 PWA 앱 설치 수동 안내 모달 팝업 */}
       {showInstallGuide && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all animate-modal-pop ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             
@@ -621,21 +697,21 @@ export default function App() {
         </div>
       )}
 
-      {/* 📢 패치노트 모달 팝업 */}
+      {/* 📢 공지사항 & 누적 패치노트 모달 팝업 (좌측: 목록 / 우측: 내용) */}
       {showNotice && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all animate-modal-pop ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             
             {/* 모달 헤더 */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <h2 className="font-bold text-base sm:text-lg">
-                  버전 1.0.14 업데이트: 헤더 드롭다운 메뉴, PWA 감지, 시간표 블러 로딩 및 식단 카테고리 컬러링
+                  소식 및 업데이트 히스토리
                 </h2>
               </div>
               <button
@@ -647,35 +723,112 @@ export default function App() {
               </button>
             </div>
 
-            {/* 모달 본문 (패치노트 내용) */}
-            <div className={`text-sm leading-relaxed space-y-2.5 mb-6 font-medium ${
-              isDarkMode ? 'text-neutral-300' : 'text-slate-700'
-            }`}>
-              <p className="font-bold text-base text-blue-500">📌 주요 변경 사항</p>
-              <ul className="list-disc list-inside space-y-2 pl-1">
-                <li>우측 상단 메뉴 드롭다운 방식(`^` 화살표 버튼) 통합</li>
-                <li>PWA 앱으로 실행 중인 경우 [앱 설치] 버튼 자동 숨김</li>
-                <li>시간표 로딩 시 화면을 가리지 않는 고급스러운 블러(Blur) 오버레이 적용</li>
-                <li>모바일 탭 스위처 좌/우 슬라이딩 애니메이션 추가</li>
-                <li>식단 카테고리별(밥, 국, 반찬, 디저트, 음료, 과일) 컬러풀 배지 및 등장 애니메이션 적용</li>
-              </ul>
+            {/* 모달 본문 (좌측: 탭 목록 / 우측: 선택된 내용) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 overflow-y-auto mb-4 p-1 min-h-[260px]">
+              
+              {/* 좌측 탭 목록 (공지사항 + 누적 패치버전) */}
+              <div className="sm:col-span-1 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 shrink-0">
+                <button
+                  onClick={() => setSelectedNoticeTab('notice')}
+                  className={`px-3.5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-left flex items-center gap-2 transition-all shrink-0 ${
+                    selectedNoticeTab === 'notice'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
+                  }`}
+                >
+                  <Megaphone className="w-4 h-4" />
+                  <span>공지사항</span>
+                </button>
+
+                <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2">패치 히스토리</div>
+
+                {PATCH_HISTORY.map((patch) => (
+                  <button
+                    key={patch.version}
+                    onClick={() => setSelectedNoticeTab(patch.version)}
+                    className={`px-3.5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 ${
+                      selectedNoticeTab === patch.version
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5 opacity-70" />
+                      <span>v{patch.version}</span>
+                    </div>
+                    {patch.version === CURRENT_VERSION && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold">최신</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* 우측 내용 출력 영역 */}
+              <div className="sm:col-span-2 pl-0 sm:pl-2 pt-1 sm:pt-0">
+                {selectedNoticeTab === 'notice' ? (
+                  /* 공지사항 탭 내용 (공지가 항상 먼저 나옴) */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                        알림
+                      </span>
+                      <h3 className="font-extrabold text-base">서비스 안내 공지</h3>
+                    </div>
+
+                    <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
+                      isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                    }`}>
+                      테스트 공지입니다. YGMhelper 서비스를 이용해 주셔서 감사합니다.
+                    </div>
+                  </div>
+                ) : (
+                  /* 누적 패치노트 내용 */
+                  (() => {
+                    const patch = PATCH_HISTORY.find((p) => p.version === selectedNoticeTab);
+                    if (!patch) return null;
+
+                    return (
+                      <div className="space-y-3 animate-fadeIn">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
+                          <h3 className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">
+                            {patch.title}
+                          </h3>
+                          <span className="text-xs text-slate-400 font-semibold shrink-0">{patch.date}</span>
+                        </div>
+
+                        <div className={`p-3.5 rounded-2xl border text-xs sm:text-sm font-medium ${
+                          isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                        }`}>
+                          <p className="font-bold text-xs text-slate-400 mb-2">변경 상세 항목</p>
+                          <ul className="list-disc list-inside space-y-1.5 pl-1">
+                            {patch.changes.map((change, idx) => (
+                              <li key={idx} className="leading-relaxed">{change}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+
             </div>
 
             {/* 모달 푸터 (체크박스 + 닫기 버튼) */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-neutral-800">
-              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
                 <input
                   type="checkbox"
                   checked={neverShowChecked}
                   onChange={(e) => setNeverShowChecked(e.target.checked)}
-                  className="w-4.5 h-4.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
                 />
                 <span>이 버전에서 다시 보지 않기</span>
               </label>
 
               <button
                 onClick={handleCloseNotice}
-                className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 닫기
               </button>
@@ -687,8 +840,8 @@ export default function App() {
 
       {/* 🔍 개별 급식 알러지 상세 확인 모달 */}
       {selectedDishAllergy && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all animate-modal-pop ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             
@@ -745,8 +898,8 @@ export default function App() {
 
       {/* 🧬 전체 알러지 정보 안내 모달 팝업 */}
       {showAllergyModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all animate-modal-pop ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             
@@ -812,7 +965,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 PWA [앱 설치] 버튼 (이미 앱으로 접속한 환경에서는 숨김 처리) */}
+            {/* 📲 PWA [앱 설치] 버튼 (앱 접속 환경 시 자동 숨김) */}
             {!isStandalone && (
               <button
                 onClick={handleInstallClick}
@@ -824,7 +977,20 @@ export default function App() {
               </button>
             )}
 
-            {/* 🔽 통합 드롭다운 메뉴 (`^` 모양 화살표 버튼) */}
+            {/* ☀️/🌙 다크모드 전용 독립 아이콘 버튼 (헤더에 상시 노출) */}
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2.5 rounded-xl border transition-all ${
+                isDarkMode 
+                  ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-700' 
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
+              }`}
+              title="테마 전환"
+            >
+              {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            </button>
+
+            {/* 🔽 드롭다운 메뉴 (`^` 모양 화살표 버튼) */}
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setIsMenuOpen((prev) => !prev)}
@@ -835,7 +1001,7 @@ export default function App() {
                 }`}
                 title="메뉴 열기"
               >
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
               </button>
 
               {/* 드롭다운 메뉴 팝업 */}
@@ -850,20 +1016,7 @@ export default function App() {
                     }`}
                   >
                     <Megaphone className="w-4 h-4 text-blue-500" />
-                    <span>공지사항</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      toggleDarkMode();
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
-                      isDarkMode ? 'hover:bg-neutral-800 text-amber-400' : 'hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    <span>{isDarkMode ? '라이트 모드' : '다크 모드'}</span>
+                    <span>공지 & 패치노트</span>
                   </button>
                 </div>
               )}
@@ -875,7 +1028,7 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 탭 선택 상자 (슬라이딩 필 애니메이션 적용) */}
+        {/* 📱 모바일 전용 탭 선택 상자 (슬라이딩 애니메이션) */}
         <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl border ${
           isDarkMode 
             ? 'bg-neutral-900 border-neutral-800' 
@@ -1039,11 +1192,14 @@ export default function App() {
                 </div>
               )}
 
-              {/* 급식 목록 및 선명한 공휴일 메시지 상자 */}
+              {/* 급식 목록 및 공휴일 메시지 상자 */}
               {mealLoading ? (
-                <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2.5">
-                  <Sparkles className="w-6 h-6 animate-spin text-orange-500" />
-                  <span className="text-sm font-semibold">급식 데이터 불러오는 중...</span>
+                <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
+                    <Sparkles className="w-4 h-4 text-orange-500 absolute animate-pulse" />
+                  </div>
+                  <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">급식 데이터 로딩 중...</span>
                 </div>
               ) : holidayName ? (
                 /* 공휴일 안내 상자 */
@@ -1064,7 +1220,7 @@ export default function App() {
                   </p>
                 </div>
               ) : meal.menuItems && meal.menuItems.length > 0 ? (
-                /* 카테고리 컬러링 및 등장 애니메이션이 적용된 급식 리스트 */
+                /* 정밀 카테고리화 급식 리스트 */
                 <div className="space-y-3">
                   {meal.menuItems.map((dish, idx) => {
                     const category = getDishCategory(dish.name);
@@ -1238,15 +1394,18 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 + 블러(Blur) 오버레이 지연 로딩 */}
+              {/* 3단계: 시간표 웹뷰 출력 + 풍부한 로딩 오버레이 */}
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] sm:h-[450px] relative w-full">
-                  {/* 컴시간 웹뷰 지연용 투명 블러(Blur) 오버레이 */}
+                  {/* 컴시간 웹뷰 지연용 투명 블러 및 글로우 오버레이 */}
                   {isWebviewLoading && (
-                    <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/40 dark:bg-neutral-900/40 flex flex-col items-center justify-center gap-3 animate-fadeIn">
-                      <Sparkles className="w-8 h-8 animate-spin text-blue-600" />
-                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-neutral-200 drop-shadow-sm">
-                        잠시만 기다려 주세요...
+                    <div className="absolute inset-0 z-20 backdrop-blur-lg bg-white/50 dark:bg-neutral-900/50 flex flex-col items-center justify-center gap-3 animate-fadeIn">
+                      <div className="relative flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin" />
+                        <Sparkles className="w-5 h-5 text-blue-600 absolute animate-pulse-glow" />
+                      </div>
+                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-neutral-100 drop-shadow-sm tracking-tight">
+                        시간표 불러오는 중... 잠시만 기다려 주세요
                       </p>
                     </div>
                   )}

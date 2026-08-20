@@ -5,6 +5,7 @@ import {
   BookOpen, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   Sun, 
   Moon, 
   Sparkles, 
@@ -24,7 +25,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전
-const CURRENT_VERSION = '1.0.13';
+const CURRENT_VERSION = '1.0.14';
 
 // NEIS 알러지 정보 19종 목록 및 맵
 const ALLERGY_MAP = {
@@ -135,7 +136,7 @@ const getDishCategory = (dishName) => {
   if (!dishName) return '반찬';
   const name = dishName.trim();
 
-  // 1. 디저트 (케이크, 빵, 쿠키, 파이 등)
+  // 1. 디저트 (케이크, 빵, 쿠키, 파이, 푸딩 등)
   const desserts = [
     '케이크', '케익', '빵', '쿠키', '파이', '도넛', '와플', '마카롱', 
     '푸딩', '아이스크림', '타르트', '슈', '떡', '핫도그', '에그타르트'
@@ -193,6 +194,36 @@ const getDishCategory = (dishName) => {
   return '반찬';
 };
 
+// 카테고리별 테마 스타일 반환 함수
+const getCategoryBadgeStyle = (category, isDark) => {
+  switch (category) {
+    case '디저트':
+      return isDark 
+        ? 'bg-pink-500/15 text-pink-300 border-pink-500/30' 
+        : 'bg-pink-100 text-pink-700 border-pink-200';
+    case '음료':
+      return isDark 
+        ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' 
+        : 'bg-cyan-100 text-cyan-700 border-cyan-200';
+    case '과일':
+      return isDark 
+        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' 
+        : 'bg-rose-100 text-rose-700 border-rose-200';
+    case '밥':
+      return isDark 
+        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' 
+        : 'bg-blue-100 text-blue-700 border-blue-200';
+    case '국':
+      return isDark 
+        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' 
+        : 'bg-amber-100 text-amber-700 border-amber-200';
+    default: // 반찬
+      return isDark 
+        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+        : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  }
+};
+
 export default function App() {
   // 1. 다크모드 상태
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -205,6 +236,13 @@ export default function App() {
 
   // 모바일 전용 탭 선택 상태 ('meal': 급식표, 'schedule': 시간표)
   const [activeTab, setActiveTab] = useState('meal');
+
+  // 상단 드롭다운 메뉴 상태
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // PWA (독립 실행 모드) 모드 감지 상태
+  const [isStandalone, setIsStandalone] = useState(false);
 
   // 주말(토, 일) 제외 초기 날짜 설정
   const [currentDate, setCurrentDate] = useState(() => {
@@ -227,10 +265,10 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
-  // 컴시간 로딩 상태 (2초 딜레이 오버레이)
+  // 컴시간 로딩 상태 (2초 딜레이 블러 오버레이)
   const [isWebviewLoading, setIsWebviewLoading] = useState(false);
 
-  // 2. 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
+  // 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
   const [webviewStep, setWebviewStep] = useState(() => {
     const isConfirmed = localStorage.getItem('ygm_comci_confirmed') === 'true';
     const savedTheme = localStorage.getItem('ygm_theme');
@@ -260,6 +298,35 @@ export default function App() {
   // HTTPS 통신을 위한 Cloudflare Worker 프록시 주소
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
+  // PWA/독립실행 환경 감지
+  useEffect(() => {
+    const checkStandalone = () => {
+      const isStandaloneMode = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        window.navigator.standalone || 
+        document.referrer.includes('android-app://');
+      setIsStandalone(Boolean(isStandaloneMode));
+    };
+
+    checkStandalone();
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', checkStandalone);
+
+    return () => {
+      window.matchMedia('(display-mode: standalone)').removeEventListener('change', checkStandalone);
+    };
+  }, []);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // PWA 설치 감지 이벤트 등록
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -278,7 +345,6 @@ export default function App() {
   useEffect(() => {
     const savedNoticeVersion = localStorage.getItem('ygm_notice_version');
     if (savedNoticeVersion !== CURRENT_VERSION) {
-      // 새 버전 배포 시 '다시 보지 않기' 초기화 및 팝업 표시
       localStorage.removeItem('ygm_hide_notice');
       setShowNotice(true);
     } else {
@@ -289,7 +355,7 @@ export default function App() {
     }
   }, []);
 
-  // 컴시간 웹뷰 단계가 2로 전환될 때 2초간 로딩 오버레이 작동
+  // 컴시간 웹뷰 단계가 2로 전환될 때 2초간 블러 오버레이 작동
   useEffect(() => {
     if (webviewStep === 2) {
       setIsWebviewLoading(true);
@@ -340,6 +406,7 @@ export default function App() {
     const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
     setNeverShowChecked(isNeverShow);
     setShowNotice(true);
+    setIsMenuOpen(false);
   };
 
   // 공지 모달 닫기
@@ -415,10 +482,10 @@ export default function App() {
   }, [loadMealData]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-150 selection:bg-blue-500 selection:text-white relative ${
+    <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative ${
       isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
     }`}>
-      {/* 🎨 Pretendard 폰트 동적 주입 */}
+      {/* 🎨 Pretendard 폰트 및 애니메이션 동적 주입 */}
       <style>{`
         @font-face {
             font-family: 'Pretendard';
@@ -477,6 +544,21 @@ export default function App() {
 
         body, * {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-item-fade {
+            animation: fadeInUp 0.3s ease-out forwards;
         }
       `}</style>
 
@@ -553,7 +635,7 @@ export default function App() {
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <h2 className="font-bold text-base sm:text-lg">
-                  버전 1.0.13 업데이트: 급식표 UI 확대, 알러지 상세 팝업 및 컴시간 로딩 효과 추가
+                  버전 1.0.14 업데이트: 헤더 드롭다운 메뉴, PWA 감지, 시간표 블러 로딩 및 식단 카테고리 컬러링
                 </h2>
               </div>
               <button
@@ -571,11 +653,11 @@ export default function App() {
             }`}>
               <p className="font-bold text-base text-blue-500">📌 주요 변경 사항</p>
               <ul className="list-disc list-inside space-y-2 pl-1">
-                <li>새 버전 배포 시 공지 팝업 자동 재노출 시스템 적용</li>
-                <li>급식표 텍스트 크기 확대 및 모바일 터치 편의성 강화</li>
-                <li>메뉴별 알러지 번호 클릭 시 해당하는 알러지명만 보는 팝업 추가</li>
-                <li>컴시간 시간표 로딩 시 "잠시만 기다려 주세요..." 안내 레이어 추가</li>
-                <li>디저트(케이크, 빵 등) 카테고리 자동 분류 추가</li>
+                <li>우측 상단 메뉴 드롭다운 방식(`^` 화살표 버튼) 통합</li>
+                <li>PWA 앱으로 실행 중인 경우 [앱 설치] 버튼 자동 숨김</li>
+                <li>시간표 로딩 시 화면을 가리지 않는 고급스러운 블러(Blur) 오버레이 적용</li>
+                <li>모바일 탭 스위처 좌/우 슬라이딩 애니메이션 추가</li>
+                <li>식단 카테고리별(밥, 국, 반찬, 디저트, 음료, 과일) 컬러풀 배지 및 등장 애니메이션 적용</li>
               </ul>
             </div>
 
@@ -730,41 +812,62 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 PWA [앱 설치] 버튼 */}
-            <button
-              onClick={handleInstallClick}
-              className="flex items-center gap-1.5 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
-              title="앱으로 설치하기"
-            >
-              <Download className="w-4 h-4" />
-              <span>앱 설치</span>
-            </button>
+            {/* 📲 PWA [앱 설치] 버튼 (이미 앱으로 접속한 환경에서는 숨김 처리) */}
+            {!isStandalone && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-1.5 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
+                title="앱으로 설치하기"
+              >
+                <Download className="w-4 h-4" />
+                <span>앱 설치</span>
+              </button>
+            )}
 
-            {/* 공지사항(패치노트) 아이콘 버튼 */}
-            <button
-              onClick={openNoticeModal}
-              className={`p-2.5 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
-                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="공지사항 보기"
-            >
-              <Megaphone className="w-4.5 h-4.5 text-blue-500" />
-            </button>
+            {/* 🔽 통합 드롭다운 메뉴 (`^` 모양 화살표 버튼) */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setIsMenuOpen((prev) => !prev)}
+                className={`p-2.5 rounded-xl border flex items-center gap-1 transition-all ${
+                  isDarkMode 
+                    ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
+                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
+                }`}
+                title="메뉴 열기"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
+              </button>
 
-            {/* 다크/라이트모드 토글 */}
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2.5 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-700' 
-                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="테마 전환"
-            >
-              {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
-            </button>
+              {/* 드롭다운 메뉴 팝업 */}
+              {isMenuOpen && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl p-1.5 z-50 animate-fadeIn ${
+                  isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'bg-white border-slate-200 text-slate-800'
+                }`}>
+                  <button
+                    onClick={openNoticeModal}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
+                      isDarkMode ? 'hover:bg-neutral-800 text-neutral-200' : 'hover:bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    <Megaphone className="w-4 h-4 text-blue-500" />
+                    <span>공지사항</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      toggleDarkMode();
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
+                      isDarkMode ? 'hover:bg-neutral-800 text-amber-400' : 'hover:bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    <span>{isDarkMode ? '라이트 모드' : '다크 모드'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -772,37 +875,39 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 탭 선택 상자 (다크모드 지원) */}
-        <div className={`flex md:hidden p-1.5 mb-4 rounded-2xl border ${
+        {/* 📱 모바일 전용 탭 선택 상자 (슬라이딩 필 애니메이션 적용) */}
+        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl border ${
           isDarkMode 
             ? 'bg-neutral-900 border-neutral-800' 
             : 'bg-slate-200/80 border-slate-300/60'
         }`}>
+          {/* 슬라이딩 사각형 배경 픽셀 이동 처리 */}
+          <div 
+            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] transition-all duration-300 ease-out rounded-xl shadow-md ${
+              activeTab === 'meal' ? 'left-1.5' : 'left-[calc(50%+0.1875rem)]'
+            } ${
+              isDarkMode ? 'bg-neutral-800' : 'bg-white'
+            }`}
+          />
+
           <button
             onClick={() => setActiveTab('meal')}
-            className={`flex-1 py-3 rounded-xl font-extrabold text-base flex items-center justify-center gap-2 transition-all ${
+            className={`relative z-10 flex-1 py-3 font-extrabold text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
               activeTab === 'meal'
-                ? isDarkMode
-                  ? 'bg-neutral-800 text-white shadow-md'
-                  : 'bg-white text-slate-900 shadow-md'
-                : isDarkMode
-                  ? 'text-neutral-400 hover:text-neutral-200'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? isDarkMode ? 'text-white' : 'text-slate-900'
+                : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
             }`}
           >
             <Utensils className="w-5 h-5 text-orange-500" />
             <span>급식표</span>
           </button>
+
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex-1 py-3 rounded-xl font-extrabold text-base flex items-center justify-center gap-2 transition-all ${
+            className={`relative z-10 flex-1 py-3 font-extrabold text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
               activeTab === 'schedule'
-                ? isDarkMode
-                  ? 'bg-neutral-800 text-white shadow-md'
-                  : 'bg-white text-slate-900 shadow-md'
-                : isDarkMode
-                  ? 'text-neutral-400 hover:text-neutral-200'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? isDarkMode ? 'text-white' : 'text-slate-900'
+                : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
             }`}
           >
             <BookOpen className="w-5 h-5 text-blue-500" />
@@ -959,47 +1064,51 @@ export default function App() {
                   </p>
                 </div>
               ) : meal.menuItems && meal.menuItems.length > 0 ? (
-                /* 큼직해진 급식 항목 리스트 */
+                /* 카테고리 컬러링 및 등장 애니메이션이 적용된 급식 리스트 */
                 <div className="space-y-3">
-                  {meal.menuItems.map((dish, idx) => (
-                    <div
-                      key={idx}
-                      className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 ${
-                        isDarkMode 
-                          ? 'bg-neutral-950/80 border-neutral-800' 
-                          : 'bg-slate-50 border-slate-200/80'
-                      }`}
-                    >
-                      {/* 메뉴 이름 및 옆에 표시되는 회색 카테고리 태그 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
-                        <span className={`font-extrabold text-base sm:text-lg leading-snug ${
-                          isDarkMode ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {dish.name}
-                        </span>
-                        <span className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-md self-start sm:self-auto ${
-                          isDarkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-200/70 text-slate-600'
-                        }`}>
-                          {getDishCategory(dish.name)}
-                        </span>
-                      </div>
+                  {meal.menuItems.map((dish, idx) => {
+                    const category = getDishCategory(dish.name);
+                    const badgeClass = getCategoryBadgeStyle(category, isDarkMode);
 
-                      {/* 알러지 정보 배지 (터치 시 해당 메뉴 알러지 상세 팝업 열림) */}
-                      {dish.allergy && (
-                        <button
-                          onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })}
-                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all hover:scale-105 active:scale-95 ${
-                            isDarkMode 
-                              ? 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-amber-500 hover:text-amber-400' 
-                              : 'bg-slate-100 border-slate-300 text-slate-600 hover:border-amber-500 hover:text-amber-700'
-                          }`}
-                          title="터치하여 함유된 알러지 성분 보기"
-                        >
-                          알러지 {dish.allergy}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    return (
+                      <div
+                        key={idx}
+                        style={{ animationDelay: `${idx * 0.05}s` }}
+                        className={`animate-item-fade opacity-0 px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-sm transition-all hover:scale-[1.01] ${
+                          isDarkMode 
+                            ? 'bg-neutral-950/80 border-neutral-800/80' 
+                            : 'bg-slate-50 border-slate-200/80'
+                        }`}
+                      >
+                        {/* 메뉴 이름 및 알록달록한 카테고리 배지 */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
+                          <span className={`font-extrabold text-base sm:text-lg leading-snug ${
+                            isDarkMode ? 'text-white' : 'text-slate-900'
+                          }`}>
+                            {dish.name}
+                          </span>
+                          <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-lg border self-start sm:self-auto ${badgeClass}`}>
+                            {category}
+                          </span>
+                        </div>
+
+                        {/* 은은한 알러지 배지 */}
+                        {dish.allergy && (
+                          <button
+                            onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })}
+                            className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all hover:scale-105 active:scale-95 ${
+                              isDarkMode 
+                                ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-amber-500/50 hover:text-amber-400' 
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-amber-500/50 hover:text-amber-700 shadow-sm'
+                            }`}
+                            title="터치하여 함유된 알러지 성분 보기"
+                          >
+                            알러지 {dish.allergy}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className={`p-10 rounded-2xl text-center text-sm font-semibold ${
@@ -1129,14 +1238,14 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 + 2초 로딩 레이어 */}
+              {/* 3단계: 시간표 웹뷰 출력 + 블러(Blur) 오버레이 지연 로딩 */}
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] sm:h-[450px] relative w-full">
-                  {/* 컴시간 웹뷰 지연 커버용 2초 로딩 오버레이 */}
+                  {/* 컴시간 웹뷰 지연용 투명 블러(Blur) 오버레이 */}
                   {isWebviewLoading && (
-                    <div className="absolute inset-0 z-20 bg-white dark:bg-neutral-900 flex flex-col items-center justify-center gap-3 animate-fadeIn">
+                    <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/40 dark:bg-neutral-900/40 flex flex-col items-center justify-center gap-3 animate-fadeIn">
                       <Sparkles className="w-8 h-8 animate-spin text-blue-600" />
-                      <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-neutral-300">
+                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-neutral-200 drop-shadow-sm">
                         잠시만 기다려 주세요...
                       </p>
                     </div>

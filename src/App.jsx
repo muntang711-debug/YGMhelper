@@ -27,11 +27,21 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.0.19';
+const CURRENT_VERSION = '1.0.20';
 const CURRENT_NOTICE_ID = 'notice_2026_08_20_1';
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.0.20',
+    date: '2026.08.20',
+    title: '버전 1.0.20 업데이트: 팝업 레이아웃 쏠림 현상 수정, 팝업 가변 애니메이션 및 모달 시스템 완전 안정화',
+    changes: [
+      '팝업 오픈 시 스크롤바가 제거되며 메인 화면이 우측으로 밀리던 레이아웃 쏠림(Layout Shift) 완벽 수정',
+      '패치노트 선택 시 내용 길이에 따라 모달 높이가 자연스럽게 변하는 height 전환 애니메이션 적용',
+      '공지사항 및 패치노트 모달 팝업 등장/퇴장 애니메이션 완전 통일'
+    ]
+  },
   {
     version: '1.0.19',
     date: '2026.08.20',
@@ -393,19 +403,20 @@ export default function App() {
   const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
-  // 🔒 팝업 모달이 활성화된 경우 메인 화면(Body) 스크롤 차단
+  // 🔒 팝업 모달 활성화 시 우측 쏠림(Layout Shift) 완벽 방지 및 배경 스크롤 차단
   useEffect(() => {
     const isAnyModalOpen = showNotice || showPatchModal || showAllergyModal || Boolean(selectedDishAllergy) || showInstallGuide;
     if (isAnyModalOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     } else {
       document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      document.body.style.paddingRight = '';
     }
     return () => {
       document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      document.body.style.paddingRight = '';
     };
   }, [showNotice, showPatchModal, showAllergyModal, selectedDishAllergy, showInstallGuide]);
 
@@ -829,12 +840,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 📜 2. 패치노트 전용 독립 모달 (가변 크기 확장 & 세로 버튼 완벽 고정) */}
+      {/* 📜 2. 패치노트 전용 독립 모달 (가변 크기 부드러운 애니메이션 적용) */}
       {showPatchModal && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md ${
           isClosingPatch ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all duration-300 ease-out ${
+          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-[height,max-height,transform,opacity] duration-300 ease-out ${
             isClosingPatch ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -859,7 +870,7 @@ export default function App() {
             {/* 본문 - 독립 스크롤 구조 (Left & Right) */}
             <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
               
-              {/* 좌측: 버전 목록 (버튼 세로 높이 h-9 고정) */}
+              {/* 좌측: 버전 목록 (버튼 세로 높이 h-9 완벽 고정) */}
               <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
                 <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2 shrink-0">버전 목록</div>
 
@@ -884,14 +895,14 @@ export default function App() {
                 ))}
               </div>
 
-              {/* 우측: 선택된 패치노트 상세 내용 (자연스러운 세로 확장) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1">
+              {/* 우측: 선택된 패치노트 상세 내용 (높이 가변 애니메이션) */}
+              <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1 transition-all duration-300 ease-out">
                 {(() => {
                   const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
                   if (!patch) return null;
 
                   return (
-                    <div className="space-y-3 animate-fadeIn pr-1">
+                    <div className="space-y-3 animate-item-fade pr-1">
                       <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
                         <h3 className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">
                           {patch.title}

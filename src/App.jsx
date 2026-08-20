@@ -27,11 +27,20 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.0.17';
+const CURRENT_VERSION = '1.0.18';
 const CURRENT_NOTICE_ID = 'notice_2026_08_20_1';
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.0.18',
+    date: '2026.08.20',
+    title: '버전 1.0.18 업데이트: 패치노트 모달 스크롤 분리 및 모바일 레이아웃 고정',
+    changes: [
+      '패치노트 모달 좌측(버전 목록)과 우측(상세 내용) 독립 스크롤바 완전 분리',
+      '상세 내용 길이에 따라 모바일 버전 선택 버튼 크기가 변형되는 버그 수정'
+    ]
+  },
   {
     version: '1.0.17',
     date: '2026.08.20',
@@ -328,18 +337,17 @@ export default function App() {
     return today;
   });
 
-  // 📢 공지사항 모달 상태 (새 공지가 등록될 때까지 다시 보지 않기)
+  // 📢 공지사항 모달 상태
   const [showNotice, setShowNotice] = useState(false);
   const [isClosingNotice, setIsClosingNotice] = useState(false);
   const [neverShowNoticeChecked, setNeverShowNoticeChecked] = useState(false);
 
-  // 📜 패치노트 모달 상태 (새 버전 배포 시마다 자동 노출)
+  // 📜 패치노트 모달 상태
   const [showPatchModal, setShowPatchModal] = useState(false);
   const [isClosingPatch, setIsClosingPatch] = useState(false);
   const [neverShowPatchChecked, setNeverShowPatchChecked] = useState(false);
   const [selectedPatchVersion, setSelectedPatchVersion] = useState(CURRENT_VERSION);
 
-  // 공지 닫힌 후 보여줄 패치노트 대기 상태
   const [pendingPatchShow, setPendingPatchShow] = useState(false);
 
   // 기타 모달 상태
@@ -431,7 +439,7 @@ export default function App() {
     if (shouldShowNotice) {
       setShowNotice(true);
       if (shouldShowPatch) {
-        setPendingPatchShow(true); // 공지가 먼저 닫힌 후 패치노트 팝업 대기
+        setPendingPatchShow(true);
       }
     } else if (shouldShowPatch) {
       setSelectedPatchVersion(CURRENT_VERSION);
@@ -494,7 +502,6 @@ export default function App() {
     setIsMenuOpen(false);
   };
 
-  // 공지 모달 닫기
   const handleCloseNotice = () => {
     if (neverShowNoticeChecked) {
       localStorage.setItem('ygm_hide_notice_id', CURRENT_NOTICE_ID);
@@ -504,7 +511,6 @@ export default function App() {
     
     triggerCloseAnimation(setIsClosingNotice, setShowNotice);
 
-    // 공지가 닫힌 후 배포된 패치노트가 대기 중이면 팝업
     if (pendingPatchShow) {
       setTimeout(() => {
         setSelectedPatchVersion(CURRENT_VERSION);
@@ -514,7 +520,6 @@ export default function App() {
     }
   };
 
-  // 패치노트 모달 닫기
   const handleClosePatch = () => {
     if (neverShowPatchChecked) {
       localStorage.setItem('ygm_hide_patch_version', CURRENT_VERSION);
@@ -735,7 +740,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📢 1. 공지사항 전용 독립 모달 (새 공지 등록 전까지 닫으면 재노출 안 됨) */}
+      {/* 📢 1. 공지사항 전용 독립 모달 */}
       {showNotice && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingNotice ? 'animate-backdrop-out' : 'animate-backdrop-in'
@@ -798,17 +803,18 @@ export default function App() {
         </div>
       )}
 
-      {/* 📜 2. 패치노트 전용 독립 모달 (새 버전 배포 시마다 자동 팝업) */}
+      {/* 📜 2. 패치노트 전용 독립 모달 (완전한 독립 스크롤 & 모바일 크기 고정) */}
       {showPatchModal && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md ${
           isClosingPatch ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all ${
+          <div className={`w-full max-w-2xl h-[85vh] max-h-[550px] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-all ${
             isClosingPatch ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4 shrink-0">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-3 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
                   <FileText className="w-5 h-5" />
@@ -824,38 +830,42 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 overflow-y-auto mb-4 p-1 min-h-[260px]">
-              <div className="sm:col-span-1 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 shrink-0">
-                <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2">버전 목록</div>
+            {/* 본문 - 독립 스크롤 구조 (Left & Right) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-1 flex-1 min-h-0 overflow-hidden">
+              
+              {/* 좌측: 버전 목록 (독립 스크롤, 크기 고정) */}
+              <div className="sm:col-span-1 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto max-h-[100px] sm:max-h-none sm:h-full pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 shrink-0 min-h-0">
+                <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2 shrink-0">버전 목록</div>
 
                 {PATCH_HISTORY.map((patch) => (
                   <button
                     key={patch.version}
                     onClick={() => setSelectedPatchVersion(patch.version)}
-                    className={`px-3.5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 ${
+                    className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 w-auto sm:w-full ${
                       selectedPatchVersion === patch.version
                         ? 'bg-blue-600 text-white shadow-md'
                         : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <History className="w-3.5 h-3.5 opacity-70" />
-                      <span>v{patch.version}</span>
+                      <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                      <span className="whitespace-nowrap">v{patch.version}</span>
                     </div>
                     {patch.version === CURRENT_VERSION && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold">최신</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold shrink-0 ml-1">최신</span>
                     )}
                   </button>
                 ))}
               </div>
 
-              <div className="sm:col-span-2 pl-0 sm:pl-2 pt-1 sm:pt-0">
+              {/* 우측: 선택된 패치노트 상세 내용 (독립 스크롤) */}
+              <div className="sm:col-span-2 pl-0 sm:pl-2 pt-1 sm:pt-0 overflow-y-auto h-full min-h-0 pr-1">
                 {(() => {
                   const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
                   if (!patch) return null;
 
                   return (
-                    <div className="space-y-3 animate-fadeIn">
+                    <div className="space-y-3 animate-fadeIn pr-1">
                       <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
                         <h3 className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">
                           {patch.title}
@@ -877,9 +887,11 @@ export default function App() {
                   );
                 })()}
               </div>
+
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0">
+            {/* 푸터 */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0 mt-2">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
                 <input
                   type="checkbox"

@@ -23,13 +23,18 @@ import {
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
-// NEIS 알러지 정보 19종 목록
-const ALLERGY_LIST = [
-  "1. 난류", "2. 우유", "3. 메밀", "4. 땅콩", "5. 대두", "6. 밀",
-  "7. 고등어", "8. 게", "9. 새우", "10. 돼지고기", "11. 복숭아",
-  "12. 토마토", "13. 아황산류", "14. 호두", "15. 닭고기", "16. 쇠고기",
-  "17. 오징어", "18. 조개류(굴,전복,홍합 포함)", "19. 잣"
-];
+// 앱 현재 버전
+const CURRENT_VERSION = '1.0.13';
+
+// NEIS 알러지 정보 19종 목록 및 맵
+const ALLERGY_MAP = {
+  "1": "난류", "2": "우유", "3": "메밀", "4": "땅콩", "5": "대두", "6": "밀",
+  "7": "고등어", "8": "게", "9": "새우", "10": "돼지고기", "11": "복숭아",
+  "12": "토마토", "13": "아황산류", "14": "호두", "15": "닭고기", "16": "쇠고기",
+  "17": "오징어", "18": "조개류(굴,전복,홍합 포함)", "19": "잣"
+};
+
+const ALLERGY_LIST = Object.entries(ALLERGY_MAP).map(([num, name]) => `${num}. ${name}`);
 
 // 주요 공휴일 및 대체공휴일 데이터베이스
 const HOLIDAYS = {
@@ -130,7 +135,16 @@ const getDishCategory = (dishName) => {
   if (!dishName) return '반찬';
   const name = dishName.trim();
 
-  // 1. 음료
+  // 1. 디저트 (케이크, 빵, 쿠키, 파이 등)
+  const desserts = [
+    '케이크', '케익', '빵', '쿠키', '파이', '도넛', '와플', '마카롱', 
+    '푸딩', '아이스크림', '타르트', '슈', '떡', '핫도그', '에그타르트'
+  ];
+  if (desserts.some((d) => name.includes(d))) {
+    return '디저트';
+  }
+
+  // 2. 음료
   if (
     name.includes('우유') || 
     name.includes('주스') || 
@@ -138,12 +152,14 @@ const getDishCategory = (dishName) => {
     name.includes('에이드') || 
     name.includes('요구르트') || 
     name.includes('야쿠르트') || 
-    name.includes('음료')
+    name.includes('음료') ||
+    name.includes('라떼') ||
+    name.includes('차')
   ) {
     return '음료';
   }
 
-  // 2. 과일
+  // 3. 과일
   const fruits = [
     '과일', '사과', '바나나', '포도', '귤', '수박', '참외', '딸기', 
     '키위', '오렌지', '파인애플', '멜론', '메론', '체리', '자두', 
@@ -154,23 +170,26 @@ const getDishCategory = (dishName) => {
     return '과일';
   }
 
-  // 3. 밥
-  if (name.includes('밥')) {
+  // 4. 밥
+  if (name.includes('밥') || name.includes('덮밥') || name.includes('볶음밥') || name.includes('비빔밥')) {
     return '밥';
   }
 
-  // 4. 국
+  // 5. 국
   if (
     name.includes('국') || 
     name.includes('탕') || 
     name.includes('찌개') || 
     name.includes('스프') || 
-    name.includes('수프')
+    name.includes('수프') ||
+    name.includes('우동') ||
+    name.includes('라면') ||
+    name.includes('국수')
   ) {
     return '국';
   }
 
-  // 5. 나머지는 반찬
+  // 6. 나머지는 반찬
   return '반찬';
 };
 
@@ -201,9 +220,15 @@ export default function App() {
   const [neverShowChecked, setNeverShowChecked] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
 
+  // 개별 급식 메뉴 알러지 상세 클릭 모달 상태
+  const [selectedDishAllergy, setSelectedDishAllergy] = useState(null);
+
   // PWA 앱 설치 관련 상태
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+
+  // 컴시간 로딩 상태 (2초 딜레이 오버레이)
+  const [isWebviewLoading, setIsWebviewLoading] = useState(false);
 
   // 2. 웹뷰 커버 단계 (0: 최초 학교선택 안내 커버, 1: 다크모드 경고 커버, 2: 웹뷰 표시됨)
   const [webviewStep, setWebviewStep] = useState(() => {
@@ -249,6 +274,32 @@ export default function App() {
     };
   }, []);
 
+  // 버전 변경 시 공지 팝업 자동 초기화 및 노출 로직
+  useEffect(() => {
+    const savedNoticeVersion = localStorage.getItem('ygm_notice_version');
+    if (savedNoticeVersion !== CURRENT_VERSION) {
+      // 새 버전 배포 시 '다시 보지 않기' 초기화 및 팝업 표시
+      localStorage.removeItem('ygm_hide_notice');
+      setShowNotice(true);
+    } else {
+      const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
+      if (!isNeverShow) {
+        setShowNotice(true);
+      }
+    }
+  }, []);
+
+  // 컴시간 웹뷰 단계가 2로 전환될 때 2초간 로딩 오버레이 작동
+  useEffect(() => {
+    if (webviewStep === 2) {
+      setIsWebviewLoading(true);
+      const timer = setTimeout(() => {
+        setIsWebviewLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [webviewStep]);
+
   // [앱 설치] 버튼 클릭 실행 함수
   const handleInstallClick = async () => {
     if (deferredPrompt) {
@@ -284,15 +335,6 @@ export default function App() {
     });
   };
 
-  // 페이지 마운트 시 '공지 다시 보지 않기' 저장 상태 확인
-  useEffect(() => {
-    const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
-    setNeverShowChecked(isNeverShow);
-    if (!isNeverShow) {
-      setShowNotice(true);
-    }
-  }, []);
-
   // 공지 모달 열기
   const openNoticeModal = () => {
     const isNeverShow = localStorage.getItem('ygm_hide_notice') === 'true';
@@ -304,6 +346,7 @@ export default function App() {
   const handleCloseNotice = () => {
     if (neverShowChecked) {
       localStorage.setItem('ygm_hide_notice', 'true');
+      localStorage.setItem('ygm_notice_version', CURRENT_VERSION);
     } else {
       localStorage.removeItem('ygm_hide_notice');
     }
@@ -459,7 +502,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="space-y-4 text-xs sm:text-sm font-medium leading-relaxed">
+            <div className="space-y-4 text-sm font-medium leading-relaxed">
               <div className={`p-3.5 rounded-2xl border ${
                 isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
               }`}>
@@ -486,7 +529,7 @@ export default function App() {
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
               <button
                 onClick={() => setShowInstallGuide(false)}
-                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 확인
               </button>
@@ -509,8 +552,8 @@ export default function App() {
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
                   <Megaphone className="w-5 h-5" />
                 </div>
-                <h2 className="font-bold text-sm sm:text-base">
-                  버전 1.0.12 업데이트: 모바일 UI 최적화 및 다크모드 디자인 개선
+                <h2 className="font-bold text-base sm:text-lg">
+                  버전 1.0.13 업데이트: 급식표 UI 확대, 알러지 상세 팝업 및 컴시간 로딩 효과 추가
                 </h2>
               </div>
               <button
@@ -523,32 +566,34 @@ export default function App() {
             </div>
 
             {/* 모달 본문 (패치노트 내용) */}
-            <div className={`text-xs sm:text-sm leading-relaxed space-y-2.5 mb-6 font-medium ${
+            <div className={`text-sm leading-relaxed space-y-2.5 mb-6 font-medium ${
               isDarkMode ? 'text-neutral-300' : 'text-slate-700'
             }`}>
-              <p className="font-bold text-sm text-blue-500">📌 주요 변경 사항</p>
-              <ul className="list-disc list-inside space-y-1.5 pl-1">
-                <li>모바일 탭 바 다크모드 배경 색상 오류 수정</li>
-                <li>모바일 헤더 공지 버튼 크기 최적화 (줄바꿈 현상 개선)</li>
-                <li>업데이트 패치노트 시스템 도입</li>
+              <p className="font-bold text-base text-blue-500">📌 주요 변경 사항</p>
+              <ul className="list-disc list-inside space-y-2 pl-1">
+                <li>새 버전 배포 시 공지 팝업 자동 재노출 시스템 적용</li>
+                <li>급식표 텍스트 크기 확대 및 모바일 터치 편의성 강화</li>
+                <li>메뉴별 알러지 번호 클릭 시 해당하는 알러지명만 보는 팝업 추가</li>
+                <li>컴시간 시간표 로딩 시 "잠시만 기다려 주세요..." 안내 레이어 추가</li>
+                <li>디저트(케이크, 빵 등) 카테고리 자동 분류 추가</li>
               </ul>
             </div>
 
             {/* 모달 푸터 (체크박스 + 닫기 버튼) */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-neutral-800">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
+              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
                 <input
                   type="checkbox"
                   checked={neverShowChecked}
                   onChange={(e) => setNeverShowChecked(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                  className="w-4.5 h-4.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
                 />
-                <span>다시 보지 않기</span>
+                <span>이 버전에서 다시 보지 않기</span>
               </label>
 
               <button
                 onClick={handleCloseNotice}
-                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 닫기
               </button>
@@ -558,7 +603,65 @@ export default function App() {
         </div>
       )}
 
-      {/* 🧬 알러지 정보 안내 모달 팝업 */}
+      {/* 🔍 개별 급식 알러지 상세 확인 모달 */}
+      {selectedDishAllergy && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
+            isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+                  <Info className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
+                  <p className="text-xs text-slate-500 dark:text-neutral-400">함유된 알러지 성분 정보</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDishAllergy(null)}
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 py-2 max-h-[320px] overflow-y-auto">
+              {selectedDishAllergy.allergyStr
+                .split('.')
+                .filter(Boolean)
+                .map((numStr, idx) => {
+                  const cleanNum = numStr.trim();
+                  const allergyName = ALLERGY_MAP[cleanNum] || `알러지 ${cleanNum}`;
+                  return (
+                    <div key={idx} className={`p-3 rounded-2xl border font-bold text-sm flex items-center gap-3 ${
+                      isDarkMode ? 'bg-neutral-950 border-neutral-800 text-amber-400' : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                    }`}>
+                      <span className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center text-xs font-black text-amber-600 shrink-0">
+                        {cleanNum}
+                      </span>
+                      <span>{allergyName}</span>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
+              <button
+                onClick={() => setSelectedDishAllergy(null)}
+                className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+              >
+                확인
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🧬 전체 알러지 정보 안내 모달 팝업 */}
       {showAllergyModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all ${
@@ -570,7 +673,7 @@ export default function App() {
                 <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600">
                   <Info className="w-5 h-5" />
                 </div>
-                <h2 className="font-bold text-base">알러지 정보 (NEIS 기준)</h2>
+                <h2 className="font-bold text-base">전체 알러지 목록 (NEIS 기준)</h2>
               </div>
               <button
                 onClick={() => setShowAllergyModal(false)}
@@ -593,7 +696,7 @@ export default function App() {
             <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
               <button
                 onClick={() => setShowAllergyModal(false)}
-                className="text-xs sm:text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
                 확인
               </button>
@@ -609,12 +712,12 @@ export default function App() {
       }`}>
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md">
-              <GraduationCap className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md">
+              <GraduationCap className="w-5.5 h-5.5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className={`font-bold text-base tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                <h1 className={`font-bold text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   YGMhelper
                 </h1>
                 <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
@@ -630,37 +733,37 @@ export default function App() {
             {/* 📲 PWA [앱 설치] 버튼 */}
             <button
               onClick={handleInstallClick}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
+              className="flex items-center gap-1.5 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
               title="앱으로 설치하기"
             >
               <Download className="w-4 h-4" />
               <span>앱 설치</span>
             </button>
 
-            {/* 공지사항(패치노트) 아이콘 전용 버튼 (글자 제거하여 공간 확보) */}
+            {/* 공지사항(패치노트) 아이콘 버튼 */}
             <button
               onClick={openNoticeModal}
-              className={`p-2 rounded-xl border transition-colors ${
+              className={`p-2.5 rounded-xl border transition-colors ${
                 isDarkMode 
                   ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                   : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
               }`}
               title="공지사항 보기"
             >
-              <Megaphone className="w-4 h-4 text-blue-500" />
+              <Megaphone className="w-4.5 h-4.5 text-blue-500" />
             </button>
 
             {/* 다크/라이트모드 토글 */}
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-xl border transition-colors ${
+              className={`p-2.5 rounded-xl border transition-colors ${
                 isDarkMode 
                   ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-700' 
                   : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
               }`}
               title="테마 전환"
             >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </button>
           </div>
         </div>
@@ -669,7 +772,7 @@ export default function App() {
       {/* 메인 영역 */}
       <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 탭 선택 상자 (다크모드 스타일 완전 적용) */}
+        {/* 📱 모바일 전용 탭 선택 상자 (다크모드 지원) */}
         <div className={`flex md:hidden p-1.5 mb-4 rounded-2xl border ${
           isDarkMode 
             ? 'bg-neutral-900 border-neutral-800' 
@@ -677,7 +780,7 @@ export default function App() {
         }`}>
           <button
             onClick={() => setActiveTab('meal')}
-            className={`flex-1 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-3 rounded-xl font-extrabold text-base flex items-center justify-center gap-2 transition-all ${
               activeTab === 'meal'
                 ? isDarkMode
                   ? 'bg-neutral-800 text-white shadow-md'
@@ -687,12 +790,12 @@ export default function App() {
                   : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Utensils className="w-4.5 h-4.5 text-orange-500" />
+            <Utensils className="w-5 h-5 text-orange-500" />
             <span>급식표</span>
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex-1 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-3 rounded-xl font-extrabold text-base flex items-center justify-center gap-2 transition-all ${
               activeTab === 'schedule'
                 ? isDarkMode
                   ? 'bg-neutral-800 text-white shadow-md'
@@ -702,7 +805,7 @@ export default function App() {
                   : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <BookOpen className="w-4.5 h-4.5 text-blue-500" />
+            <BookOpen className="w-5 h-5 text-blue-500" />
             <span>실시간 시간표</span>
           </button>
         </div>
@@ -722,11 +825,11 @@ export default function App() {
                 isDarkMode ? 'border-neutral-800' : 'border-slate-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600">
-                    <Utensils className="w-5 h-5" />
+                  <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600">
+                    <Utensils className="w-5.5 h-5.5" />
                   </div>
                   <div>
-                    <h2 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       오늘의 급식
                     </h2>
                     <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 식단표</p>
@@ -744,15 +847,15 @@ export default function App() {
                   onClick={openDatePicker}
                   className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none flex-wrap"
                 >
-                  <CalendarIcon className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${holidayName ? 'text-red-500' : 'text-blue-500'}`} />
-                  <span className={`text-xs sm:text-sm font-bold tracking-tight ${
+                  <CalendarIcon className={`w-5 h-5 shrink-0 ${holidayName ? 'text-red-500' : 'text-blue-500'}`} />
+                  <span className={`text-sm sm:text-base font-bold tracking-tight ${
                     holidayName 
                       ? 'text-red-700 dark:text-red-400' 
                       : isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
                     {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
                   </span>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-lg font-bold ${
+                  <span className={`text-xs px-2.5 py-0.5 rounded-lg font-bold ${
                     holidayName
                       ? 'bg-red-600 text-white'
                       : isDarkMode ? 'bg-neutral-800 text-blue-400' : 'bg-blue-100 text-blue-800'
@@ -762,7 +865,7 @@ export default function App() {
 
                   {/* 공휴일 뱃지 */}
                   {holidayName && (
-                    <span className={`text-[11px] px-2 py-0.5 rounded-lg font-bold border ${
+                    <span className={`text-xs px-2 py-0.5 rounded-lg font-bold border ${
                       isDarkMode 
                         ? 'bg-red-900/60 text-red-300 border-red-800' 
                         : 'bg-red-100 text-red-700 border-red-200'
@@ -783,18 +886,18 @@ export default function App() {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={resetToToday}
-                    className={`text-xs px-2.5 py-1.5 rounded-xl font-bold border transition-colors ${
+                    className={`text-xs sm:text-sm px-3 py-2 rounded-xl font-bold border transition-colors ${
                       isDarkMode 
                         ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                         : 'border-slate-300 hover:bg-slate-200 text-slate-700'
                     }`}
                   >
-                    <RotateCcw className="w-3 h-3 inline mr-1" />
+                    <RotateCcw className="w-3.5 h-3.5 inline mr-1" />
                     오늘
                   </button>
                   <button
                     onClick={() => changeDate(-1)}
-                    className={`p-1.5 rounded-xl border transition-colors ${
+                    className={`p-2 rounded-xl border transition-colors ${
                       isDarkMode 
                         ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                         : 'border-slate-300 hover:bg-slate-200 text-slate-700'
@@ -805,7 +908,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => changeDate(1)}
-                    className={`p-1.5 rounded-xl border transition-colors ${
+                    className={`p-2 rounded-xl border transition-colors ${
                       isDarkMode 
                         ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                         : 'border-slate-300 hover:bg-slate-200 text-slate-700'
@@ -844,7 +947,7 @@ export default function App() {
                     ? 'bg-red-950/40 border-red-900/50 text-red-300' 
                     : 'bg-red-50 border-red-200 text-red-800'
                 }`}>
-                  <p className={`font-bold text-sm sm:text-base ${
+                  <p className={`font-bold text-base sm:text-lg ${
                     isDarkMode ? 'text-red-400' : 'text-red-700'
                   }`}>
                     🎈 오늘은 공휴일입니다 ({holidayName})
@@ -856,39 +959,44 @@ export default function App() {
                   </p>
                 </div>
               ) : meal.menuItems && meal.menuItems.length > 0 ? (
-                <div className="space-y-2.5">
+                /* 큼직해진 급식 항목 리스트 */
+                <div className="space-y-3">
                   {meal.menuItems.map((dish, idx) => (
                     <div
                       key={idx}
-                      className={`px-4 py-3 sm:py-3.5 rounded-xl border flex items-center justify-between gap-2.5 ${
+                      className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 ${
                         isDarkMode 
                           ? 'bg-neutral-950/80 border-neutral-800' 
-                          : 'bg-slate-50 border-slate-200'
+                          : 'bg-slate-50 border-slate-200/80'
                       }`}
                     >
                       {/* 메뉴 이름 및 옆에 표시되는 회색 카테고리 태그 */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-bold text-xs sm:text-sm ${
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
+                        <span className={`font-extrabold text-base sm:text-lg leading-snug ${
                           isDarkMode ? 'text-white' : 'text-slate-900'
                         }`}>
                           {dish.name}
                         </span>
-                        <span className={`text-xs font-medium ${
-                          isDarkMode ? 'text-neutral-500' : 'text-slate-400'
+                        <span className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-md self-start sm:self-auto ${
+                          isDarkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-200/70 text-slate-600'
                         }`}>
                           {getDishCategory(dish.name)}
                         </span>
                       </div>
 
-                      {/* 알러지 정보 배지 */}
+                      {/* 알러지 정보 배지 (터치 시 해당 메뉴 알러지 상세 팝업 열림) */}
                       {dish.allergy && (
-                        <span className={`text-xs font-bold px-2 py-1 rounded-lg border shrink-0 ${
-                          isDarkMode 
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
-                            : 'bg-amber-100 text-amber-900 border-amber-300'
-                        }`}>
+                        <button
+                          onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })}
+                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all hover:scale-105 active:scale-95 ${
+                            isDarkMode 
+                              ? 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-amber-500 hover:text-amber-400' 
+                              : 'bg-slate-100 border-slate-300 text-slate-600 hover:border-amber-500 hover:text-amber-700'
+                          }`}
+                          title="터치하여 함유된 알러지 성분 보기"
+                        >
                           알러지 {dish.allergy}
-                        </span>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -906,20 +1014,20 @@ export default function App() {
             <div className="mt-5 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
               <button
                 onClick={() => setShowAllergyModal(true)}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-colors ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
                   isDarkMode 
                     ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <Info className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>알러지 정보 확인</span>
+                <span>전체 알러지 목록</span>
               </button>
 
               <button
                 onClick={loadMealData}
                 disabled={mealLoading}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-colors ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
                   isDarkMode 
                     ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -942,11 +1050,11 @@ export default function App() {
                 isDarkMode ? 'border-neutral-800' : 'border-slate-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
-                    <BookOpen className="w-5 h-5" />
+                  <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
+                    <BookOpen className="w-5.5 h-5.5" />
                   </div>
                   <div>
-                    <h2 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       실시간 시간표
                     </h2>
                     <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
@@ -969,7 +1077,7 @@ export default function App() {
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
+                    <h3 className={`font-bold text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
                       학교 및 학년/반 선택 안내
                     </h3>
                     <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
@@ -981,14 +1089,14 @@ export default function App() {
                     {isDarkMode ? (
                       <button
                         onClick={() => confirmComciStep(1)}
-                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                       >
                         다음으로 <ArrowRight className="w-4 h-4" />
                       </button>
                     ) : (
                       <button
                         onClick={() => confirmComciStep(2)}
-                        className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                       >
                         <Eye className="w-4 h-4" /> 표시하기
                       </button>
@@ -1004,7 +1112,7 @@ export default function App() {
                     <AlertCircle className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-neutral-200">컴시간은 다크 모드를 지원하지 않습니다</h3>
+                    <h3 className="font-bold text-base text-neutral-200">컴시간은 다크 모드를 지원하지 않습니다</h3>
                     <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed">
                       밝은 하얀색 화면이 노출될 수 있으니 아래 버튼을 눌러 이용해 주세요.
                     </p>
@@ -1013,7 +1121,7 @@ export default function App() {
                   <div className="flex items-center justify-center mt-3">
                     <button
                       onClick={() => setWebviewStep(2)}
-                      className="text-xs sm:text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                      className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
                     >
                       <Eye className="w-4 h-4" /> 표시하기
                     </button>
@@ -1021,9 +1129,19 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3단계: 시간표 웹뷰 출력 */}
+              {/* 3단계: 시간표 웹뷰 출력 + 2초 로딩 레이어 */}
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] sm:h-[450px] relative w-full">
+                  {/* 컴시간 웹뷰 지연 커버용 2초 로딩 오버레이 */}
+                  {isWebviewLoading && (
+                    <div className="absolute inset-0 z-20 bg-white dark:bg-neutral-900 flex flex-col items-center justify-center gap-3 animate-fadeIn">
+                      <Sparkles className="w-8 h-8 animate-spin text-blue-600" />
+                      <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-neutral-300">
+                        잠시만 기다려 주세요...
+                      </p>
+                    </div>
+                  )}
+
                   <iframe
                     src={comciStudentUrl}
                     title="컴시간알리미 실시간 시간표 웹뷰"

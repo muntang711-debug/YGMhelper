@@ -49,7 +49,10 @@ export default {
 
           currentData[rating] = (currentData[rating] || 0) + 1;
 
-          await env.MEAL_RATINGS.put(`ratings:${date}`, JSON.stringify(currentData));
+          // 7일(604,800초) 후 자동 삭제 TTL 설정
+          await env.MEAL_RATINGS.put(`ratings:${date}`, JSON.stringify(currentData), {
+            expirationTtl: 604800
+          });
 
           return new Response(JSON.stringify(currentData), {
             headers: { 'Content-Type': 'application/json' }

@@ -8,20 +8,16 @@ import {
   ChevronDown,
   Sun, 
   Moon, 
-  Sparkles, 
   RotateCcw, 
   Info, 
   Monitor, 
   X, 
   Megaphone, 
   AlertCircle, 
-  Eye, 
   GraduationCap,
   ArrowRight,
-  CheckCircle2,
   Download,
   Share,
-  History,
   FileText,
   Lock,
   KeyRound,
@@ -29,7 +25,8 @@ import {
   Smile,
   Meh,
   Frown,
-  Flame
+  Flame,
+  Eye
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -48,11 +45,38 @@ const PATCH_HISTORY = [
   {
     version: '1.1.0',
     date: '2026.08.21',
-    title: '버전 1.1.0 업데이트: 실시간 급식 평가 기능 및 Cloudflare KV 백엔드 연동',
+    title: '버전 1.1.0 업데이트: 실시간 급식 평가 기능 및 Cloudflare KV 연동',
     changes: [
-      '날짜별 급식 평가 기능 추가 (야르킁킁, 야르, 먹을만함, 그저그런, 맛없음)',
-      '온라인 실시간 데이터베이스(Cloudflare KV) 연동으로 평가 결과 집계 제공',
-      '하루 1회 중복 투표 방지 로직 적용'
+      '오늘 급식 한정 실시간 평가 기능 추가 (야르킁킁, 야르, 먹을만함, 그저그런, 맛없음)',
+      '평가 기록 7일 자동 보관 및 삭제 로직 적용',
+      '알레르기 상세 팝업 및 급식 정보 UI 보완'
+    ]
+  },
+  {
+    version: '1.0.2',
+    date: '2026.08.15',
+    title: '버전 1.0.2 패치: 공휴일 감지 및 시간표 렌더링 안정화',
+    changes: [
+      '국경일 및 대체공휴일 자동 판별 로직 추가',
+      '컴시간알리미 다크모드/라이트모드 안내 뷰 스텝 개선'
+    ]
+  },
+  {
+    version: '1.0.1',
+    date: '2026.08.01',
+    title: '버전 1.0.1 패치: PWA 지원 및 UI 테마 최적화',
+    changes: [
+      'PWA 홈 화면 추가 설치 가이드 모달 반영',
+      '다크모드 색상 대비 및 모바일 레이아웃 조정'
+    ]
+  },
+  {
+    version: '1.0.0',
+    date: '2026.07.20',
+    title: '버전 1.0.0 정식 릴리즈',
+    changes: [
+      'NEIS API 기반 실시간 급식표 조회 서비스 시작',
+      '컴시간알리미 실시간 시간표 연동'
     ]
   }
 ];
@@ -63,8 +87,6 @@ const ALLERGY_MAP = {
   "12": "토마토", "13": "아황산류", "14": "호두", "15": "닭고기", "16": "쇠고기",
   "17": "오징어", "18": "조개류(굴,전복,홍합 포함)", "19": "잣"
 };
-
-const ALLERGY_LIST = Object.entries(ALLERGY_MAP).map(([num, name]) => `${num}. ${name}`);
 
 const HOLIDAYS = {
   "2026-01-01": "신정", "2026-02-16": "설날 연휴", "2026-02-17": "설날", "2026-02-18": "설날 연휴",
@@ -215,7 +237,6 @@ export default function App() {
   const [isClosingInstall, setIsClosingInstall] = useState(false);
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isWebviewLoading, setIsWebviewLoading] = useState(false);
 
   const [webviewStep, setWebviewStep] = useState(() => {
     const isConfirmed = localStorage.getItem('ygm_comci_confirmed') === 'true';
@@ -235,6 +256,9 @@ export default function App() {
   const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
 
   const formattedDateStr = getFormattedDate(currentDate);
+  const todayStr = getFormattedDate(new Date());
+  const isToday = formattedDateStr === todayStr;
+
   const datePickerValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
   const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
@@ -309,14 +333,6 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (webviewStep === 2) {
-      setIsWebviewLoading(true);
-      const timer = setTimeout(() => setIsWebviewLoading(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [webviewStep]);
-
   // 📊 평가 데이터 불러오기 및 로컬 투표 기록 확인
   const loadRatings = useCallback(async () => {
     try {
@@ -335,7 +351,7 @@ export default function App() {
 
   // 🗳️ 평가 투표 제출
   const handleVoteRating = async (ratingLabel) => {
-    if (userVotedRating || isRatingSubmitting) return;
+    if (!isToday || userVotedRating || isRatingSubmitting) return;
 
     setIsRatingSubmitting(true);
     try {
@@ -666,6 +682,59 @@ export default function App() {
         </div>
       )}
 
+      {/* 🍤 개별 메뉴 알레르기 상세 팝업 */}
+      {selectedDishAllergy && (
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${isClosingDishAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'}`}>
+          <div className={`w-full max-w-sm p-6 rounded-3xl border shadow-2xl relative ${isClosingDishAllergy ? 'animate-modal-out' : 'animate-modal-in'} ${isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800 mb-3">
+              <h3 className="font-bold text-base">{selectedDishAllergy.dishName} 알레르기 정보</h3>
+              <button onClick={() => triggerCloseAnimation(setIsClosingDishAllergy, () => setSelectedDishAllergy(null))} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs sm:text-sm font-medium">
+              <p className="text-slate-500 dark:text-neutral-400">포함된 알레르기 유발 성분 번호: <strong className="text-orange-500">{selectedDishAllergy.allergyStr}</strong></p>
+              <div className={`p-3.5 rounded-2xl border space-y-1.5 ${isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                {selectedDishAllergy.allergyStr.split('.').map((num) => num.trim()).filter(Boolean).map((num) => (
+                  <div key={num} className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-orange-500">{num}번</span>
+                    <span className="font-medium text-slate-700 dark:text-neutral-300">{ALLERGY_MAP[num] || '알 수 없음'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
+              <button onClick={() => triggerCloseAnimation(setIsClosingDishAllergy, () => setSelectedDishAllergy(null))} className="text-xs px-4 py-2 rounded-xl font-bold bg-blue-600 text-white">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ℹ️ 전체 알레르기 번호 안내 팝업 */}
+      {showAllergyModal && (
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${isClosingAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'}`}>
+          <div className={`w-full max-w-md max-h-[80vh] p-6 rounded-3xl border shadow-2xl relative flex flex-col ${isClosingAllergy ? 'animate-modal-out' : 'animate-modal-in'} ${isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800 mb-3 shrink-0">
+              <h3 className="font-bold text-base sm:text-lg">알레르기 유발 성분 번호표</h3>
+              <button onClick={() => triggerCloseAnimation(setIsClosingAllergy, setShowAllergyModal)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-1 my-2">
+              {Object.entries(ALLERGY_MAP).map(([num, name]) => (
+                <div key={num} className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs ${isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="font-extrabold text-orange-500 w-6">{num}.</span>
+                  <span className="font-medium text-slate-700 dark:text-neutral-300">{name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="pt-3 border-t border-slate-200 dark:border-neutral-800 flex justify-end shrink-0">
+              <button onClick={() => triggerCloseAnimation(setIsClosingAllergy, setShowAllergyModal)} className="text-xs px-4 py-2 rounded-xl font-bold bg-blue-600 text-white">닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 헤더 */}
       <header className={`border-b sticky top-0 z-50 backdrop-blur-md ${isDarkMode ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white/90 border-slate-200'}`}>
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -736,7 +805,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className={`p-3 rounded-2xl border mb-3 flex items-center justify-between gap-2 ${holidayName ? (isDarkMode ? 'bg-red-950/40 border-red-900/60' : 'bg-red-50 border-red-200') : (isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200')}`}>
+              <div className={`p-3 rounded-2xl border mb-4 flex items-center justify-between gap-2 ${holidayName ? (isDarkMode ? 'bg-red-950/40 border-red-900/60' : 'bg-red-50 border-red-200') : (isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200')}`}>
                 <div onClick={openDatePicker} className="flex items-center gap-2 cursor-pointer select-none">
                   <CalendarIcon className={`w-5 h-5 ${holidayName ? 'text-red-500' : 'text-blue-500'}`} />
                   <span className={`text-sm sm:text-base font-bold ${holidayName ? 'text-red-700 dark:text-red-400' : (isDarkMode ? 'text-white' : 'text-slate-900')}`}>
@@ -754,44 +823,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 🗳️ 실시간 급식 평가 섹션 */}
-              {!holidayName && (
-                <div className={`p-4 rounded-2xl border mb-4 ${isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
-                      <span>🍱 오늘의 급식 평가</span>
-                      {totalVotes > 0 && <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold">{totalVotes}명 참여</span>}
-                    </span>
-                    {userVotedRating && <span className="text-xs text-emerald-500 font-bold">✓ 평가 완료</span>}
-                  </div>
-
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {RATING_OPTIONS.map((opt) => {
-                      const IconComponent = opt.icon;
-                      const count = ratings[opt.label] || 0;
-                      const isSelected = userVotedRating === opt.label;
-
-                      return (
-                        <button
-                          key={opt.label}
-                          onClick={() => handleVoteRating(opt.label)}
-                          disabled={Boolean(userVotedRating) || isRatingSubmitting}
-                          className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                            isSelected 
-                              ? 'ring-2 ring-blue-500 border-blue-500 font-black scale-105' 
-                              : opt.color
-                          } ${userVotedRating ? 'opacity-80 cursor-default' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
-                        >
-                          <IconComponent className="w-4 h-4" />
-                          <span className="text-[11px] font-bold leading-none">{opt.label}</span>
-                          <span className="text-[10px] font-extrabold opacity-75">{count}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
+              {/* 급식 정보 목록 */}
               {mealLoading ? (
                 <div className="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
                   <div className="w-8 h-8 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
@@ -813,8 +845,11 @@ export default function App() {
                           <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border ${badgeClass}`}>{category}</span>
                         </div>
                         {dish.allergy && (
-                          <button onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })} className="text-xs font-semibold px-2 py-1 rounded-lg border text-slate-500 dark:text-neutral-400">
-                            {dish.allergy}
+                          <button 
+                            onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })} 
+                            className="text-xs font-semibold px-2 py-1 rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition-colors"
+                          >
+                            알레르기: {dish.allergy}
                           </button>
                         )}
                       </div>
@@ -824,11 +859,54 @@ export default function App() {
               ) : (
                 <div className="p-8 text-center text-xs text-slate-400">급식 정보가 없습니다.</div>
               )}
+
+              {/* 🗳️ 급식 정보 아래 실시간 평가 섹션 */}
+              {!holidayName && (
+                <div className={`mt-5 p-4 rounded-2xl border ${isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                      <span>🍱 오늘의 급식 평가</span>
+                      {totalVotes > 0 && <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold">{totalVotes}명 참여</span>}
+                    </span>
+                    {!isToday ? (
+                      <span className="text-[11px] text-amber-500 font-bold">오늘 급식만 평가 가능</span>
+                    ) : userVotedRating ? (
+                      <span className="text-xs text-emerald-500 font-bold">✓ 평가 완료</span>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {RATING_OPTIONS.map((opt) => {
+                      const IconComponent = opt.icon;
+                      const count = ratings[opt.label] || 0;
+                      const isSelected = userVotedRating === opt.label;
+                      const isDisabled = !isToday || Boolean(userVotedRating) || isRatingSubmitting;
+
+                      return (
+                        <button
+                          key={opt.label}
+                          onClick={() => handleVoteRating(opt.label)}
+                          disabled={isDisabled}
+                          className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                            isSelected 
+                              ? 'ring-2 ring-blue-500 border-blue-500 font-black scale-105' 
+                              : opt.color
+                          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
+                        >
+                          <IconComponent className="w-4 h-4" />
+                          <span className="text-[11px] font-bold leading-none">{opt.label}</span>
+                          <span className="text-[10px] font-extrabold opacity-75">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
               <button onClick={() => setShowAllergyModal(true)} className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl font-bold text-xs border ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
-                <Info className="w-4 h-4 text-orange-500" /><span>전체 알러지 목록</span>
+                <Info className="w-4 h-4 text-orange-500" /><span>전체 알레르기 목록</span>
               </button>
               <button onClick={loadMealData} disabled={mealLoading} className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl font-bold text-xs border ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
                 <RotateCcw className={`w-4 h-4 text-blue-500 ${mealLoading ? 'animate-spin' : ''}`} /><span>다시 불러오기</span>
@@ -866,12 +944,6 @@ export default function App() {
 
               {webviewStep === 2 && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[420px] relative w-full">
-                  {isWebviewLoading && (
-                    <div className="absolute inset-0 z-20 backdrop-blur-lg bg-white/50 flex flex-col items-center justify-center gap-3">
-                      <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin" />
-                      <p className="text-xs font-bold">시간표 불러오는 중...</p>
-                    </div>
-                  )}
                   <iframe src={comciStudentUrl} title="시간표" className="w-full h-full border-0" style={{ zoom: '0.78' }} />
                 </div>
               )}

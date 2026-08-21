@@ -1,0 +1,5 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ygmhelper-dev",
+  "pages_build_output_dir": "./dist"
+}

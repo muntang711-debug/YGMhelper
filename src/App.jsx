@@ -22,7 +22,9 @@ import {
   Download,
   Share,
   History,
-  FileText
+  FileText,
+  Lock,
+  KeyRound
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
@@ -348,6 +350,43 @@ const getCategoryBadgeStyle = (category, isDark) => {
 };
 
 export default function App() {
+  // 🔑 인증 코드 검증 및 /beta 주소 연결 로직
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const isAuthSession = sessionStorage.getItem('ygm_beta_auth') === 'true';
+    const isBetaPath = window.location.pathname.startsWith('/beta');
+    return isAuthSession && isBetaPath;
+  });
+
+  const [inputPasscode, setInputPasscode] = useState('');
+  const [authError, setAuthError] = useState(false);
+
+  useEffect(() => {
+    const isAuthSession = sessionStorage.getItem('ygm_beta_auth') === 'true';
+    const isBetaPath = window.location.pathname.startsWith('/beta');
+
+    // 세션 없이 /beta 직접 접근 시 강제 차단 후 / 주소로 이동
+    if (isBetaPath && !isAuthSession) {
+      window.history.replaceState({}, '', '/');
+      setIsAuthenticated(false);
+    } else if (isAuthSession && !isBetaPath) {
+      window.history.replaceState({}, '', '/beta');
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handlePasscodeSubmit = (e) => {
+    e.preventDefault();
+    if (inputPasscode.trim() === 'beta') {
+      sessionStorage.setItem('ygm_beta_auth', 'true');
+      window.history.pushState({}, '', '/beta');
+      setIsAuthenticated(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+      setInputPasscode('');
+    }
+  };
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('ygm_theme');
     if (savedTheme) return savedTheme === 'dark';
@@ -415,7 +454,7 @@ export default function App() {
   const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
-  // 🔒 팝업 모달 활성화 시 우측 쏠림(Layout Shift) 완벽 방지 및 배경 스크롤 차단
+  // 🔒 팝업 모달 활성화 시 우측 쏠림 방지 및 배경 스크롤 차단
   useEffect(() => {
     const isAnyModalOpen = showNotice || showPatchModal || showAllergyModal || Boolean(selectedDishAllergy) || showInstallGuide;
     if (isAnyModalOpen) {
@@ -477,8 +516,10 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
-  // 🔔 공지사항 및 패치노트 자동(강제) 팝업 감지 로직
+  // 🔔 공지사항 및 패치노트 자동(강제) 팝업 감지 로직 (인증 완료 후에만 작동)
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const hiddenNoticeId = localStorage.getItem('ygm_hide_notice_id');
     const hiddenPatchVersion = localStorage.getItem('ygm_hide_patch_version');
 
@@ -486,17 +527,17 @@ export default function App() {
     const shouldShowPatch = hiddenPatchVersion !== CURRENT_VERSION;
 
     if (shouldShowNotice) {
-      setIsAutoNotice(true); // 자동 팝업으로 오픈됨 표시
+      setIsAutoNotice(true);
       setShowNotice(true);
       if (shouldShowPatch) {
         setPendingPatchShow(true);
       }
     } else if (shouldShowPatch) {
-      setIsAutoPatch(true); // 자동 팝업으로 오픈됨 표시
+      setIsAutoPatch(true);
       setSelectedPatchVersion(CURRENT_VERSION);
       setShowPatchModal(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (webviewStep === 2) {
@@ -538,18 +579,16 @@ export default function App() {
     });
   };
 
-  // 수동(드롭다운 메뉴)으로 공지사항 모달 오픈
   const openNoticeModal = () => {
-    setIsAutoNotice(false); // 수동 오픈 표시
+    setIsAutoNotice(false);
     const isNoticeHidden = localStorage.getItem('ygm_hide_notice_id') === CURRENT_NOTICE_ID;
     setNeverShowNoticeChecked(isNoticeHidden);
     setShowNotice(true);
     setIsMenuOpen(false);
   };
 
-  // 수동(드롭다운 메뉴)으로 패치노트 모달 오픈
   const openPatchModal = () => {
-    setIsAutoPatch(false); // 수동 오픈 표시
+    setIsAutoPatch(false);
     const isPatchHidden = localStorage.getItem('ygm_hide_patch_version') === CURRENT_VERSION;
     setNeverShowPatchChecked(isPatchHidden);
     setSelectedPatchVersion(CURRENT_VERSION);
@@ -566,7 +605,7 @@ export default function App() {
 
     if (pendingPatchShow) {
       setTimeout(() => {
-        setIsAutoPatch(true); // 자동 팝업 패치노트 오픈
+        setIsAutoPatch(true);
         setSelectedPatchVersion(CURRENT_VERSION);
         setShowPatchModal(true);
         setPendingPatchShow(false);
@@ -633,9 +672,76 @@ export default function App() {
   }, [formattedDateStr]);
 
   useEffect(() => {
-    loadMealData();
-  }, [loadMealData]);
+    if (isAuthenticated) {
+      loadMealData();
+    }
+  }, [loadMealData, isAuthenticated]);
 
+  // 🔑 미인증 상태: 인증 코드 입력 UI (beta 입력 필요)
+  if (!isAuthenticated) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-200 ${
+        isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
+      }`}>
+        <div className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl relative animate-modal-in ${
+          isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-blue-600/10 text-blue-600 border border-blue-500/20 flex items-center justify-center mb-3">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h1 className="font-extrabold text-xl sm:text-2xl tracking-tight">DEV 테스트 접근 인증</h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1.5 font-medium">
+              인증 코드를 입력해야 테스트 환경으로 이동할 수 있습니다.
+            </p>
+          </div>
+
+          <form onSubmit={handlePasscodeSubmit} className="space-y-4">
+            <div className="relative">
+              <KeyRound className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="인증 코드를 입력하세요"
+                value={inputPasscode}
+                onChange={(e) => setInputPasscode(e.target.value)}
+                className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-bold outline-none transition-all ${
+                  authError 
+                    ? 'border-red-500 ring-2 ring-red-500/20' 
+                    : 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                } ${
+                  isDarkMode 
+                    ? 'bg-neutral-950 border-neutral-800 text-white placeholder-neutral-600' 
+                    : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                }`}
+              />
+            </div>
+
+            {authError && (
+              <p className="text-xs font-bold text-red-500 flex items-center gap-1.5 pl-1">
+                <AlertCircle className="w-4 h-4" /> 올바르지 않은 인증 코드입니다.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-2xl font-extrabold text-sm bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white shadow-lg transition-all flex items-center justify-center gap-2"
+            >
+              <span>접근하기</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-200 dark:border-neutral-800 text-center">
+            <span className="text-xs text-slate-400 font-semibold">
+              dev.ygmhelper.xyz | YGMhelper Dev Server
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 🚀 인증 완료 상태: YGMhelper 메인 서비스 UI (/beta)
   return (
     <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative ${
       isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
@@ -792,7 +898,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📢 1. 공지사항 전용 독립 모달 (자동/수동 별 체크박스 분리) */}
+      {/* 📢 1. 공지사항 전용 독립 모달 */}
       {showNotice && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingNotice ? 'animate-backdrop-out' : 'animate-backdrop-in'
@@ -833,7 +939,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* 푸터: 자동(강제) 팝업일 때만 [다시 보지 않기] 노출 */}
             <div className={`flex items-center ${isAutoNotice ? 'justify-between' : 'justify-end'} pt-4 border-t border-slate-200 dark:border-neutral-800`}>
               {isAutoNotice && (
                 <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
@@ -858,7 +963,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📜 2. 패치노트 전용 독립 모달 (자동/수동 별 체크박스 분리 & 애니메이션 깔끔 삭제) */}
+      {/* 📜 2. 패치노트 전용 독립 모달 */}
       {showPatchModal && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md ${
           isClosingPatch ? 'animate-backdrop-out' : 'animate-backdrop-in'
@@ -885,10 +990,10 @@ export default function App() {
               </button>
             </div>
 
-            {/* 본문 - 독립 스크롤 구조 (Left & Right) */}
+            {/* 본문 - 독립 스크롤 구조 */}
             <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
               
-              {/* 좌측: 버전 목록 (버튼 세로 높이 h-9 완벽 고정) */}
+              {/* 좌측: 버전 목록 */}
               <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
                 <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2 shrink-0">버전 목록</div>
 
@@ -945,7 +1050,7 @@ export default function App() {
 
             </div>
 
-            {/* 푸터: 자동(강제) 팝업일 때만 [이 버전에서 다시 보지 않기] 노출 */}
+            {/* 푸터 */}
             <div className={`flex items-center ${isAutoPatch ? 'justify-between' : 'justify-end'} pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0 mt-2`}>
               {isAutoPatch && (
                 <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
@@ -1091,17 +1196,14 @@ export default function App() {
                 <h1 className={`font-bold text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   YGMhelper
                 </h1>
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                  isDarkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  YGM
+                <span className="text-[10px] px-2 py-0.5 rounded-md font-extrabold bg-purple-600 text-white">
+                  DEV / BETA
                 </span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 PWA [앱 설치] 아이콘 단독 버튼 (모바일 텍스트 삭제 반영) */}
             {!isStandalone && (
               <button
                 onClick={handleInstallClick}
@@ -1557,7 +1659,7 @@ export default function App() {
 
         <div className="mt-6 text-center text-xs text-slate-500 flex items-center justify-center gap-1 font-medium">
           <Info className="w-3.5 h-3.5" />
-          <span>Domain: ygmhelper.xyz | YGM 전용 스마트 스쿨 도우미</span>
+          <span>Dev Domain: dev.ygmhelper.xyz | YGM 개발 서버</span>
         </div>
       </main>
     </div>

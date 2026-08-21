@@ -27,11 +27,21 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.0.20';
+const CURRENT_VERSION = '1.0.21';
 const CURRENT_NOTICE_ID = 'notice_2026_08_20_1';
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.0.21',
+    date: '2026.08.21',
+    title: '버전 1.0.21 업데이트: 헤더 다운로드 버튼 모바일 최적화, 모달 가변 애니메이션 삭제 및 수동 열기 시 체크박스 숨김',
+    changes: [
+      '헤더 앱 설치 버튼의 텍스트 제거 및 다운로드 아이콘 단독 배치로 모바일 최적화',
+      '패치노트 내용 변경 시 발생하던 어색한 창 크기 변형 애니메이션 완전 삭제',
+      '드롭다운 메뉴를 통해 공지사항/패치노트 직접 열람 시 [다시 보지 않기] 체크박스 비노출 처리 (자동 팝업 시에만 노출)'
+    ]
+  },
   {
     version: '1.0.20',
     date: '2026.08.20',
@@ -357,16 +367,18 @@ export default function App() {
     return today;
   });
 
-  // 📢 공지사항 모달 상태
+  // 📢 공지사항 모달 상태 & 자동/수동 진입 구분 플래그
   const [showNotice, setShowNotice] = useState(false);
   const [isClosingNotice, setIsClosingNotice] = useState(false);
   const [neverShowNoticeChecked, setNeverShowNoticeChecked] = useState(false);
+  const [isAutoNotice, setIsAutoNotice] = useState(false);
 
-  // 📜 패치노트 모달 상태
+  // 📜 패치노트 모달 상태 & 자동/수동 진입 구분 플래그
   const [showPatchModal, setShowPatchModal] = useState(false);
   const [isClosingPatch, setIsClosingPatch] = useState(false);
   const [neverShowPatchChecked, setNeverShowPatchChecked] = useState(false);
   const [selectedPatchVersion, setSelectedPatchVersion] = useState(CURRENT_VERSION);
+  const [isAutoPatch, setIsAutoPatch] = useState(false);
 
   const [pendingPatchShow, setPendingPatchShow] = useState(false);
 
@@ -465,7 +477,7 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
-  // 🔔 공지사항 및 패치노트 자동 팝업 정밀 로직
+  // 🔔 공지사항 및 패치노트 자동(강제) 팝업 감지 로직
   useEffect(() => {
     const hiddenNoticeId = localStorage.getItem('ygm_hide_notice_id');
     const hiddenPatchVersion = localStorage.getItem('ygm_hide_patch_version');
@@ -474,11 +486,13 @@ export default function App() {
     const shouldShowPatch = hiddenPatchVersion !== CURRENT_VERSION;
 
     if (shouldShowNotice) {
+      setIsAutoNotice(true); // 자동 팝업으로 오픈됨 표시
       setShowNotice(true);
       if (shouldShowPatch) {
         setPendingPatchShow(true);
       }
     } else if (shouldShowPatch) {
+      setIsAutoPatch(true); // 자동 팝업으로 오픈됨 표시
       setSelectedPatchVersion(CURRENT_VERSION);
       setShowPatchModal(true);
     }
@@ -524,14 +538,18 @@ export default function App() {
     });
   };
 
+  // 수동(드롭다운 메뉴)으로 공지사항 모달 오픈
   const openNoticeModal = () => {
+    setIsAutoNotice(false); // 수동 오픈 표시
     const isNoticeHidden = localStorage.getItem('ygm_hide_notice_id') === CURRENT_NOTICE_ID;
     setNeverShowNoticeChecked(isNoticeHidden);
     setShowNotice(true);
     setIsMenuOpen(false);
   };
 
+  // 수동(드롭다운 메뉴)으로 패치노트 모달 오픈
   const openPatchModal = () => {
+    setIsAutoPatch(false); // 수동 오픈 표시
     const isPatchHidden = localStorage.getItem('ygm_hide_patch_version') === CURRENT_VERSION;
     setNeverShowPatchChecked(isPatchHidden);
     setSelectedPatchVersion(CURRENT_VERSION);
@@ -540,16 +558,15 @@ export default function App() {
   };
 
   const handleCloseNotice = () => {
-    if (neverShowNoticeChecked) {
+    if (isAutoNotice && neverShowNoticeChecked) {
       localStorage.setItem('ygm_hide_notice_id', CURRENT_NOTICE_ID);
-    } else {
-      localStorage.removeItem('ygm_hide_notice_id');
     }
     
     triggerCloseAnimation(setIsClosingNotice, setShowNotice);
 
     if (pendingPatchShow) {
       setTimeout(() => {
+        setIsAutoPatch(true); // 자동 팝업 패치노트 오픈
         setSelectedPatchVersion(CURRENT_VERSION);
         setShowPatchModal(true);
         setPendingPatchShow(false);
@@ -558,10 +575,8 @@ export default function App() {
   };
 
   const handleClosePatch = () => {
-    if (neverShowPatchChecked) {
+    if (isAutoPatch && neverShowPatchChecked) {
       localStorage.setItem('ygm_hide_patch_version', CURRENT_VERSION);
-    } else {
-      localStorage.removeItem('ygm_hide_patch_version');
     }
     triggerCloseAnimation(setIsClosingPatch, setShowPatchModal);
   };
@@ -721,7 +736,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingInstall ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
             isClosingInstall ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -777,12 +792,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 📢 1. 공지사항 전용 독립 모달 */}
+      {/* 📢 1. 공지사항 전용 독립 모달 (자동/수동 별 체크박스 분리) */}
       {showNotice && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingNotice ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
             isClosingNotice ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -818,16 +833,19 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-neutral-800">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
-                <input
-                  type="checkbox"
-                  checked={neverShowNoticeChecked}
-                  onChange={(e) => setNeverShowNoticeChecked(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
-                />
-                <span>다시 보지 않기</span>
-              </label>
+            {/* 푸터: 자동(강제) 팝업일 때만 [다시 보지 않기] 노출 */}
+            <div className={`flex items-center ${isAutoNotice ? 'justify-between' : 'justify-end'} pt-4 border-t border-slate-200 dark:border-neutral-800`}>
+              {isAutoNotice && (
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
+                  <input
+                    type="checkbox"
+                    checked={neverShowNoticeChecked}
+                    onChange={(e) => setNeverShowNoticeChecked(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                  />
+                  <span>다시 보지 않기</span>
+                </label>
+              )}
 
               <button
                 onClick={handleCloseNotice}
@@ -840,12 +858,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 📜 2. 패치노트 전용 독립 모달 (가변 크기 부드러운 애니메이션 적용) */}
+      {/* 📜 2. 패치노트 전용 독립 모달 (자동/수동 별 체크박스 분리 & 애니메이션 깔끔 삭제) */}
       {showPatchModal && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md ${
           isClosingPatch ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between transition-[height,max-height,transform,opacity] duration-300 ease-out ${
+          <div className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between ${
             isClosingPatch ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -878,7 +896,7 @@ export default function App() {
                   <button
                     key={patch.version}
                     onClick={() => setSelectedPatchVersion(patch.version)}
-                    className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 whitespace-nowrap ${
+                    className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
                       selectedPatchVersion === patch.version
                         ? 'bg-blue-600 text-white shadow-md'
                         : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
@@ -895,14 +913,14 @@ export default function App() {
                 ))}
               </div>
 
-              {/* 우측: 선택된 패치노트 상세 내용 (높이 가변 애니메이션) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1 transition-all duration-300 ease-out">
+              {/* 우측: 선택된 패치노트 상세 내용 */}
+              <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1">
                 {(() => {
                   const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
                   if (!patch) return null;
 
                   return (
-                    <div className="space-y-3 animate-item-fade pr-1">
+                    <div className="space-y-3 pr-1">
                       <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
                         <h3 className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">
                           {patch.title}
@@ -927,17 +945,19 @@ export default function App() {
 
             </div>
 
-            {/* 푸터 */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0 mt-2">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
-                <input
-                  type="checkbox"
-                  checked={neverShowPatchChecked}
-                  onChange={(e) => setNeverShowPatchChecked(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
-                />
-                <span>이 버전에서 다시 보지 않기</span>
-              </label>
+            {/* 푸터: 자동(강제) 팝업일 때만 [이 버전에서 다시 보지 않기] 노출 */}
+            <div className={`flex items-center ${isAutoPatch ? 'justify-between' : 'justify-end'} pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0 mt-2`}>
+              {isAutoPatch && (
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
+                  <input
+                    type="checkbox"
+                    checked={neverShowPatchChecked}
+                    onChange={(e) => setNeverShowPatchChecked(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                  />
+                  <span>이 버전에서 다시 보지 않기</span>
+                </label>
+              )}
 
               <button
                 onClick={handleClosePatch}
@@ -955,7 +975,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingDishAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
             isClosingDishAllergy ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -1015,7 +1035,7 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md ${
           isClosingAllergy ? 'animate-backdrop-out' : 'animate-backdrop-in'
         }`}>
-          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative transition-all duration-300 ease-out ${
+          <div className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
             isClosingAllergy ? 'animate-modal-out' : 'animate-modal-in'
           } ${
             isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
@@ -1081,14 +1101,14 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 📲 PWA [앱 설치] 아이콘 단독 버튼 (모바일 텍스트 삭제 반영) */}
             {!isStandalone && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-1.5 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
+                className="p-2.5 rounded-xl border flex items-center justify-center bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all active:scale-95"
                 title="앱으로 설치하기"
               >
-                <Download className="w-4 h-4" />
-                <span>앱 설치</span>
+                <Download className="w-4.5 h-4.5" />
               </button>
             )}
 

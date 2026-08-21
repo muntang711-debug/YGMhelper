@@ -32,8 +32,8 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.1.0';
-const CURRENT_NOTICE_ID = 'notice_2026_08_22_1';
+const CURRENT_VERSION = '1.1.1';
+const CURRENT_NOTICE_ID = 'notice_2026_08_22_2';
 
 const RATING_OPTIONS = [
   { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
@@ -45,6 +45,15 @@ const RATING_OPTIONS = [
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.1.1',
+    date: '2026.08.22',
+    title: '버전 1.1.1 업데이트: 과거 날짜 급식 평가 모듈 자동 숨김 및 샐러드 메뉴 분류 보정',
+    changes: [
+      '평가 데이터가 없는 과거 날짜(7일 경과 자동 삭제 포함)의 경우 급식 평가 창 자동 비노출 처리',
+      '식단 이름에 샐러드가 포함된 메뉴가 과일/음료 대신 반찬으로 분류되도록 카테고리 로직 개선'
+    ]
+  },
   {
     version: '1.1.0',
     date: '2026.08.22',
@@ -297,6 +306,9 @@ const getDishCategory = (dishName) => {
   
   const cleanName = dishName.replace(/\([^)]*\)/g, '').trim();
 
+  // 🥗 샐러드가 포함된 메뉴는 과일/음료 키워드보다 먼저 무조건 반찬 분류
+  if (cleanName.includes('샐러드')) return '반찬';
+
   const isExcludedRiceCake = cleanName.includes('떡볶이') || cleanName.includes('떡갈비') || cleanName.includes('떡꼬치') || cleanName.includes('떡국');
   const desserts = [
     '케이크', '케익', '빵', '쿠키', '파이', '도넛', '와플', '마카롱', 
@@ -548,9 +560,12 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setRatings(data);
+      } else {
+        setRatings({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "맛없음": 0 });
       }
     } catch (err) {
       console.error('Failed to load ratings:', err);
+      setRatings({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "맛없음": 0 });
     }
   }, [formattedDateStr]);
 
@@ -1477,8 +1492,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* 🗳️ 급식 정보 바로 아래 실시간 평가 섹션 */}
-              {!holidayName && (
+              {/* 🗳️ 오늘이거나 평가 데이터가 남아 있는 경우에만 표시 (7일 경과 데이터 삭제 시 자동 숨김) */}
+              {!holidayName && (isToday || totalVotes > 0) && (
                 <div className={`mt-5 p-4 rounded-2xl border ${
                   isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                 }`}>

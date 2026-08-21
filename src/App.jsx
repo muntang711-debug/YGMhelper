@@ -22,16 +22,38 @@ import {
   Download,
   Share,
   History,
-  FileText
+  FileText,
+  ThumbsUp,
+  Smile,
+  Meh,
+  Frown,
+  Flame
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.0.21';
-const CURRENT_NOTICE_ID = 'notice_2026_08_20_1';
+const CURRENT_VERSION = '1.1.0';
+const CURRENT_NOTICE_ID = 'notice_2026_08_22_1';
+
+const RATING_OPTIONS = [
+  { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
+  { label: '야르', icon: ThumbsUp, color: 'text-blue-500 border-blue-500/30 bg-blue-500/10' },
+  { label: '먹을만함', icon: Smile, color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' },
+  { label: '그저그런', icon: Meh, color: 'text-slate-500 border-slate-500/30 bg-slate-500/10' },
+  { label: '맛없음', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10' }
+];
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.1.0',
+    date: '2026.08.22',
+    title: '버전 1.1.0 업데이트: 실시간 급식 평가 기능 및 Cloudflare KV 백엔드 연동',
+    changes: [
+      '오늘 급식 한정 실시간 평가 기능 추가 (야르킁킁, 야르, 먹을만함, 그저그런, 맛없음)',
+      '평가 기록 7일 자동 보관 및 삭제 로직 적용'
+    ]
+  },
   {
     version: '1.0.21',
     date: '2026.08.21',
@@ -410,7 +432,15 @@ export default function App() {
   const [meal, setMeal] = useState({ menuItems: [], calories: '', status: 'LOADING' });
   const [mealLoading, setMealLoading] = useState(true);
 
+  // 🍱 평가 관련 상태
+  const [ratings, setRatings] = useState({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "맛없음": 0 });
+  const [userVotedRating, setUserVotedRating] = useState(null);
+  const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
+
   const formattedDateStr = getFormattedDate(currentDate);
+  const todayStr = getFormattedDate(new Date());
+  const isToday = formattedDateStr === todayStr;
+
   const datePickerValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
   const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
@@ -507,6 +537,47 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [webviewStep]);
+
+  // 📊 평가 데이터 불러오기 및 로컬 투표 기록 확인
+  const loadRatings = useCallback(async () => {
+    try {
+      const savedVote = localStorage.getItem(`ygm_voted_${formattedDateStr}`);
+      setUserVotedRating(savedVote);
+
+      const res = await fetch(`/api/ratings?date=${formattedDateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRatings(data);
+      }
+    } catch (err) {
+      console.error('Failed to load ratings:', err);
+    }
+  }, [formattedDateStr]);
+
+  // 🗳️ 평가 투표 제출
+  const handleVoteRating = async (ratingLabel) => {
+    if (!isToday || userVotedRating || isRatingSubmitting) return;
+
+    setIsRatingSubmitting(true);
+    try {
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: formattedDateStr, rating: ratingLabel })
+      });
+
+      if (res.ok) {
+        const updatedData = await res.json();
+        setRatings(updatedData);
+        setUserVotedRating(ratingLabel);
+        localStorage.setItem(`ygm_voted_${formattedDateStr}`, ratingLabel);
+      }
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    } finally {
+      setIsRatingSubmitting(false);
+    }
+  };
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
@@ -630,11 +701,14 @@ export default function App() {
       setMeal(mealRes);
       setMealLoading(false);
     });
-  }, [formattedDateStr]);
+    loadRatings();
+  }, [formattedDateStr, loadRatings]);
 
   useEffect(() => {
     loadMealData();
   }, [loadMealData]);
+
+  const totalVotes = Object.values(ratings).reduce((acc, curr) => acc + curr, 0);
 
   return (
     <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative ${
@@ -829,7 +903,7 @@ export default function App() {
               <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
                 isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}>
-                테스트 공지입니다. YGMhelper 서비스를 이용해 주셔서 감사합니다.
+                오늘의 급식을 실시간으로 평가할 수 있는 급식 평가 기능이 추가되었습니다!
               </div>
             </div>
 
@@ -1400,6 +1474,55 @@ export default function App() {
                   isDarkMode ? 'bg-neutral-950/60 text-neutral-400' : 'bg-slate-50 text-slate-500'
                 }`}>
                   등록된 급식 정보가 없거나, NEIS에서 급식 정보를 불러오지 못했습니다.
+                </div>
+              )}
+
+              {/* 🗳️ 급식 정보 바로 아래 실시간 평가 섹션 */}
+              {!holidayName && (
+                <div className={`mt-5 p-4 rounded-2xl border ${
+                  isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                      <span>🍱 오늘의 급식 평가</span>
+                      {totalVotes > 0 && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold">
+                          {totalVotes}명 참여
+                        </span>
+                      )}
+                    </span>
+                    {!isToday ? (
+                      <span className="text-[11px] text-amber-500 font-bold">오늘 급식만 평가 가능</span>
+                    ) : userVotedRating ? (
+                      <span className="text-xs text-emerald-500 font-bold">✓ 평가 완료</span>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {RATING_OPTIONS.map((opt) => {
+                      const IconComponent = opt.icon;
+                      const count = ratings[opt.label] || 0;
+                      const isSelected = userVotedRating === opt.label;
+                      const isDisabled = !isToday || Boolean(userVotedRating) || isRatingSubmitting;
+
+                      return (
+                        <button
+                          key={opt.label}
+                          onClick={() => handleVoteRating(opt.label)}
+                          disabled={isDisabled}
+                          className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                            isSelected 
+                              ? 'ring-2 ring-blue-500 border-blue-500 font-black scale-105' 
+                              : opt.color
+                          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
+                        >
+                          <IconComponent className="w-4 h-4" />
+                          <span className="text-[11px] font-bold leading-none">{opt.label}</span>
+                          <span className="text-[10px] font-extrabold opacity-75">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

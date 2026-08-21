@@ -1,0 +1,15 @@
+{
+  "name": "ygmhelper",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-20",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "MEAL_RATINGS",
+      "id": "dd0a872109634379bd2753f4474db3c6"
+    }
+  ]
+}

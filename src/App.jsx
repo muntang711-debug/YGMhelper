@@ -32,8 +32,8 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.1.2';
-const CURRENT_NOTICE_ID = 'notice_2026_08_22_3';
+const CURRENT_VERSION = '1.1.3';
+const CURRENT_NOTICE_ID = 'notice_2026_08_22_4';
 
 const RATING_OPTIONS = [
   { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
@@ -45,6 +45,15 @@ const RATING_OPTIONS = [
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.1.3',
+    date: '2026.08.22',
+    title: '버전 1.1.3 업데이트: 모바일 급식 평가 레이아웃 최적화 및 텍스트 줄바꿈 방지',
+    changes: [
+      '모바일 화면에서 급식 평가 버튼 텍스트 줄바꿈(Word Wrap) 방지 처리',
+      '버튼 패딩, 자간(tracking-tighter) 및 폰트 크기 미세 조정으로 5열 레이아웃 가독성 개선'
+    ]
+  },
   {
     version: '1.1.2',
     date: '2026.08.22',
@@ -1486,7 +1495,7 @@ export default function App() {
 
               {/* 🗳️ 최근 7일 이내(0~7일 전) 날짜인 경우 데이터 존재 여부 상관없이 상시 노출 */}
               {isWithin7Days && (
-                <div className={`mt-5 p-4 rounded-2xl border ${
+                <div className={`mt-5 p-3.5 sm:p-4 rounded-2xl border ${
                   isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                 }`}>
                   <div className="flex items-center justify-between mb-3">
@@ -1505,7 +1514,7 @@ export default function App() {
                     ) : null}
                   </div>
 
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
                     {RATING_OPTIONS.map((opt) => {
                       const IconComponent = opt.icon;
                       const count = ratings[opt.label] || 0;
@@ -1517,15 +1526,17 @@ export default function App() {
                           key={opt.label}
                           onClick={() => handleVoteRating(opt.label)}
                           disabled={isDisabled}
-                          className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          className={`px-1 py-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
                             isSelected 
                               ? 'ring-2 ring-blue-500 border-blue-500 font-black scale-105' 
                               : opt.color
                           } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
                         >
-                          <IconComponent className="w-4 h-4" />
-                          <span className="text-[11px] font-bold leading-none">{opt.label}</span>
-                          <span className="text-[10px] font-extrabold opacity-75">{count}</span>
+                          <IconComponent className="w-4 h-4 shrink-0" />
+                          <span className="text-[10px] sm:text-[11px] font-bold leading-none whitespace-nowrap tracking-tighter">
+                            {opt.label}
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] font-extrabold opacity-75">{count}</span>
                         </button>
                       );
                     })}

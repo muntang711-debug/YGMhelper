@@ -31,9 +31,9 @@ import {
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
-// 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.1.3';
-const CURRENT_NOTICE_ID = 'notice_2026_08_22_4';
+// 앱 현재 버전 및 공지사항 고유 ID (공지는 내용 변경 시에만 ID 변경)
+const CURRENT_VERSION = '1.1.4';
+const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 const RATING_OPTIONS = [
   { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
@@ -45,6 +45,14 @@ const RATING_OPTIONS = [
 
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
+  {
+    version: '1.1.4',
+    date: '2026.08.22',
+    title: '버전 1.1.4 업데이트: 공지사항 고유 ID 고정 및 배포 시 공지사항 재노출 버그 수정',
+    changes: [
+      '새로운 공지 내용이 없을 때 앱 업데이트 배포만으로 공지사항 팝업이 다시 뜨던 문제 수정 (공지 ID 분리 관리)'
+    ]
+  },
   {
     version: '1.1.3',
     date: '2026.08.22',

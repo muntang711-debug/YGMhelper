@@ -32,8 +32,8 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.1.1';
-const CURRENT_NOTICE_ID = 'notice_2026_08_22_2';
+const CURRENT_VERSION = '1.1.2';
+const CURRENT_NOTICE_ID = 'notice_2026_08_22_3';
 
 const RATING_OPTIONS = [
   { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
@@ -46,11 +46,21 @@ const RATING_OPTIONS = [
 // 패치노트 전체 히스토리 데이터베이스 (1.0.0 ~ CURRENT_VERSION)
 const PATCH_HISTORY = [
   {
+    version: '1.1.2',
+    date: '2026.08.22',
+    title: '버전 1.1.2 업데이트: 최근 7일 급식 평가 모듈 상시 노출 및 공휴일 자동 스킵 처리',
+    changes: [
+      '데이터 존재 여부와 관계없이 최근 7일 이내 날짜 선택 시 급식 평가 모듈 상시 노출',
+      '날짜 이동 및 선택 시 주말 및 공휴일 자동 스킵 처리',
+      '급식표 내 빨간색 공휴일 안내 카드 제거'
+    ]
+  },
+  {
     version: '1.1.1',
     date: '2026.08.22',
     title: '버전 1.1.1 업데이트: 과거 날짜 급식 평가 모듈 자동 숨김 및 샐러드 메뉴 분류 보정',
     changes: [
-      '평가 데이터가 없는 과거 날짜(7일 경과 자동 삭제 포함)의 경우 급식 평가 창 자동 비노출 처리',
+      '평가 데이터가 없는 과거 날짜의 경우 급식 평가 창 자동 비노출 처리',
       '식단 이름에 샐러드가 포함된 메뉴가 과일/음료 대신 반찬으로 분류되도록 카테고리 로직 개선'
     ]
   },
@@ -300,13 +310,20 @@ const getHolidayInfo = (date) => {
   return fixedHolidays[monthDay] || null;
 };
 
+// 주말 또는 공휴일 판별 함수
+const isHolidayOrWeekend = (date) => {
+  const day = date.getDay();
+  if (day === 0 || day === 6) return true;
+  return Boolean(getHolidayInfo(date));
+};
+
 // 정밀 급식 메뉴 카테고리 구분 함수
 const getDishCategory = (dishName) => {
   if (!dishName) return '반찬';
   
   const cleanName = dishName.replace(/\([^)]*\)/g, '').trim();
 
-  // 🥗 샐러드가 포함된 메뉴는 과일/음료 키워드보다 먼저 무조건 반찬 분류
+  // 🥗 샐러드가 포함된 메뉴는 무조건 반찬으로 분류
   if (cleanName.includes('샐러드')) return '반찬';
 
   const isExcludedRiceCake = cleanName.includes('떡볶이') || cleanName.includes('떡갈비') || cleanName.includes('떡꼬치') || cleanName.includes('떡국');
@@ -395,7 +412,7 @@ export default function App() {
 
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
-    while (today.getDay() === 0 || today.getDay() === 6) {
+    while (isHolidayOrWeekend(today)) {
       today.setDate(today.getDate() + 1);
     }
     return today;
@@ -453,8 +470,18 @@ export default function App() {
   const todayStr = getFormattedDate(new Date());
   const isToday = formattedDateStr === todayStr;
 
+  // 오늘 날짜와 선택된 날짜 간의 일수 차이 계산 (0 ~ 7일 이내 노출 여부 확인용)
+  const getDiffDaysFromToday = () => {
+    const todayObj = new Date();
+    const t1 = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).getTime();
+    const t2 = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()).getTime();
+    return Math.floor((t1 - t2) / (1000 * 60 * 60 * 24));
+  };
+
+  const diffDays = getDiffDaysFromToday();
+  const isWithin7Days = diffDays >= 0 && diffDays <= 7;
+
   const datePickerValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-  const holidayName = getHolidayInfo(currentDate);
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
   // 🔒 팝업 모달 활성화 시 우측 쏠림(Layout Shift) 완벽 방지 및 배경 스크롤 차단
@@ -681,18 +708,18 @@ export default function App() {
     }
   };
 
+  // 주말/공휴일 자동 건너뛰기 날짜 변경 함수
   const changeDate = (days) => {
     const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + days);
-    while (newDate.getDay() === 0 || newDate.getDay() === 6) {
-      newDate.setDate(newDate.getDate() + (days > 0 ? 1 : -1));
-    }
+    do {
+      newDate.setDate(newDate.getDate() + days);
+    } while (isHolidayOrWeekend(newDate));
     setCurrentDate(newDate);
   };
 
   const resetToToday = () => {
     const today = new Date();
-    while (today.getDay() === 0 || today.getDay() === 6) {
+    while (isHolidayOrWeekend(today)) {
       today.setDate(today.getDate() + 1);
     }
     setCurrentDate(today);
@@ -702,9 +729,7 @@ export default function App() {
     if (!e.target.value) return;
     const [y, m, d] = e.target.value.split('-').map(Number);
     const selected = new Date(y, m - 1, d);
-    if (selected.getDay() === 6) {
-      selected.setDate(selected.getDate() + 2);
-    } else if (selected.getDay() === 0) {
+    while (isHolidayOrWeekend(selected)) {
       selected.setDate(selected.getDate() + 1);
     }
     setCurrentDate(selected);
@@ -1190,7 +1215,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 📲 PWA [앱 설치] 아이콘 단독 버튼 (모바일 텍스트 삭제 반영) */}
+            {/* 📲 PWA [앱 설치] 아이콘 단독 버튼 */}
             {!isStandalone && (
               <button
                 onClick={handleInstallClick}
@@ -1322,39 +1347,23 @@ export default function App() {
               </div>
 
               <div className={`p-3 rounded-2xl border mb-3 flex items-center justify-between gap-2 ${
-                holidayName
-                  ? isDarkMode ? 'bg-red-950/40 border-red-900/60' : 'bg-red-50 border-red-200'
-                  : isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
               }`}>
                 <div 
                   onClick={openDatePicker}
                   className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none flex-wrap"
                 >
-                  <CalendarIcon className={`w-5 h-5 shrink-0 ${holidayName ? 'text-red-500' : 'text-blue-500'}`} />
+                  <CalendarIcon className="w-5 h-5 shrink-0 text-blue-500" />
                   <span className={`text-sm sm:text-base font-bold tracking-tight ${
-                    holidayName 
-                      ? 'text-red-700 dark:text-red-400' 
-                      : isDarkMode ? 'text-white' : 'text-slate-900'
+                    isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
                     {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
                   </span>
                   <span className={`text-xs px-2.5 py-0.5 rounded-lg font-bold ${
-                    holidayName
-                      ? 'bg-red-600 text-white'
-                      : isDarkMode ? 'bg-neutral-800 text-blue-400' : 'bg-blue-100 text-blue-800'
+                    isDarkMode ? 'bg-neutral-800 text-blue-400' : 'bg-blue-100 text-blue-800'
                   }`}>
                     {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}
                   </span>
-
-                  {holidayName && (
-                    <span className={`text-xs px-2 py-0.5 rounded-lg font-bold border ${
-                      isDarkMode 
-                        ? 'bg-red-900/60 text-red-300 border-red-800' 
-                        : 'bg-red-100 text-red-700 border-red-200'
-                    }`}>
-                      공휴일 ({holidayName})
-                    </span>
-                  )}
 
                   <input
                     ref={dateInputRef}
@@ -1402,7 +1411,7 @@ export default function App() {
                 </div>
               </div>
 
-              {meal.calories && !mealLoading && !holidayName && (
+              {meal.calories && !mealLoading && (
                 <div className="flex items-center justify-between px-1 mb-3">
                   <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
                     선택한 날짜 총 칼로리
@@ -1422,23 +1431,6 @@ export default function App() {
                     <Sparkles className="w-4 h-4 text-orange-500 absolute animate-pulse" />
                   </div>
                   <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">급식 데이터 로딩 중...</span>
-                </div>
-              ) : holidayName ? (
-                <div className={`p-8 sm:p-10 rounded-2xl text-center text-sm font-semibold border flex flex-col items-center justify-center gap-2 ${
-                  isDarkMode 
-                    ? 'bg-red-950/40 border-red-900/50 text-red-300' 
-                    : 'bg-red-50 border-red-200 text-red-800'
-                }`}>
-                  <p className={`font-bold text-base sm:text-lg ${
-                    isDarkMode ? 'text-red-400' : 'text-red-700'
-                  }`}>
-                    🎈 오늘은 공휴일입니다 ({holidayName})
-                  </p>
-                  <p className={`text-xs sm:text-sm font-medium ${
-                    isDarkMode ? 'text-red-300/80' : 'text-red-600'
-                  }`}>
-                    공휴일 및 대체공휴일에는 급식이 제공되지 않습니다.
-                  </p>
                 </div>
               ) : meal.menuItems && meal.menuItems.length > 0 ? (
                 <div className="space-y-3">
@@ -1492,8 +1484,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* 🗳️ 오늘이거나 평가 데이터가 남아 있는 경우에만 표시 (7일 경과 데이터 삭제 시 자동 숨김) */}
-              {!holidayName && (isToday || totalVotes > 0) && (
+              {/* 🗳️ 최근 7일 이내(0~7일 전) 날짜인 경우 데이터 존재 여부 상관없이 상시 노출 */}
+              {isWithin7Days && (
                 <div className={`mt-5 p-4 rounded-2xl border ${
                   isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                 }`}>

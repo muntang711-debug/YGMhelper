@@ -34,7 +34,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.9';
+const CURRENT_VERSION = '1.3.0';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 // 다채로운 MZ 평가 옵션 리스트
@@ -46,8 +46,19 @@ const RATING_OPTIONS = [
   { label: '억까', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 shadow-rose-500/10' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.9 완전 원복)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.3.0 완전 복원)
 const PATCH_HISTORY = [
+  {
+    version: '1.3.0',
+    date: '2026.08.28',
+    title: '버전 1.3.0 패치노트: 모바일 전용 글래스모피즘 탭 바 고정 & PC 컴시간 카드 스티키 완벽 추적 및 3D 모션 대보강⚡️',
+    changes: [
+      '모바일 서비스 선택 바에만 독점 글래스모피즘(Glassmorphism) CSS 적용 & 스크롤 밀착 sticky top-16 고정 완',
+      'PC/태블릿에서 길어진 급식표 스크롤 시 컴시간 시간표 카드가 완벽하게 상단에 고정되어 따라오는 sticky top-20 self-start 구현',
+      '모든 버튼 마우스 호버 및 클릭 시 3D 회전+고탄성 스프링 타격감 모션 전면 보강',
+      'v1.0.0부터 전 버전 히스토리 내역 완전 유지 관리'
+    ]
+  },
   {
     version: '1.2.9',
     date: '2026.08.28',
@@ -294,7 +305,7 @@ const getCategoryBadgeStyle = (category, isDark) => {
   }
 };
 
-// 🎯 마우스 포인터 위치 따라 모든 카드/모달이 다이나믹하게 기울어지는 3D 파라락스 틸트 컴포넌트
+// 🎯 마우스 포인터 위치 따라 카드/모달이 기울어지는 3D 파라락스 틸트 컴포넌트
 const TiltCard = ({ children, className = '' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
@@ -1281,11 +1292,11 @@ export default function App() {
       {/* 🖥️ 풀 와이드 메인 영역 (max-w-7xl) */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 상단 밀착 스티키 탭 세그먼트 바 (sticky top-16 z-40 & 블러 글래스모피즘 전면 복원) */}
-        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl border sticky top-16 z-40 backdrop-blur-xl shadow-xl transition-all duration-300 ${
+        {/* 📱 모바일 전용 독점 글래스모피즘 스티키 탭 바 (sticky top-16 z-40) */}
+        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl sticky top-16 z-40 transition-all duration-300 backdrop-blur-xl backdrop-saturate-180 shadow-2xl ${
           isDarkMode 
-            ? 'bg-neutral-900/90 border-neutral-800/90 shadow-neutral-950/60 ring-1 ring-white/10' 
-            : 'bg-white/90 border-slate-200/90 shadow-slate-300/50 ring-1 ring-black/5'
+            ? 'bg-neutral-900/75 border border-white/10 shadow-neutral-950/80 ring-1 ring-white/10' 
+            : 'bg-white/75 border border-white/40 shadow-slate-300/60 ring-1 ring-black/5'
         }`}>
           {/* motion/react layout animation */}
           <motion.div 
@@ -1294,7 +1305,7 @@ export default function App() {
             className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-md ${
               activeTab === 'meal' ? 'left-1.5' : 'left-[calc(50%+0.1875rem)]'
             } ${
-              isDarkMode ? 'bg-neutral-800 ring-1 ring-neutral-700' : 'bg-white ring-1 ring-slate-200'
+              isDarkMode ? 'bg-neutral-800/90 ring-1 ring-neutral-700' : 'bg-white/90 ring-1 ring-slate-200'
             }`}
           />
 
@@ -1325,7 +1336,7 @@ export default function App() {
           </motion.button>
         </div>
 
-        {/* 💻 PC/태블릿 12컬럼 그리드 (급식: 7 / 시간표: 5 스티키 고정) */}
+        {/* 💻 PC/태블릿 12컬럼 그리드 (급식: 7 / 시간표: 5 스티키 상단 추적 고정) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* 🍽️ 급식표 Card (3D 파라락스 틸트 지원) */}
@@ -1618,8 +1629,8 @@ export default function App() {
             </motion.div>
           </TiltCard>
 
-          {/* 📚 시간표 Card (스크롤 시 자연스럽게 고정되어 따라오는 sticky top-20 z-30 + 3D 파라락스 틸트) */}
-          <div className={`lg:col-span-5 sticky top-20 z-30 ${activeTab === 'schedule' ? 'block' : 'hidden md:block'}`}>
+          {/* 📚 시간표 Card (스크롤 시 상단 고정되어 추적하는 sticky top-20 z-30 self-start + 3D 파라락스 틸트) */}
+          <div className={`lg:col-span-5 sticky top-20 z-30 self-start ${activeTab === 'schedule' ? 'block' : 'hidden md:block'}`}>
             <TiltCard>
               <motion.div 
                 initial={{ opacity: 0, scale: 0.97 }}

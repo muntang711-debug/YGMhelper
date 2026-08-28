@@ -33,7 +33,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.0';
+const CURRENT_VERSION = '1.2.1';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 const RATING_OPTIONS = [
@@ -46,6 +46,14 @@ const RATING_OPTIONS = [
 
 // 패치노트 전체 히스토리 데이터베이스
 const PATCH_HISTORY = [
+  {
+    version: '1.2.1',
+    date: '2026.08.28',
+    title: '버전 1.2.1 업데이트: npm ci 빌드 오류 조치 및 package.json 의존성 버전 동기화',
+    changes: [
+      'framer-motion 패키지 추가에 따른 npm ci 빌드 서버 lockfile 동기화 안내 및 package.json 정비'
+    ]
+  },
   {
     version: '1.2.0',
     date: '2026.08.27',

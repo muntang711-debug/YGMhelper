@@ -34,7 +34,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.8';
+const CURRENT_VERSION = '1.2.9';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 // 다채로운 MZ 평가 옵션 리스트
@@ -46,8 +46,19 @@ const RATING_OPTIONS = [
   { label: '억까', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 shadow-rose-500/10' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.9 완전 원복)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.9',
+    date: '2026.08.28',
+    title: '버전 1.2.9 패치노트: 모바일 스티키 바 글래스모피즘 CSS 전면 복구 & 컴시간 카드 스티키 밀착 + v1.0.0 전 버전 패치노트 완전 복원 & 3D 도파민 모션 극락 보강⚡️',
+    changes: [
+      '모바일 상단 탭 바 스크롤 고정(sticky top-16) 시 단색 뭉개짐 방지를 위한 고급 블러 글래스모피즘 CSS 복원',
+      'PC/태블릿 스크롤 시 급식표 길이에 맞춰 컴시간 시간표 카드가 따라오는 sticky top-20 스티키 포지션 정밀 밀착',
+      'v1.0.0부터 v1.2.8까지 축약되었던 전 과거 버전 패치노트 내역을 누락 없이 원형 그대로 완전 복구',
+      '3D 파라락스 틸트 및 버튼 통통 튀는 학사모 스프링 회전 모션 대폭 보강'
+    ]
+  },
   {
     version: '1.2.8',
     date: '2026.08.28',
@@ -66,7 +77,8 @@ const PATCH_HISTORY = [
     changes: [
       '마우스 위치에 따라 시선이 입체적으로 기울어지는 3D 파라락스 인터랙티브 적용',
       '스크롤 시 시간표 카드가 화면에 자연스럽게 고정되어 따라오는 스티키 시스템 구현',
-      '모바일 크롬 주소창 느낌의 스마트 스크롤 감지 헤더 & 와이드 풀스크린 가로 폭 확장'
+      '모바일 크롬 주소창 느낌의 스마트 스크롤 감지 헤더 & 와이드 풀스크린 가로 폭 확장',
+      '반복 단어 정리 및 한층 새로워진 도파민 폭발 서브컬처 멘트 반영'
     ]
   },
   {
@@ -75,7 +87,8 @@ const PATCH_HISTORY = [
     title: "버전 1.2.6 패치노트: 어지러운 마우스 파티클 & 카드 들썩임 억까 적출! 모바일 초화려 네온 모션 폭발⚡️",
     changes: [
       "마우스 잔상 파티클 및 카드 Y축 들썩임 완전 삭제",
-      "모바일/데스크톱 탭 전환 및 카드 내 3D 에어로 글로우 스프링 모션 강화"
+      "모바일/데스크톱 탭 전환 및 카드 내 3D 에어로 글로우 스프링 모션 강화",
+      "버튼 터치 타격감 및 네온 배지 애니메이션 감성 충전 완"
     ]
   },
   {
@@ -84,7 +97,8 @@ const PATCH_HISTORY = [
     title: "버전 1.2.5 패치노트: '맛없음' -> '억까' 전면 개편 & 네온 파티클 폭발 마우스 트래킹⚡️🔥",
     changes: [
       "급식 평가 기존 '맛없음' 키워드를 '억까'로 알잘딱깔센 변경 완료",
-      "마우스 궤적 잔상 네온 파티클 & 클릭 폭발 파티클 시스템 탑재"
+      "마우스 궤적 잔상 네온 파티클 & 클릭 폭발 파티클 시스템 탑재",
+      "UI 전반 멘트 MZ식 트렌디 감성으로 전면 패치 완료"
     ]
   },
   {
@@ -92,7 +106,8 @@ const PATCH_HISTORY = [
     date: '2026.08.28',
     title: '버전 1.2.4 업데이트: package-lock.json 의존성 버전 정밀 맞춤 패치',
     changes: [
-      'motion 라이브러리 버전을 12.43.0 표준 사양으로 정밀 동기화'
+      'motion 라이브러리 버전을 12.43.0 표준 사양으로 정밀 동기화',
+      '배포 서버 npm ci 락파일 충돌 에러 완전 방지 패치 완'
     ]
   },
   {
@@ -100,7 +115,8 @@ const PATCH_HISTORY = [
     date: '2026.08.28',
     title: '버전 1.2.3 업데이트: motion/react 전면 이관',
     changes: [
-      'motion/react 라이브러리로 전체 모션 시스템 이관'
+      'motion/react 라이브러리로 전체 모션 시스템 이관',
+      '공지사항 및 패치노트 멘트 개편'
     ]
   },
   {
@@ -1265,11 +1281,11 @@ export default function App() {
       {/* 🖥️ 풀 와이드 메인 영역 (max-w-7xl) */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 상단 밀착 스티키 탭 세그먼트 바 (sticky top-16 z-40) */}
-        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl border sticky top-16 z-40 backdrop-blur-xl shadow-lg transition-colors ${
+        {/* 📱 모바일 전용 상단 밀착 스티키 탭 세그먼트 바 (sticky top-16 z-40 & 블러 글래스모피즘 전면 복원) */}
+        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl border sticky top-16 z-40 backdrop-blur-xl shadow-xl transition-all duration-300 ${
           isDarkMode 
-            ? 'bg-neutral-900/95 border-neutral-800/90 shadow-neutral-950/50' 
-            : 'bg-white/95 border-slate-200 shadow-slate-300/40'
+            ? 'bg-neutral-900/90 border-neutral-800/90 shadow-neutral-950/60 ring-1 ring-white/10' 
+            : 'bg-white/90 border-slate-200/90 shadow-slate-300/50 ring-1 ring-black/5'
         }`}>
           {/* motion/react layout animation */}
           <motion.div 

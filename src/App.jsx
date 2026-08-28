@@ -29,25 +29,40 @@ import {
   Meh,
   Frown,
   Flame,
-  Zap
+  Zap,
+  Crown,
+  Rocket
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.11';
+const CURRENT_VERSION = '1.2.12';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
-// 다채로운 MZ 평가 옵션 리스트
+// 극락의 최신 도파민 MZ 평가 옵션 리스트
 const RATING_OPTIONS = [
-  { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 shadow-amber-500/10' },
-  { label: '야르', icon: ThumbsUp, color: 'text-blue-500 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 shadow-blue-500/10' },
-  { label: '먹을만함', icon: Smile, color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-emerald-500/10' },
-  { label: '그저그런', icon: Meh, color: 'text-slate-500 border-slate-500/30 bg-slate-500/10 hover:bg-slate-500/20 shadow-slate-500/10' },
-  { label: '억까', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 shadow-rose-500/10' }
+  { label: 'GOAT야르', icon: Crown, color: 'text-amber-400 border-amber-500/40 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 shadow-lg shadow-amber-500/20' },
+  { label: '도파민극락', icon: Flame, color: 'text-pink-500 border-pink-500/40 bg-gradient-to-r from-pink-500/20 to-rose-500/20 hover:from-pink-500/30 shadow-lg shadow-pink-500/20' },
+  { label: '알잘딱', icon: ThumbsUp, color: 'text-blue-400 border-blue-500/40 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 shadow-lg shadow-blue-500/20' },
+  { label: '음...', icon: Meh, color: 'text-slate-400 border-slate-500/40 bg-slate-800/40 hover:bg-slate-700/50 shadow-md' },
+  { label: '억까임', icon: Frown, color: 'text-rose-500 border-rose-500/40 bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 shadow-lg shadow-rose-500/20' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.11 완전 보존)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.12 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.12',
+    date: '2026.08.28',
+    title: '버전 1.2.12 패치노트: 버전 1.2.12 폭발적 반영 & 초화려 3D 네온 글로우 모션 극락 탑재 + 최신 도파민 MZ 어휘(GOAT/폼미쳤다/알잘딱) 풀충전⚡️🔥',
+    changes: [
+      '시맨틱 버저닝 1.2.12 정밀 연장 세팅 완료',
+      '모든 주요 버튼 및 헤더에 3D 네온 글로우 오로라 이펙트 & 무지개 그라데이션 타이포그래피 적용',
+      '최신 MZ 서브컬처 용어(GOAT야르, 도파민극락, 알잘딱, 억까임, 폼 미쳤다, 개추) 풀충전',
+      '버튼 터치 시 통통 튀는 3D 스케일+스프링 타격감 및 발광 파티클 연출 극대화',
+      '모바일 글래스모피즘 스티키 탭 바 & PC 컴시간 시간표 스티키 추적 고정 완전 유지',
+      'v1.0.0부터 전 과거 버전 패치노트 내역 누락 없이 완전 보존'
+    ]
+  },
   {
     version: '1.2.11',
     date: '2026.08.28',
@@ -303,21 +318,21 @@ const getDishCategory = (dishName) => {
 const getCategoryBadgeStyle = (category, isDark) => {
   switch (category) {
     case '디저트':
-      return isDark ? 'bg-pink-500/15 text-pink-300 border-pink-500/30 shadow-pink-500/10' : 'bg-pink-100 text-pink-700 border-pink-200';
+      return isDark ? 'bg-pink-500/20 text-pink-300 border-pink-500/40 shadow-lg shadow-pink-500/20 animate-pulse' : 'bg-pink-100 text-pink-700 border-pink-300 shadow-sm';
     case '음료':
-      return isDark ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-cyan-500/10' : 'bg-cyan-100 text-cyan-700 border-cyan-200';
+      return isDark ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20' : 'bg-cyan-100 text-cyan-700 border-cyan-300 shadow-sm';
     case '과일':
-      return isDark ? 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-rose-500/10' : 'bg-rose-100 text-rose-700 border-rose-200';
+      return isDark ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-lg shadow-rose-500/20' : 'bg-rose-100 text-rose-700 border-rose-300 shadow-sm';
     case '밥':
-      return isDark ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 shadow-blue-500/10' : 'bg-blue-100 text-blue-700 border-blue-200';
+      return isDark ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-lg shadow-blue-500/20' : 'bg-blue-100 text-blue-700 border-blue-300 shadow-sm';
     case '국':
-      return isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-amber-500/10' : 'bg-amber-100 text-amber-700 border-amber-200';
+      return isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/20' : 'bg-amber-100 text-amber-700 border-amber-300 shadow-sm';
     default:
-      return isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-emerald-500/10' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/20' : 'bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm';
   }
 };
 
-// 🎯 마우스 포인터 위치 따라 카드/모달이 다이나믹하게 기울어지는 3D 파라락스 틸트 컴포넌트
+// 🎯 초화려 3D 네온 파라락스 틸트 컴포넌트
 const TiltCard = ({ children, className = '' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
@@ -328,8 +343,8 @@ const TiltCard = ({ children, className = '' }) => {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const rotateX = ((y - centerY) / centerY) * -7;
-    const rotateY = ((x - centerX) / centerX) * 7;
+    const rotateX = ((y - centerY) / centerY) * -10;
+    const rotateY = ((x - centerX) / centerX) * 10;
 
     setTilt({ x: rotateX, y: rotateY });
   };
@@ -343,7 +358,7 @@ const TiltCard = ({ children, className = '' }) => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: "spring", stiffness: 420, damping: 20 }}
+      transition={{ type: "spring", stiffness: 450, damping: 18 }}
       style={{ transformStyle: "preserve-3d", perspective: 1000 }}
       className={className}
     >
@@ -352,27 +367,27 @@ const TiltCard = ({ children, className = '' }) => {
   );
 };
 
-// motion/react 전용 고탄성 모달 애니메이션 옵션
+// motion/react 초화려 고탄성 모달 애니메이션 옵션
 const modalOverlayVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.15 } }
+  hidden: { opacity: 0, backdropFilter: "blur(0px)" },
+  visible: { opacity: 1, backdropFilter: "blur(12px)", transition: { duration: 0.25 } },
+  exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.2 } }
 };
 
 const modalContentVariants = {
-  hidden: { opacity: 0, scale: 0.65, y: 50, rotateX: 25 },
+  hidden: { opacity: 0, scale: 0.5, y: 80, rotateX: 35 },
   visible: { 
     opacity: 1, 
     scale: 1, 
     y: 0,
     rotateX: 0,
-    transition: { type: "spring", stiffness: 500, damping: 22 } 
+    transition: { type: "spring", stiffness: 520, damping: 20 } 
   },
   exit: { 
     opacity: 0, 
-    scale: 0.75, 
-    y: 25, 
-    transition: { duration: 0.15 } 
+    scale: 0.6, 
+    y: 40, 
+    transition: { duration: 0.18 } 
   }
 };
 
@@ -380,13 +395,13 @@ const listContainerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.04, delayChildren: 0.02 }
+    transition: { staggerChildren: 0.05, delayChildren: 0.02 }
   }
 };
 
 const listItemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.9, rotateX: -10 },
-  show: { opacity: 1, y: 0, scale: 1, rotateX: 0, transition: { type: "spring", stiffness: 520, damping: 20 } }
+  hidden: { opacity: 0, y: 25, scale: 0.85, rotateX: -15 },
+  show: { opacity: 1, y: 0, scale: 1, rotateX: 0, transition: { type: "spring", stiffness: 550, damping: 18 } }
 };
 
 export default function App() {
@@ -444,7 +459,7 @@ export default function App() {
   const [mealLoading, setMealLoading] = useState(true);
 
   // 평가 관련 상태
-  const [ratings, setRatings] = useState({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "억까": 0 });
+  const [ratings, setRatings] = useState({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
   const [userVotedRating, setUserVotedRating] = useState(null);
   const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
 
@@ -558,11 +573,11 @@ export default function App() {
         const data = await res.json();
         setRatings(data);
       } else {
-        setRatings({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "억까": 0 });
+        setRatings({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
       }
     } catch (err) {
       console.error('Failed to load ratings:', err);
-      setRatings({ "야르킁킁": 0, "야르": 0, "먹을만함": 0, "그저그런": 0, "억까": 0 });
+      setRatings({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
     }
   }, [formattedDateStr]);
 
@@ -716,7 +731,7 @@ export default function App() {
   const totalVotes = Object.values(ratings).reduce((acc, curr) => acc + curr, 0);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 selection:bg-blue-500 selection:text-white relative overflow-x-hidden ${
+    <div className={`min-h-screen transition-colors duration-300 selection:bg-purple-500 selection:text-white relative overflow-x-hidden ${
       isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
     }`}>
       <style>{`
@@ -738,14 +753,14 @@ export default function App() {
       `}</style>
 
       <AnimatePresence>
-        {/* 📱 PWA 앱 설치 안내 모달 (3D 파라락스 틸트 감싸기) */}
+        {/* 📱 PWA 앱 설치 안내 모달 */}
         {showInstallGuide && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70"
           >
             <TiltCard className="w-full max-w-md">
               <motion.div 
@@ -760,15 +775,16 @@ export default function App() {
                 <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
                   <div className="flex items-center gap-2.5">
                     <motion.div 
-                      whileHover={{ scale: 1.25, rotate: [0, -10, 10, 0] }}
-                      className="p-2 rounded-xl bg-blue-500/10 text-blue-600 cursor-pointer"
+                      whileHover={{ scale: 1.3, rotate: 360 }}
+                      transition={{ duration: 0.5 }}
+                      className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 cursor-pointer"
                     >
                       <Download className="w-5 h-5" />
                     </motion.div>
-                    <h2 className="font-bold text-base">📲 YGMhelper 홈화면 설치 가이드</h2>
+                    <h2 className="font-extrabold text-base bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">📲 YGMhelper 앱 설치 폼미쳤다!</h2>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.25, rotate: 90 }}
+                    whileHover={{ scale: 1.3, rotate: 90 }}
                     whileTap={{ scale: 0.8 }}
                     onClick={() => setShowInstallGuide(false)}
                     className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -779,42 +795,42 @@ export default function App() {
 
                 <div className="space-y-4 text-sm font-medium leading-relaxed">
                   <motion.div 
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    className={`p-3.5 rounded-2xl border ${
+                    whileHover={{ scale: 1.05, x: 5 }}
+                    className={`p-4 rounded-2xl border ${
                       isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <p className="font-bold text-blue-500 flex items-center gap-1.5 mb-1">
+                    <p className="font-extrabold text-blue-500 flex items-center gap-1.5 mb-1">
                       <Share className="w-4 h-4" /> 아이폰 (iOS Safari)
                     </p>
                     <p className="text-slate-600 dark:text-neutral-400">
-                      사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 야르 세팅 완료!
+                      사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 야르 극락 세팅 완료!
                     </p>
                   </motion.div>
 
                   <motion.div 
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    className={`p-3.5 rounded-2xl border ${
+                    whileHover={{ scale: 1.05, x: 5 }}
+                    className={`p-4 rounded-2xl border ${
                       isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <p className="font-bold text-emerald-500 flex items-center gap-1.5 mb-1">
+                    <p className="font-extrabold text-emerald-500 flex items-center gap-1.5 mb-1">
                       📱 안드로이드 (Chrome)
                     </p>
                     <p className="text-slate-600 dark:text-neutral-400">
-                      우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 앱처럼 사용 야르!
+                      우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 도파민 앱 생성 야르!
                     </p>
                   </motion.div>
                 </div>
 
                 <div className="pt-4 mt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                   <motion.button
-                    whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 25px rgba(59, 130, 246, 0.8)" }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => setShowInstallGuide(false)}
-                    className="text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
+                    className="text-sm px-5 py-2.5 rounded-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl transition-all"
                   >
-                    야르~ 확인
+                    야르~ 도파민 세팅 확인
                   </motion.button>
                 </div>
               </motion.div>
@@ -822,14 +838,14 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* 📢 1. 공지사항 모달 (3D 파라락스 틸트 감싸기) */}
+        {/* 📢 1. 공지사항 모달 */}
         {showNotice && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70"
           >
             <TiltCard className="w-full max-w-md">
               <motion.div 
@@ -844,20 +860,19 @@ export default function App() {
                 <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
                   <div className="flex items-center gap-2.5">
                     <motion.div 
-                      animate={{ scale: [1, 1.25, 1], rotate: [0, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 2.5 }}
-                      className="p-2 rounded-xl bg-blue-500/10 text-blue-600 cursor-pointer"
+                      animate={{ scale: [1, 1.3, 1], rotate: [0, 15, -15, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30 cursor-pointer"
                     >
                       <Megaphone className="w-5 h-5" />
                     </motion.div>
-                    <h2 className="font-bold text-base sm:text-lg">📢 긴급 공지 수신 완료! (야르)</h2>
+                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">📢 초긴급 도파민 공지! (GOAT)</h2>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.25, rotate: 90 }}
+                    whileHover={{ scale: 1.3, rotate: 90 }}
                     whileTap={{ scale: 0.8 }}
                     onClick={handleCloseNotice}
                     className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                    title="닫기"
                   >
                     <X className="w-5 h-5" />
                   </motion.button>
@@ -865,16 +880,16 @@ export default function App() {
 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                      HOT
+                    <span className="px-3 py-1 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
+                      HOT 도파민
                     </span>
-                    <h3 className="font-extrabold text-sm sm:text-base">오늘의 급식 실시간 도파민 평가 런칭!</h3>
+                    <h3 className="font-extrabold text-sm sm:text-base">오늘의 급식 실시간 도파민 평가 개시!</h3>
                   </div>
 
                   <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
                     isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                   }`}>
-                    오늘 급식 솔직한 후기! 야르부터 억까까지 자유롭게 투표하시고 도파민 충전하세요!🔥
+                    오늘 급식 솔직한 후기! GOAT야르부터 억까임까지 알잘딱깔센하게 투표하고 도파민 챙기세요!🔥
                   </div>
                 </div>
 
@@ -885,19 +900,19 @@ export default function App() {
                         type="checkbox"
                         checked={neverShowNoticeChecked}
                         onChange={(e) => setNeverShowNoticeChecked(e.target.checked)}
-                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
                       />
-                      <span>다시 안 보기 (억까 방지)</span>
+                      <span>억까 방지 (다시 안 보기)</span>
                     </label>
                   )}
 
                   <motion.button
-                    whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.15, rotate: [0, -4, 4, 0], boxShadow: "0px 0px 25px rgba(168, 85, 247, 0.8)" }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={handleCloseNotice}
-                    className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
+                    className="text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white shadow-xl transition-all"
                   >
-                    야르~ 확인 완료
+                    야르~ 개추 누르고 확인
                   </motion.button>
                 </div>
               </motion.div>
@@ -905,14 +920,14 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* 📜 2. 패치노트 모달 (3D 파라락스 틸트 감싸기) */}
+        {/* 📜 2. 패치노트 모달 */}
         {showPatchModal && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70"
           >
             <TiltCard className="w-full max-w-2xl">
               <motion.div 
@@ -926,17 +941,16 @@ export default function App() {
               >
                 <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-3 shrink-0">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
+                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
                       <FileText className="w-5 h-5" />
                     </div>
-                    <h2 className="font-bold text-base sm:text-lg">📜 패치노트 히스토리</h2>
+                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">📜 폼 미친 패치노트 히스토리</h2>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.25, rotate: 90 }}
+                    whileHover={{ scale: 1.3, rotate: 90 }}
                     whileTap={{ scale: 0.8 }}
                     onClick={handleClosePatch}
                     className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                    title="닫기"
                   >
                     <X className="w-5 h-5" />
                   </motion.button>
@@ -944,17 +958,17 @@ export default function App() {
 
                 <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
                   <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
-                    <div className="hidden sm:block my-1 text-[11px] font-bold text-slate-400 px-2 shrink-0">버전 히스토리</div>
+                    <div className="hidden sm:block my-1 text-[11px] font-black text-purple-400 uppercase tracking-wider px-2 shrink-0">버전 히스토리</div>
 
                     {PATCH_HISTORY.map((patch) => (
                       <motion.button
                         key={patch.version}
-                        whileHover={{ scale: 1.08, x: 5, rotate: [0, -2, 2, 0] }}
-                        whileTap={{ scale: 0.92 }}
+                        whileHover={{ scale: 1.1, x: 6, rotate: [0, -2, 2, 0] }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => setSelectedPatchVersion(patch.version)}
-                        className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
+                        className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 whitespace-nowrap ${
                           selectedPatchVersion === patch.version
-                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-500/30'
                             : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
                         }`}
                       >
@@ -963,7 +977,7 @@ export default function App() {
                           <span>v{patch.version}</span>
                         </div>
                         {patch.version === CURRENT_VERSION && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400 text-neutral-900 font-extrabold shrink-0 ml-1.5">최신</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-gradient-to-r from-amber-400 to-yellow-400 text-neutral-900 font-black shrink-0 ml-1.5 shadow-sm">NEW</span>
                         )}
                       </motion.button>
                     ))}
@@ -977,22 +991,24 @@ export default function App() {
                       return (
                         <motion.div 
                           key={patch.version}
-                          initial={{ opacity: 0, x: 20, scale: 0.96 }}
+                          initial={{ opacity: 0, x: 25, scale: 0.9 }}
                           animate={{ opacity: 1, x: 0, scale: 1 }}
-                          transition={{ type: "spring", stiffness: 480, damping: 22 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 20 }}
                           className="space-y-3 pr-1"
                         >
                           <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
-                            <h3 className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">
+                            <h3 className="font-black text-sm sm:text-base text-purple-600 dark:text-purple-400">
                               {patch.title}
                             </h3>
-                            <span className="text-xs text-slate-400 font-semibold shrink-0">{patch.date}</span>
+                            <span className="text-xs text-slate-400 font-bold shrink-0">{patch.date}</span>
                           </div>
 
-                          <div className={`p-3.5 rounded-2xl border text-xs sm:text-sm font-medium ${
+                          <div className={`p-4 rounded-2xl border text-xs sm:text-sm font-medium ${
                             isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                           }`}>
-                            <p className="font-bold text-xs text-slate-400 mb-2">🔥 핵심 변경점 한눈에 보기</p>
+                            <p className="font-extrabold text-xs text-purple-400 mb-2 flex items-center gap-1">
+                              <Zap className="w-3.5 h-3.5 fill-purple-400" /> 도파민 패치 핵심 요약
+                            </p>
                             <ul className="list-disc list-inside space-y-1.5 pl-1">
                               {patch.changes.map((change, idx) => (
                                 <li key={idx} className="leading-relaxed">{change}</li>
@@ -1012,19 +1028,19 @@ export default function App() {
                         type="checkbox"
                         checked={neverShowPatchChecked}
                         onChange={(e) => setNeverShowPatchChecked(e.target.checked)}
-                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
+                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
                       />
                       <span>이 버전 끄기</span>
                     </label>
                   )}
 
                   <motion.button
-                    whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.15, rotate: [0, -4, 4, 0], boxShadow: "0px 0px 25px rgba(99, 102, 241, 0.8)" }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={handleClosePatch}
-                    className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
+                    className="text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl transition-all"
                   >
-                    닫기
+                    야르~ 확인완료
                   </motion.button>
                 </div>
               </motion.div>
@@ -1032,14 +1048,14 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* 🔍 개별 알러지 모달 (3D 파라락스 틸트 감싸기) */}
+        {/* 🔍 개별 알러지 모달 */}
         {selectedDishAllergy && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70"
           >
             <TiltCard className="w-full max-w-md">
               <motion.div 
@@ -1053,16 +1069,16 @@ export default function App() {
               >
                 <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30">
                       <Info className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
-                      <p className="text-xs text-slate-500 dark:text-neutral-400">알러지 유발 정보 체크</p>
+                      <h2 className="font-extrabold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
+                      <p className="text-xs text-amber-500 font-bold">알러지 요소 정밀 체크</p>
                     </div>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.25, rotate: 90 }}
+                    whileHover={{ scale: 1.3, rotate: 90 }}
                     whileTap={{ scale: 0.8 }}
                     onClick={() => setSelectedDishAllergy(null)}
                     className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1081,14 +1097,14 @@ export default function App() {
                       return (
                         <motion.div 
                           key={idx}
-                          initial={{ opacity: 0, x: -15, scale: 0.95 }}
+                          initial={{ opacity: 0, x: -20, scale: 0.9 }}
                           animate={{ opacity: 1, x: 0, scale: 1 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 20, delay: idx * 0.02 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 18, delay: idx * 0.02 }}
                           className={`p-3 rounded-2xl border font-bold text-sm flex items-center gap-3 ${
                             isDarkMode ? 'bg-neutral-950 border-neutral-800 text-amber-400' : 'bg-amber-50/80 border-amber-200 text-amber-900'
                           }`}
                         >
-                          <span className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center text-xs font-black text-amber-600 shrink-0">
+                          <span className="w-7 h-7 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-xs font-black text-white shadow-sm shrink-0">
                             {cleanNum}
                           </span>
                           <span>{allergyName}</span>
@@ -1099,12 +1115,12 @@ export default function App() {
 
                 <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                   <motion.button
-                    whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.15, rotate: [0, -4, 4, 0], boxShadow: "0px 0px 25px rgba(245, 158, 11, 0.8)" }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => setSelectedDishAllergy(null)}
-                    className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
+                    className="text-sm px-5 py-2.5 rounded-2xl font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xl transition-all"
                   >
-                    야르~ 확인
+                    야르~ 체크완료
                   </motion.button>
                 </div>
               </motion.div>
@@ -1112,14 +1128,14 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* 🧬 전체 알러지 정보 모달 (3D 파라락스 틸트 감싸기) */}
+        {/* 🧬 전체 알러지 정보 모달 */}
         {showAllergyModal && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70"
           >
             <TiltCard className="w-full max-w-md">
               <motion.div 
@@ -1133,13 +1149,13 @@ export default function App() {
               >
                 <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600">
+                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
                       <Info className="w-5 h-5" />
                     </div>
-                    <h2 className="font-bold text-base">전체 알러지 성분 총정리</h2>
+                    <h2 className="font-extrabold text-base bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">전체 알러지 성분 알잘딱 정리</h2>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.25, rotate: 90 }}
+                    whileHover={{ scale: 1.3, rotate: 90 }}
                     whileTap={{ scale: 0.8 }}
                     onClick={() => setShowAllergyModal(false)}
                     className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1152,10 +1168,10 @@ export default function App() {
                   {ALLERGY_LIST.map((item, idx) => (
                     <motion.div 
                       key={idx}
-                      initial={{ opacity: 0, scale: 0.85 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 450, damping: 18, delay: idx * 0.01 }}
-                      className={`p-2.5 rounded-xl border ${
+                      transition={{ type: "spring", stiffness: 480, damping: 16, delay: idx * 0.01 }}
+                      className={`p-2.5 rounded-xl border font-bold ${
                         isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                       }`}
                     >
@@ -1166,10 +1182,10 @@ export default function App() {
 
                 <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                   <motion.button
-                    whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.15, rotate: [0, -4, 4, 0], boxShadow: "0px 0px 25px rgba(249, 115, 22, 0.8)" }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => setShowAllergyModal(false)}
-                    className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
+                    className="text-sm px-5 py-2.5 rounded-2xl font-black bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl transition-all"
                   >
                     야르~ 확인
                   </motion.button>
@@ -1181,37 +1197,35 @@ export default function App() {
       </AnimatePresence>
 
       {/* 📱 상단 네비게이션 헤더 */}
-      <header className={`border-b sticky top-0 z-50 backdrop-blur-md transition-colors ${
-        isDarkMode ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white/90 border-slate-200'
+      <header className={`border-b sticky top-0 z-50 backdrop-blur-xl transition-all ${
+        isDarkMode ? 'bg-neutral-900/85 border-neutral-800/80' : 'bg-white/85 border-slate-200/80'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            transition={{ type: "spring", stiffness: 450, damping: 20 }}
             className="flex items-center gap-2.5"
           >
             <motion.div 
-              whileHover={{ rotate: [0, -25, 25, -12, 0], scale: 1.3 }}
+              whileHover={{ rotate: [0, -30, 30, -15, 0], scale: 1.35, boxShadow: "0px 0px 25px rgba(59, 130, 246, 0.9)" }}
               whileTap={{ scale: 0.8 }}
               transition={{ duration: 0.35 }}
-              className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25 cursor-pointer"
+              className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 cursor-pointer"
             >
-              <GraduationCap className="w-5.5 h-5.5" />
+              <GraduationCap className="w-6 h-6" />
             </motion.div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className={`font-bold text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                <h1 className="font-black text-lg tracking-tight bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
                   YGMhelper
                 </h1>
                 <motion.span 
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ repeat: Infinity, duration: 2.5 }}
-                  className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                    isDarkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-slate-200 text-slate-700'
-                  }`}
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="text-[10px] px-2 py-0.5 rounded-lg font-black bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20"
                 >
-                  YGM
+                  GOAT
                 </motion.span>
               </div>
             </div>
@@ -1220,10 +1234,10 @@ export default function App() {
           <div className="flex items-center gap-2">
             {!isStandalone && (
               <motion.button
-                whileHover={{ scale: 1.2, rotate: [0, -8, 8, 0] }}
+                whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0], boxShadow: "0px 0px 20px rgba(59, 130, 246, 0.7)" }}
                 whileTap={{ scale: 0.8 }}
                 onClick={handleInstallClick}
-                className="p-2.5 rounded-xl border flex items-center justify-center bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all"
+                className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 transition-all"
                 title="앱으로 설치하기"
               >
                 <Download className="w-4.5 h-4.5" />
@@ -1231,10 +1245,10 @@ export default function App() {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.2, rotate: 30 }}
+              whileHover={{ scale: 1.2, rotate: 45, boxShadow: "0px 0px 20px rgba(245, 158, 11, 0.7)" }}
               whileTap={{ scale: 0.8 }}
               onClick={toggleDarkMode}
-              className={`p-2.5 rounded-xl border transition-all ${
+              className={`p-2.5 rounded-2xl border transition-all ${
                 isDarkMode 
                   ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-700' 
                   : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
@@ -1249,48 +1263,48 @@ export default function App() {
                 whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
                 whileTap={{ scale: 0.8 }}
                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                className={`p-2.5 rounded-xl border flex items-center gap-1 transition-all ${
+                className={`p-2.5 rounded-2xl border flex items-center gap-1 transition-all ${
                   isDarkMode 
                     ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                     : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
                 }`}
                 title="메뉴 열기"
               >
-                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-300 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-300 ${isMenuOpen ? 'rotate-180 text-purple-500' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
                 {isMenuOpen && (
                   <motion.div 
-                    initial={{ opacity: 0, y: -10, scale: 0.85 }}
+                    initial={{ opacity: 0, y: -15, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.85 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                    exit={{ opacity: 0, y: -15, scale: 0.8 }}
+                    transition={{ type: "spring", stiffness: 550, damping: 20 }}
                     className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl p-1.5 z-50 ${
                       isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'bg-white border-slate-200 text-slate-800'
                     }`}
                   >
                     <motion.button
-                      whileHover={{ scale: 1.08, x: 5, rotate: [0, -3, 3, 0] }}
-                      whileTap={{ scale: 0.92 }}
+                      whileHover={{ scale: 1.1, x: 6, rotate: [0, -3, 3, 0] }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={openNoticeModal}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
+                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all ${
                         isDarkMode ? 'hover:bg-neutral-800 text-neutral-200' : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <Megaphone className="w-4 h-4 text-blue-500" />
+                      <Megaphone className="w-4 h-4 text-purple-500" />
                       <span>공지사항</span>
                     </motion.button>
 
                     <motion.button
-                      whileHover={{ scale: 1.08, x: 5, rotate: [0, -3, 3, 0] }}
-                      whileTap={{ scale: 0.92 }}
+                      whileHover={{ scale: 1.1, x: 6, rotate: [0, -3, 3, 0] }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={openPatchModal}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
-                        isDarkMode ? 'hover:bg-neutral-800 text-purple-400' : 'hover:bg-slate-100 text-slate-700'
+                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all ${
+                        isDarkMode ? 'hover:bg-neutral-800 text-pink-400' : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <FileText className="w-4 h-4 text-purple-500" />
+                      <FileText className="w-4 h-4 text-pink-500" />
                       <span>패치노트</span>
                     </motion.button>
                   </motion.div>
@@ -1301,30 +1315,29 @@ export default function App() {
         </div>
       </header>
 
-      {/* 🖥️ 풀 와이드 메인 영역 (max-w-7xl) */}
+      {/* 🖥️ 풀 와이드 메인 영역 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         
-        {/* 📱 모바일 전용 독점 글래스모피즘 스티키 탭 바 (sticky top-16 z-40) */}
+        {/* 📱 모바일 스티키 탭 바 (sticky top-16 z-40) */}
         <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl sticky top-16 z-40 transition-all duration-300 backdrop-blur-xl backdrop-saturate-180 shadow-2xl ${
           isDarkMode 
             ? 'bg-neutral-900/75 border border-white/10 shadow-neutral-950/80 ring-1 ring-white/10' 
             : 'bg-white/75 border border-white/40 shadow-slate-300/60 ring-1 ring-black/5'
         }`}>
-          {/* motion/react layout animation */}
           <motion.div 
             layout
             transition={{ type: "spring", stiffness: 550, damping: 28 }}
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-md ${
+            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-lg ${
               activeTab === 'meal' ? 'left-1.5' : 'left-[calc(50%+0.1875rem)]'
             } ${
-              isDarkMode ? 'bg-neutral-800/90 ring-1 ring-neutral-700' : 'bg-white/90 ring-1 ring-slate-200'
+              isDarkMode ? 'bg-gradient-to-r from-neutral-800 to-neutral-700 ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200'
             }`}
           />
 
           <motion.button
             whileTap={{ scale: 0.9, rotate: -2 }}
             onClick={() => setActiveTab('meal')}
-            className={`relative z-10 flex-1 py-3 font-extrabold text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
+            className={`relative z-10 flex-1 py-3 font-black text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
               activeTab === 'meal'
                 ? isDarkMode ? 'text-white' : 'text-slate-900'
                 : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
@@ -1337,26 +1350,26 @@ export default function App() {
           <motion.button
             whileTap={{ scale: 0.9, rotate: 2 }}
             onClick={() => setActiveTab('schedule')}
-            className={`relative z-10 flex-1 py-3 font-extrabold text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
+            className={`relative z-10 flex-1 py-3 font-black text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
               activeTab === 'schedule'
                 ? isDarkMode ? 'text-white' : 'text-slate-900'
                 : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
             }`}
           >
-            <BookOpen className="w-5 h-5 text-blue-500 animate-pulse" />
+            <BookOpen className="w-5 h-5 text-purple-500 animate-pulse" />
             <span>실시간 시간표</span>
           </motion.button>
         </div>
 
-        {/* 💻 PC/태블릿 12컬럼 그리드 (급식: 7 / 시간표: 5 스티키 상단 추적 고정) */}
+        {/* 💻 PC/태블릿 12컬럼 그리드 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* 🍽️ 급식표 Card (3D 파라락스 틸트 지원) */}
+          {/* 🍽️ 급식표 Card */}
           <TiltCard className={`lg:col-span-7 ${activeTab === 'meal' ? 'block' : 'hidden md:block'}`}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.97 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 350, damping: 22 }}
+              transition={{ type: "spring", stiffness: 380, damping: 20 }}
               className={`p-5 sm:p-7 rounded-3xl border flex flex-col justify-between h-full ${
                 isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
               }`}
@@ -1367,17 +1380,17 @@ export default function App() {
                 }`}>
                   <div className="flex items-center gap-2.5">
                     <motion.div 
-                      whileHover={{ scale: 1.3, rotate: [0, -15, 15, 0] }}
+                      whileHover={{ scale: 1.35, rotate: [0, -20, 20, 0], boxShadow: "0px 0px 25px rgba(249, 115, 22, 0.9)" }}
                       whileTap={{ scale: 0.8 }}
-                      className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600 cursor-pointer"
+                      className="p-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 cursor-pointer"
                     >
                       <Utensils className="w-5.5 h-5.5" />
                     </motion.div>
                     <div>
-                      <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        오늘의 급식 라인업 (야르)
+                      <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent">
+                        지리는 급식 라인업 (GOAT야르)
                       </h2>
-                      <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 맛도리 식단표</p>
+                      <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 극락 맛도리 식단표</p>
                     </div>
                   </div>
                 </div>
@@ -1386,22 +1399,20 @@ export default function App() {
                   isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                 }`}>
                   <motion.div 
-                    whileHover={{ scale: 1.05, rotate: [0, -2, 2, 0] }}
+                    whileHover={{ scale: 1.08, rotate: [0, -2, 2, 0] }}
                     whileTap={{ scale: 0.92 }}
                     onClick={openDatePicker}
                     className="flex items-center gap-2 cursor-pointer select-none flex-wrap"
                   >
-                    <CalendarIcon className="w-5 h-5 shrink-0 text-blue-500" />
-                    <span className={`text-sm sm:text-base font-bold tracking-tight ${
+                    <CalendarIcon className="w-5 h-5 shrink-0 text-purple-500 animate-pulse" />
+                    <span className={`text-sm sm:text-base font-black tracking-tight ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
                       {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
                     </span>
                     <motion.span 
-                      whileHover={{ scale: 1.2 }}
-                      className={`text-xs px-2.5 py-0.5 rounded-lg font-bold ${
-                        isDarkMode ? 'bg-neutral-800 text-blue-400' : 'bg-blue-100 text-blue-800'
-                      }`}
+                      whileHover={{ scale: 1.25 }}
+                      className="text-xs px-2.5 py-0.5 rounded-lg font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
                     >
                       {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}
                     </motion.span>
@@ -1417,12 +1428,12 @@ export default function App() {
 
                   <div className="flex items-center gap-1.5">
                     <motion.button
-                      whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
+                      whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 20px rgba(168, 85, 247, 0.5)" }}
                       whileTap={{ scale: 0.85 }}
                       onClick={resetToToday}
-                      className={`text-xs sm:text-sm px-3 py-2 rounded-xl font-bold border transition-colors ${
+                      className={`text-xs sm:text-sm px-3.5 py-2 rounded-xl font-black border transition-all ${
                         isDarkMode 
-                          ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
+                          ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-200' 
                           : 'border-slate-300 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
@@ -1430,10 +1441,10 @@ export default function App() {
                       오늘
                     </motion.button>
                     <motion.button
-                      whileHover={{ scale: 1.2, x: -4, rotate: -10 }}
+                      whileHover={{ scale: 1.25, x: -4, rotate: -15 }}
                       whileTap={{ scale: 0.8 }}
                       onClick={() => changeDate(-1)}
-                      className={`p-2 rounded-xl border transition-colors ${
+                      className={`p-2 rounded-xl border transition-all ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                           : 'border-slate-300 hover:bg-slate-200 text-slate-700'
@@ -1443,10 +1454,10 @@ export default function App() {
                       <ChevronLeft className="w-4 h-4" />
                     </motion.button>
                     <motion.button
-                      whileHover={{ scale: 1.2, x: 4, rotate: 10 }}
+                      whileHover={{ scale: 1.25, x: 4, rotate: 15 }}
                       whileTap={{ scale: 0.8 }}
                       onClick={() => changeDate(1)}
-                      className={`p-2 rounded-xl border transition-colors ${
+                      className={`p-2 rounded-xl border transition-all ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
                           : 'border-slate-300 hover:bg-slate-200 text-slate-700'
@@ -1460,14 +1471,12 @@ export default function App() {
 
                 {meal.calories && !mealLoading && (
                   <div className="flex items-center justify-between px-1 mb-3">
-                    <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs sm:text-sm font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
                       총 칼로리 (벌크업 스펙)
                     </span>
                     <motion.span 
-                      whileHover={{ scale: 1.15, rotate: [0, -3, 3, 0] }}
-                      className={`text-xs sm:text-sm px-3 py-1 rounded-full font-bold ${
-                        isDarkMode ? 'bg-neutral-800 text-orange-400' : 'bg-orange-100 text-orange-800 border border-orange-200'
-                      }`}
+                      whileHover={{ scale: 1.2, rotate: [0, -4, 4, 0] }}
+                      className="text-xs sm:text-sm px-3.5 py-1 rounded-full font-black bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
                     >
                       {meal.calories}
                     </motion.span>
@@ -1477,10 +1486,12 @@ export default function App() {
                 {mealLoading ? (
                   <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
                     <div className="relative flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
-                      <Sparkles className="w-5 h-5 text-orange-500 absolute animate-pulse" />
+                      <div className="w-14 h-14 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
+                      <Sparkles className="w-6 h-6 text-orange-500 absolute animate-pulse" />
                     </div>
-                    <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">야르~ 급식 데이터 실시간 획득 중...</span>
+                    <span className="text-sm font-black text-transparent bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text animate-pulse">
+                      야르~ 급식 도파민 데이터 획득 중...
+                    </span>
                   </div>
                 ) : meal.menuItems && meal.menuItems.length > 0 ? (
                   <motion.div 
@@ -1497,23 +1508,23 @@ export default function App() {
                         <motion.div
                           key={idx}
                           variants={listItemVariants}
-                          whileHover={{ scale: 1.03, x: 6, transition: { type: "spring", stiffness: 500, damping: 18 } }}
-                          whileTap={{ scale: 0.96 }}
-                          className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-sm transition-colors cursor-pointer ${
+                          whileHover={{ scale: 1.04, x: 8, transition: { type: "spring", stiffness: 550, damping: 16 } }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all cursor-pointer ${
                             isDarkMode 
-                              ? 'bg-neutral-950/80 border-neutral-800/80 hover:border-neutral-700' 
-                              : 'bg-slate-50 border-slate-200/80 hover:border-slate-300'
+                              ? 'bg-neutral-950/80 border-neutral-800/80 hover:border-purple-500/40' 
+                              : 'bg-slate-50 border-slate-200/80 hover:border-purple-300'
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
-                            <span className={`font-extrabold text-base sm:text-lg leading-snug ${
+                            <span className={`font-black text-base sm:text-lg leading-snug ${
                               isDarkMode ? 'text-white' : 'text-slate-900'
                             }`}>
                               {dish.name}
                             </span>
                             <motion.span 
-                              whileHover={{ scale: 1.18, rotate: [0, -4, 4, 0] }}
-                              className={`text-xs font-extrabold px-2.5 py-0.5 rounded-lg border self-start sm:self-auto ${badgeClass}`}
+                              whileHover={{ scale: 1.25, rotate: [0, -5, 5, 0] }}
+                              className={`text-xs font-black px-2.5 py-0.5 rounded-lg border self-start sm:self-auto ${badgeClass}`}
                             >
                               {category}
                             </motion.span>
@@ -1521,13 +1532,13 @@ export default function App() {
 
                           {dish.allergy && (
                             <motion.button
-                              whileHover={{ scale: 1.18, rotate: [0, -5, 5, 0] }}
-                              whileTap={{ scale: 0.82 }}
+                              whileHover={{ scale: 1.2, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 15px rgba(245, 158, 11, 0.6)" }}
+                              whileTap={{ scale: 0.8 }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy });
                               }}
-                              className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all ${
+                              className={`text-xs font-extrabold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all ${
                                 isDarkMode 
                                   ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-amber-500/50 hover:text-amber-400' 
                                   : 'bg-white border-slate-200 text-slate-500 hover:border-amber-500/50 hover:text-amber-700 shadow-sm'
@@ -1542,7 +1553,7 @@ export default function App() {
                     })}
                   </motion.div>
                 ) : (
-                  <div className={`p-12 rounded-2xl text-center text-sm font-semibold ${
+                  <div className={`p-12 rounded-2xl text-center text-sm font-extrabold ${
                     isDarkMode ? 'bg-neutral-950/60 text-neutral-400' : 'bg-slate-50 text-slate-500'
                   }`}>
                     급식 정보가 없습니다. (오늘 휴교이거나 NEIS 점검 중!)
@@ -1554,24 +1565,24 @@ export default function App() {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 20, delay: 0.08 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 18, delay: 0.08 }}
                     className={`mt-6 p-4 rounded-2xl border ${
                       isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                      <span className="text-xs sm:text-sm font-black flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
                         <span>🍱 실시간 급식 도파민 평가</span>
                         {totalVotes > 0 && (
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black shadow-md shadow-purple-500/20">
                             {totalVotes}명 참전
                           </span>
                         )}
                       </span>
                       {!isToday ? (
-                        <span className="text-[11px] text-amber-500 font-bold">오늘 급식만 참여 가능</span>
+                        <span className="text-[11px] text-amber-500 font-black">오늘 급식만 참여 가능</span>
                       ) : userVotedRating ? (
-                        <span className="text-xs text-emerald-500 font-bold">✓ 투표 완료</span>
+                        <span className="text-xs text-emerald-400 font-black">✓ 투표 완료</span>
                       ) : null}
                     </div>
 
@@ -1585,21 +1596,21 @@ export default function App() {
                         return (
                           <motion.button
                             key={opt.label}
-                            whileHover={!isDisabled ? { scale: 1.22, rotate: [0, -6, 6, 0], transition: { type: "spring", stiffness: 550 } } : {}}
-                            whileTap={!isDisabled ? { scale: 0.8 } : {}}
+                            whileHover={!isDisabled ? { scale: 1.25, rotate: [0, -8, 8, 0], transition: { type: "spring", stiffness: 600 } } : {}}
+                            whileTap={!isDisabled ? { scale: 0.75 } : {}}
                             onClick={() => handleVoteRating(opt.label)}
                             disabled={isDisabled}
-                            className={`px-1 py-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-colors min-w-0 shadow-sm ${
+                            className={`px-1 py-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
                               isSelected 
-                                ? 'ring-2 ring-blue-500 border-blue-500 font-black shadow-blue-500/20' 
+                                ? 'ring-2 ring-purple-500 border-purple-500 font-black shadow-xl shadow-purple-500/30' 
                                 : opt.color
                             } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
-                            <IconComponent className="w-4.5 h-4.5 shrink-0" />
-                            <span className="text-[10px] sm:text-[11px] font-bold leading-none whitespace-nowrap tracking-tighter">
+                            <IconComponent className="w-5 h-5 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] font-black leading-none whitespace-nowrap tracking-tighter">
                               {opt.label}
                             </span>
-                            <span className="text-[9px] sm:text-[10px] font-extrabold opacity-75">{count}</span>
+                            <span className="text-[9px] sm:text-[10px] font-black opacity-80">{count}</span>
                           </motion.button>
                         );
                       })}
@@ -1610,27 +1621,27 @@ export default function App() {
 
               <div className="mt-6 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
                 <motion.button
-                  whileHover={{ scale: 1.1, rotate: [0, -3, 3, 0] }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.12, rotate: [0, -3, 3, 0], boxShadow: "0px 0px 20px rgba(249, 115, 22, 0.6)" }}
+                  whileTap={{ scale: 0.88 }}
                   onClick={() => setShowAllergyModal(true)}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4.5 py-3 rounded-2xl font-black text-xs sm:text-sm border transition-all ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <Info className="w-4 h-4 text-orange-500 shrink-0" />
-                  <span>알러지 성분 총정리</span>
+                  <span>알러지 알잘딱 정돈</span>
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.1, rotate: [0, -3, 3, 0] }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.12, rotate: [0, -3, 3, 0], boxShadow: "0px 0px 20px rgba(59, 130, 246, 0.6)" }}
+                  whileTap={{ scale: 0.88 }}
                   onClick={loadMealData}
                   disabled={mealLoading}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4.5 py-3 rounded-2xl font-black text-xs sm:text-sm border transition-all ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' 
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
@@ -1641,13 +1652,13 @@ export default function App() {
             </motion.div>
           </TiltCard>
 
-          {/* 📚 시간표 Card (스크롤 시 상단 고정되어 추적하는 sticky top-20 z-30 self-start + 3D 파라락스 틸트) */}
+          {/* 📚 시간표 Card (스크롤 시 상단 추적 고정 sticky top-20 z-30 self-start) */}
           <div className={`lg:col-span-5 sticky top-20 z-30 self-start ${activeTab === 'schedule' ? 'block' : 'hidden md:block'}`}>
             <TiltCard>
               <motion.div 
-                initial={{ opacity: 0, scale: 0.97 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 350, damping: 22, delay: 0.05 }}
+                transition={{ type: "spring", stiffness: 380, damping: 20, delay: 0.05 }}
                 className={`p-5 sm:p-7 rounded-3xl border flex flex-col justify-between ${
                   isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
                 }`}
@@ -1658,27 +1669,27 @@ export default function App() {
                   }`}>
                     <div className="flex items-center gap-2.5">
                       <motion.div 
-                        whileHover={{ scale: 1.3, rotate: [0, -15, 15, 0] }}
+                        whileHover={{ scale: 1.35, rotate: [0, -20, 20, 0], boxShadow: "0px 0px 25px rgba(168, 85, 247, 0.9)" }}
                         whileTap={{ scale: 0.8 }}
-                        className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 cursor-pointer"
+                        className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 cursor-pointer"
                       >
                         <BookOpen className="w-5.5 h-5.5" />
                       </motion.div>
                       <div>
-                        <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          실시간 시간표 (야르)
+                        <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 bg-clip-text text-transparent">
+                          실시간 시간표 (폼미쳤다)
                         </h2>
-                        <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
-                          컴시간알리미 실시간 동기화
+                        <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
+                          컴시간알리미 실시간 연동
                         </p>
                       </div>
                     </div>
 
                     <motion.span 
-                      whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                      className="text-xs px-2.5 py-1 rounded-lg font-bold bg-blue-600 text-white shadow-sm flex items-center gap-1"
+                      whileHover={{ scale: 1.25, rotate: [0, -5, 5, 0] }}
+                      className="text-xs px-3 py-1 rounded-xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30 flex items-center gap-1"
                     >
-                      <Monitor className="w-3.5 h-3.5" /> LIVE
+                      <Monitor className="w-3.5 h-3.5 animate-pulse" /> LIVE
                     </motion.span>
                   </div>
 
@@ -1687,37 +1698,37 @@ export default function App() {
                       isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}>
                       <motion.div 
-                        animate={{ scale: [1, 1.15, 1] }}
+                        animate={{ scale: [1, 1.2, 1] }}
                         transition={{ repeat: Infinity, duration: 2 }}
-                        className="p-4 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                        className="p-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30"
                       >
                         <CheckCircle2 className="w-8 h-8" />
                       </motion.div>
                       <div>
-                        <h3 className={`font-bold text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
-                          학교 & 학년/반 1회 설정
+                        <h3 className={`font-black text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
+                          학교 & 학년/반 1회 세팅
                         </h3>
-                        <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
-                          첫 접속 시 <span className="font-bold text-blue-500">딱 1회만</span> 본인 반 설정해주시면 자동 세팅 야르!
+                        <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
+                          첫 접속 시 <span className="font-black text-purple-500">딱 1회만</span> 본인 반 세팅해두면 무한 연동 야르!
                         </p>
                       </div>
 
                       <div className="flex items-center justify-center mt-3">
                         {isDarkMode ? (
                           <motion.button
-                            whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                            whileTap={{ scale: 0.88 }}
+                            whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 25px rgba(168, 85, 247, 0.8)" }}
+                            whileTap={{ scale: 0.85 }}
                             onClick={() => confirmComciStep(1)}
-                            className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-md shadow-blue-500/25 transition-colors"
+                            className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-xl transition-all"
                           >
                             다음 단계로 <ArrowRight className="w-4 h-4" />
                           </motion.button>
                         ) : (
                           <motion.button
-                            whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                            whileTap={{ scale: 0.88 }}
+                            whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 25px rgba(168, 85, 247, 0.8)" }}
+                            whileTap={{ scale: 0.85 }}
                             onClick={() => confirmComciStep(2)}
-                            className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-md shadow-blue-500/25 transition-colors"
+                            className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-xl transition-all"
                           >
                             <Eye className="w-4 h-4" /> 화면 띄우기
                           </motion.button>
@@ -1729,25 +1740,25 @@ export default function App() {
                   {webviewStep === 1 && (
                     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/90 h-[440px] p-6 flex flex-col items-center justify-center text-center gap-4">
                       <motion.div 
-                        animate={{ rotate: [0, -10, 10, -10, 0] }}
+                        animate={{ rotate: [0, -12, 12, -12, 0] }}
                         transition={{ repeat: Infinity, duration: 2.5 }}
-                        className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                        className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30"
                       >
                         <AlertCircle className="w-8 h-8" />
                       </motion.div>
                       <div>
-                        <h3 className="font-bold text-base text-neutral-200">컴시간 다크모드 미지원 안내</h3>
-                        <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed">
+                        <h3 className="font-black text-base text-neutral-200">컴시간 다크모드 미지원 안내</h3>
+                        <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed font-semibold">
                           원본 소스가 화이트 기반이라 밝은 화면으로 보일 수 있어요!
                         </p>
                       </div>
 
                       <div className="flex items-center justify-center mt-3">
                         <motion.button
-                          whileHover={{ scale: 1.12, rotate: [0, -4, 4, 0] }}
-                          whileTap={{ scale: 0.88 }}
+                          whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0], boxShadow: "0px 0px 25px rgba(168, 85, 247, 0.8)" }}
+                          whileTap={{ scale: 0.85 }}
                           onClick={() => setWebviewStep(2)}
-                          className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-md shadow-blue-500/25 transition-colors"
+                          className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-xl transition-all"
                         >
                           <Eye className="w-4 h-4" /> 화면 띄우기
                         </motion.button>
@@ -1763,13 +1774,13 @@ export default function App() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-20 backdrop-blur-lg bg-white/50 dark:bg-neutral-900/50 flex flex-col items-center justify-center gap-3"
+                            className="absolute inset-0 z-20 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 flex flex-col items-center justify-center gap-3"
                           >
                             <div className="relative flex items-center justify-center">
-                              <div className="w-12 h-12 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin" />
-                              <Sparkles className="w-5 h-5 text-blue-600 absolute animate-pulse" />
+                              <div className="w-14 h-14 rounded-full border-4 border-purple-600/20 border-t-purple-600 animate-spin" />
+                              <Sparkles className="w-6 h-6 text-purple-600 absolute animate-pulse" />
                             </div>
-                            <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-neutral-100 drop-shadow-sm tracking-tight">
+                            <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-neutral-100 tracking-tight">
                               야르~ 시간표 로딩 중...
                             </p>
                           </motion.div>
@@ -1791,7 +1802,7 @@ export default function App() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-bold text-xs">출처: 컴시간알리미</span>
+                  <span className="font-extrabold text-xs">출처: 컴시간알리미</span>
                 </div>
               </motion.div>
             </TiltCard>
@@ -1799,7 +1810,7 @@ export default function App() {
 
         </div>
 
-        <div className="mt-8 text-center text-xs text-slate-500 flex items-center justify-center gap-1 font-medium">
+        <div className="mt-8 text-center text-xs text-slate-500 flex items-center justify-center gap-1 font-bold">
           <Info className="w-3.5 h-3.5" />
           <span>Domain: ygmhelper.xyz | YGM 전용 스마트 스쿨 도우미</span>
         </div>

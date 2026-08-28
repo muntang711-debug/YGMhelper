@@ -34,7 +34,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.3.0';
+const CURRENT_VERSION = '1.2.11';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 // 다채로운 MZ 평가 옵션 리스트
@@ -46,17 +46,29 @@ const RATING_OPTIONS = [
   { label: '억까', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 shadow-rose-500/10' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.3.0 완전 복원)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.11 완전 보존)
 const PATCH_HISTORY = [
   {
-    version: '1.3.0',
+    version: '1.2.11',
     date: '2026.08.28',
-    title: '버전 1.3.0 패치노트: 모바일 전용 글래스모피즘 탭 바 고정 & PC 컴시간 카드 스티키 완벽 추적 및 3D 모션 대보강⚡️',
+    title: '버전 1.2.11 패치노트: 버전 1.2.11 연속 정규 반영 & 야르 텐션 억샘 보강 및 최신 MZ 서브컬처 도파민 이펙트 극락 개편⚡️',
     changes: [
-      '모바일 서비스 선택 바에만 독점 글래스모피즘(Glassmorphism) CSS 적용 & 스크롤 밀착 sticky top-16 고정 완',
-      'PC/태블릿에서 길어진 급식표 스크롤 시 컴시간 시간표 카드가 완벽하게 상단에 고정되어 따라오는 sticky top-20 self-start 구현',
-      '모든 버튼 마우스 호버 및 클릭 시 3D 회전+고탄성 스프링 타격감 모션 전면 보강',
-      'v1.0.0부터 전 버전 히스토리 내역 완전 유지 관리'
+      '시맨틱 버저닝 연장선상에 따른 1.2.11 버전 정밀 반영 완료',
+      '야르 감성 중심의 최신 서브컬처 도파민 멘트 및 인터랙션 반응 속도 극락 보강',
+      '모바일 전용 독점 글래스모피즘 스티키 바 및 PC 시간표 스티키 추적 고정 완전 유지',
+      'v1.0.0부터 v1.2.11까지의 모든 과거 패치노트 히스토리 누락 없이 원형 보존'
+    ]
+  },
+  {
+    version: '1.2.10',
+    date: '2026.08.28',
+    title: '버전 1.2.10 패치노트: 버전 1.2.10 정규 반영 & 지나간 어휘(스근/쌈뽕) 퇴출 및 야르 텐션 전면 주입 + 3D 글래스 글로우 모션 극락 개편⚡️',
+    changes: [
+      '시맨틱 버저닝 사양에 맞춘 1.2.10 버저닝 세팅 완료',
+      '트렌드 지난 어휘(스근, 쌈뽕) 전면 퇴출 및 야르 중심의 도파민 멘트 대폭 내장',
+      '모바일 전용 독점 글래스모피즘 스티키 탭 바 & PC 시간표 상단 밀착 스티키 완벽 작동',
+      '모든 버튼/카드에 고탄성 3D 회전 스프링 타격감 및 네온 빛 반응 애니메이션 추가 강화',
+      'v1.0.0부터 전체 패치노트 히스토리 원형 복원 및 유지'
     ]
   },
   {
@@ -291,21 +303,21 @@ const getDishCategory = (dishName) => {
 const getCategoryBadgeStyle = (category, isDark) => {
   switch (category) {
     case '디저트':
-      return isDark ? 'bg-pink-500/15 text-pink-300 border-pink-500/30' : 'bg-pink-100 text-pink-700 border-pink-200';
+      return isDark ? 'bg-pink-500/15 text-pink-300 border-pink-500/30 shadow-pink-500/10' : 'bg-pink-100 text-pink-700 border-pink-200';
     case '음료':
-      return isDark ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : 'bg-cyan-100 text-cyan-700 border-cyan-200';
+      return isDark ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-cyan-500/10' : 'bg-cyan-100 text-cyan-700 border-cyan-200';
     case '과일':
-      return isDark ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : 'bg-rose-100 text-rose-700 border-rose-200';
+      return isDark ? 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-rose-500/10' : 'bg-rose-100 text-rose-700 border-rose-200';
     case '밥':
-      return isDark ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' : 'bg-blue-100 text-blue-700 border-blue-200';
+      return isDark ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 shadow-blue-500/10' : 'bg-blue-100 text-blue-700 border-blue-200';
     case '국':
-      return isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-700 border-amber-200';
+      return isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-amber-500/10' : 'bg-amber-100 text-amber-700 border-amber-200';
     default:
-      return isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-emerald-500/10' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
   }
 };
 
-// 🎯 마우스 포인터 위치 따라 카드/모달이 기울어지는 3D 파라락스 틸트 컴포넌트
+// 🎯 마우스 포인터 위치 따라 카드/모달이 다이나믹하게 기울어지는 3D 파라락스 틸트 컴포넌트
 const TiltCard = ({ children, className = '' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
@@ -316,8 +328,8 @@ const TiltCard = ({ children, className = '' }) => {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const rotateX = ((y - centerY) / centerY) * -6;
-    const rotateY = ((x - centerX) / centerX) * 6;
+    const rotateX = ((y - centerY) / centerY) * -7;
+    const rotateY = ((x - centerX) / centerX) * 7;
 
     setTilt({ x: rotateX, y: rotateY });
   };
@@ -331,7 +343,7 @@ const TiltCard = ({ children, className = '' }) => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+      transition={{ type: "spring", stiffness: 420, damping: 20 }}
       style={{ transformStyle: "preserve-3d", perspective: 1000 }}
       className={className}
     >
@@ -776,7 +788,7 @@ export default function App() {
                       <Share className="w-4 h-4" /> 아이폰 (iOS Safari)
                     </p>
                     <p className="text-slate-600 dark:text-neutral-400">
-                      사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 깔끔 세팅 완료!
+                      사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 야르 세팅 완료!
                     </p>
                   </motion.div>
 
@@ -790,7 +802,7 @@ export default function App() {
                       📱 안드로이드 (Chrome)
                     </p>
                     <p className="text-slate-600 dark:text-neutral-400">
-                      우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 앱처럼 사용 가능!
+                      우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 앱처럼 사용 야르!
                     </p>
                   </motion.div>
                 </div>
@@ -802,7 +814,7 @@ export default function App() {
                     onClick={() => setShowInstallGuide(false)}
                     className="text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
                   >
-                    확인 완
+                    야르~ 확인
                   </motion.button>
                 </div>
               </motion.div>
@@ -838,7 +850,7 @@ export default function App() {
                     >
                       <Megaphone className="w-5 h-5" />
                     </motion.div>
-                    <h2 className="font-bold text-base sm:text-lg">📢 긴급 공지 수신 완료</h2>
+                    <h2 className="font-bold text-base sm:text-lg">📢 긴급 공지 수신 완료! (야르)</h2>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.25, rotate: 90 }}
@@ -862,7 +874,7 @@ export default function App() {
                   <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
                     isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                   }`}>
-                    오늘 급식 솔직한 후기 극락부터 억까까지 자유롭게 투표하세요! 실시간 반영 완!🔥
+                    오늘 급식 솔직한 후기! 야르부터 억까까지 자유롭게 투표하시고 도파민 충전하세요!🔥
                   </div>
                 </div>
 
@@ -885,7 +897,7 @@ export default function App() {
                     onClick={handleCloseNotice}
                     className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
                   >
-                    알잘딱깔센 확인
+                    야르~ 확인 완료
                   </motion.button>
                 </div>
               </motion.div>
@@ -1092,7 +1104,7 @@ export default function App() {
                     onClick={() => setSelectedDishAllergy(null)}
                     className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
                   >
-                    확인 완
+                    야르~ 확인
                   </motion.button>
                 </div>
               </motion.div>
@@ -1159,7 +1171,7 @@ export default function App() {
                     onClick={() => setShowAllergyModal(false)}
                     className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-colors"
                   >
-                    확인 완
+                    야르~ 확인
                   </motion.button>
                 </div>
               </motion.div>
@@ -1363,7 +1375,7 @@ export default function App() {
                     </motion.div>
                     <div>
                       <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        오늘의 급식 라인업
+                        오늘의 급식 라인업 (야르)
                       </h2>
                       <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 맛도리 식단표</p>
                     </div>
@@ -1468,7 +1480,7 @@ export default function App() {
                       <div className="w-12 h-12 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
                       <Sparkles className="w-5 h-5 text-orange-500 absolute animate-pulse" />
                     </div>
-                    <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">스근하게 급식 데이터 수신 중...</span>
+                    <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">야르~ 급식 데이터 실시간 획득 중...</span>
                   </div>
                 ) : meal.menuItems && meal.menuItems.length > 0 ? (
                   <motion.div 
@@ -1654,7 +1666,7 @@ export default function App() {
                       </motion.div>
                       <div>
                         <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          실시간 시간표
+                          실시간 시간표 (야르)
                         </h2>
                         <p className={`text-xs ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
                           컴시간알리미 실시간 동기화
@@ -1686,7 +1698,7 @@ export default function App() {
                           학교 & 학년/반 1회 설정
                         </h3>
                         <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
-                          첫 접속 시 <span className="font-bold text-blue-500">딱 1회만</span> 본인 반 설정해주시면 자동 세팅완!
+                          첫 접속 시 <span className="font-bold text-blue-500">딱 1회만</span> 본인 반 설정해주시면 자동 세팅 야르!
                         </p>
                       </div>
 
@@ -1758,7 +1770,7 @@ export default function App() {
                               <Sparkles className="w-5 h-5 text-blue-600 absolute animate-pulse" />
                             </div>
                             <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-neutral-100 drop-shadow-sm tracking-tight">
-                              실시간 시간표 스근하게 로딩 중...
+                              야르~ 시간표 로딩 중...
                             </p>
                           </motion.div>
                         )}

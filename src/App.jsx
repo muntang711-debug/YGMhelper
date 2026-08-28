@@ -33,19 +33,29 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.1';
+const CURRENT_VERSION = '1.2.2';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 const RATING_OPTIONS = [
-  { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
-  { label: '야르', icon: ThumbsUp, color: 'text-blue-500 border-blue-500/30 bg-blue-500/10' },
-  { label: '먹을만함', icon: Smile, color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' },
-  { label: '그저그런', icon: Meh, color: 'text-slate-500 border-slate-500/30 bg-slate-500/10' },
-  { label: '맛없음', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10' }
+  { label: '야르킁킁', icon: Flame, color: 'text-amber-500 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 shadow-amber-500/10' },
+  { label: '야르', icon: ThumbsUp, color: 'text-blue-500 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 shadow-blue-500/10' },
+  { label: '먹을만함', icon: Smile, color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-emerald-500/10' },
+  { label: '그저그런', icon: Meh, color: 'text-slate-500 border-slate-500/30 bg-slate-500/10 hover:bg-slate-500/20 shadow-slate-500/10' },
+  { label: '맛없음', icon: Frown, color: 'text-rose-500 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 shadow-rose-500/10' }
 ];
 
 // 패치노트 전체 히스토리 데이터베이스
 const PATCH_HISTORY = [
+  {
+    version: '1.2.2',
+    date: '2026.08.28',
+    title: '버전 1.2.2 업데이트: framer-motion 기반 인터랙티브 모션 UI 전면 개편 및 쌈뽕한 스프링/3D 효과 적용',
+    changes: [
+      '모든 모달 및 카드 인터랙션에 고탄성 3D 스프링 모션 적용',
+      '급식 카드, 평가 버튼, 헤더 로고 등에 생동감 넘치는 호버/클릭 마이크로 인터랙션 구축',
+      '순차적 팝업 스프링 및 다이내믹 호버 이펙트 추가'
+    ]
+  },
   {
     version: '1.2.1',
     date: '2026.08.28',
@@ -242,26 +252,28 @@ const getCategoryBadgeStyle = (category, isDark) => {
   }
 };
 
-// Framer Motion 애니메이션 Variants 정의
+// 쌈뽕한 스프링 & 3D Framer Motion Variants
 const modalOverlayVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.15 } }
+  visible: { opacity: 1, transition: { duration: 0.25 } },
+  exit: { opacity: 0, transition: { duration: 0.18 } }
 };
 
 const modalContentVariants = {
-  hidden: { opacity: 0, scale: 0.92, y: 15 },
+  hidden: { opacity: 0, scale: 0.75, y: 40, rotateX: 18 },
   visible: { 
     opacity: 1, 
     scale: 1, 
     y: 0,
-    transition: { type: "spring", stiffness: 420, damping: 28 } 
+    rotateX: 0,
+    transition: { type: "spring", stiffness: 380, damping: 22 } 
   },
   exit: { 
     opacity: 0, 
-    scale: 0.94, 
-    y: 10, 
-    transition: { duration: 0.15 } 
+    scale: 0.8, 
+    y: 25, 
+    rotateX: -10,
+    transition: { duration: 0.18 } 
   }
 };
 
@@ -269,13 +281,13 @@ const listContainerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 }
+    transition: { staggerChildren: 0.06, delayChildren: 0.02 }
   }
 };
 
 const listItemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } }
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 360, damping: 22 } }
 };
 
 export default function App() {
@@ -605,7 +617,7 @@ export default function App() {
   const totalVotes = Object.values(ratings).reduce((acc, curr) => acc + curr, 0);
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative ${
+    <div className={`min-h-screen transition-colors duration-300 selection:bg-blue-500 selection:text-white relative ${
       isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
     }`}>
       <style>{`
@@ -642,7 +654,7 @@ export default function App() {
               animate="visible"
               exit="exit"
               className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
-                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100 shadow-blue-500/5' : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
               }`}
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
@@ -653,8 +665,8 @@ export default function App() {
                   <h2 className="font-bold text-base">YGMhelper 앱 설치 방법</h2>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={() => setShowInstallGuide(false)}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
@@ -688,10 +700,10 @@ export default function App() {
 
               <div className="pt-4 mt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowInstallGuide(false)}
-                  className="text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                  className="text-sm px-4 py-2 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-colors"
                 >
                   확인
                 </motion.button>
@@ -715,7 +727,7 @@ export default function App() {
               animate="visible"
               exit="exit"
               className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
-                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100 shadow-blue-500/5' : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
               }`}
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
@@ -726,8 +738,8 @@ export default function App() {
                   <h2 className="font-bold text-base sm:text-lg">서비스 공지사항</h2>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={handleCloseNotice}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                   title="닫기"
@@ -765,10 +777,10 @@ export default function App() {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleCloseNotice}
-                  className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                  className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-colors"
                 >
                   확인
                 </motion.button>
@@ -792,7 +804,7 @@ export default function App() {
               animate="visible"
               exit="exit"
               className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-3xl border shadow-2xl relative flex flex-col justify-between ${
-                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100 shadow-purple-500/5' : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
               }`}
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-3 shrink-0">
@@ -803,8 +815,8 @@ export default function App() {
                   <h2 className="font-bold text-base sm:text-lg">패치노트 히스토리</h2>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={handleClosePatch}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                   title="닫기"
@@ -820,12 +832,12 @@ export default function App() {
                   {PATCH_HISTORY.map((patch) => (
                     <motion.button
                       key={patch.version}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: 1.04, x: 2 }}
+                      whileTap={{ scale: 0.96 }}
                       onClick={() => setSelectedPatchVersion(patch.version)}
                       className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
                         selectedPatchVersion === patch.version
-                          ? 'bg-blue-600 text-white shadow-md'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
                           : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
                       }`}
                     >
@@ -848,9 +860,9 @@ export default function App() {
                     return (
                       <motion.div 
                         key={patch.version}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2 }}
+                        initial={{ opacity: 0, x: 15, scale: 0.98 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         className="space-y-3 pr-1"
                       >
                         <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
@@ -890,10 +902,10 @@ export default function App() {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleClosePatch}
-                  className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                  className="text-xs sm:text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-colors"
                 >
                   닫기
                 </motion.button>
@@ -917,7 +929,7 @@ export default function App() {
               animate="visible"
               exit="exit"
               className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
-                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100 shadow-amber-500/5' : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
               }`}
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
@@ -931,8 +943,8 @@ export default function App() {
                   </div>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={() => setSelectedDishAllergy(null)}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
@@ -950,9 +962,9 @@ export default function App() {
                     return (
                       <motion.div 
                         key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03 }}
+                        initial={{ opacity: 0, x: -15, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 450, damping: 22, delay: idx * 0.03 }}
                         className={`p-3 rounded-2xl border font-bold text-sm flex items-center gap-3 ${
                           isDarkMode ? 'bg-neutral-950 border-neutral-800 text-amber-400' : 'bg-amber-50/80 border-amber-200 text-amber-900'
                         }`}
@@ -968,10 +980,10 @@ export default function App() {
 
               <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedDishAllergy(null)}
-                  className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                  className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-colors"
                 >
                   확인
                 </motion.button>
@@ -995,7 +1007,7 @@ export default function App() {
               animate="visible"
               exit="exit"
               className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative ${
-                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+                isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100 shadow-orange-500/5' : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
               }`}
             >
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
@@ -1006,8 +1018,8 @@ export default function App() {
                   <h2 className="font-bold text-base">전체 알러지 목록 (NEIS 기준)</h2>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={() => setShowAllergyModal(false)}
                   className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
@@ -1017,20 +1029,26 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-2 text-xs font-semibold py-2 max-h-[320px] overflow-y-auto">
                 {ALLERGY_LIST.map((item, idx) => (
-                  <div key={idx} className={`p-2.5 rounded-xl border ${
-                    isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                  }`}>
+                  <motion.div 
+                    key={idx}
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20, delay: idx * 0.015 }}
+                    className={`p-2.5 rounded-xl border ${
+                      isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                    }`}
+                  >
                     {item}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
               <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowAllergyModal(false)}
-                  className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+                  className="text-sm px-4 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-colors"
                 >
                   확인
                 </motion.button>
@@ -1046,14 +1064,18 @@ export default function App() {
       }`}>
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <motion.div 
-            initial={{ opacity: 0, x: -15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, x: -20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 350, damping: 20 }}
             className="flex items-center gap-2.5"
           >
-            <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md">
+            <motion.div 
+              whileHover={{ rotate: [0, -12, 12, -6, 0], scale: 1.12 }}
+              transition={{ duration: 0.4 }}
+              className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30 cursor-pointer"
+            >
               <GraduationCap className="w-5.5 h-5.5" />
-            </div>
+            </motion.div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className={`font-bold text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -1071,10 +1093,10 @@ export default function App() {
           <div className="flex items-center gap-2">
             {!isStandalone && (
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={handleInstallClick}
-                className="p-2.5 rounded-xl border flex items-center justify-center bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all"
+                className="p-2.5 rounded-xl border flex items-center justify-center bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/25 transition-all"
                 title="앱으로 설치하기"
               >
                 <Download className="w-4.5 h-4.5" />
@@ -1082,8 +1104,8 @@ export default function App() {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.1, rotate: 15 }}
+              whileTap={{ scale: 0.9 }}
               onClick={toggleDarkMode}
               className={`p-2.5 rounded-xl border transition-all ${
                 isDarkMode 
@@ -1097,8 +1119,8 @@ export default function App() {
 
             <div className="relative" ref={menuRef}>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setIsMenuOpen((prev) => !prev)}
                 className={`p-2.5 rounded-xl border flex items-center gap-1 transition-all ${
                   isDarkMode 
@@ -1107,21 +1129,23 @@ export default function App() {
                 }`}
                 title="메뉴 열기"
               >
-                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-300 ${isMenuOpen ? 'rotate-180 text-blue-500' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
                 {isMenuOpen && (
                   <motion.div 
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    initial={{ opacity: 0, y: -10, scale: 0.88 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.88 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 25 }}
                     className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl p-1.5 z-50 ${
-                      isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'bg-white border-slate-200 text-slate-800'
+                      isDarkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-200 shadow-neutral-950/80' : 'bg-white border-slate-200 text-slate-800 shadow-slate-300/60'
                     }`}
                   >
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.03, x: 3 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={openNoticeModal}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
                         isDarkMode ? 'hover:bg-neutral-800 text-neutral-200' : 'hover:bg-slate-100 text-slate-700'
@@ -1129,9 +1153,11 @@ export default function App() {
                     >
                       <Megaphone className="w-4 h-4 text-blue-500" />
                       <span>공지사항</span>
-                    </button>
+                    </motion.button>
 
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.03, x: 3 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={openPatchModal}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
                         isDarkMode ? 'hover:bg-neutral-800 text-purple-400' : 'hover:bg-slate-100 text-slate-700'
@@ -1139,7 +1165,7 @@ export default function App() {
                     >
                       <FileText className="w-4 h-4 text-purple-500" />
                       <span>패치노트</span>
-                    </button>
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1155,10 +1181,10 @@ export default function App() {
             ? 'bg-neutral-900 border-neutral-800' 
             : 'bg-slate-200/80 border-slate-300/60'
         }`}>
-          {/* Framer Motion layoutId 슬라이더 */}
+          {/* Dynamic Motion Layout Slider */}
           <motion.div 
             layout
-            transition={{ type: "spring", stiffness: 450, damping: 32 }}
+            transition={{ type: "spring", stiffness: 500, damping: 32 }}
             className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-md ${
               activeTab === 'meal' ? 'left-1.5' : 'left-[calc(50%+0.1875rem)]'
             } ${
@@ -1195,9 +1221,9 @@ export default function App() {
           
           {/* 🍽️ 급식표 Card */}
           <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 22 }}
             className={`p-5 sm:p-6 rounded-3xl border flex flex-col justify-between ${
               activeTab === 'meal' ? 'block' : 'hidden md:block'
             } ${
@@ -1209,9 +1235,12 @@ export default function App() {
                 isDarkMode ? 'border-neutral-800' : 'border-slate-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600">
+                  <motion.div 
+                    whileHover={{ scale: 1.15, rotate: 10 }}
+                    className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600"
+                  >
                     <Utensils className="w-5.5 h-5.5" />
-                  </div>
+                  </motion.div>
                   <div>
                     <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       오늘의 급식
@@ -1224,9 +1253,11 @@ export default function App() {
               <div className={`p-3 rounded-2xl border mb-3 flex items-center justify-between gap-2 ${
                 isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
               }`}>
-                <div 
+                <motion.div 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={openDatePicker}
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none flex-wrap"
+                  className="flex items-center gap-2 cursor-pointer select-none flex-wrap"
                 >
                   <CalendarIcon className="w-5 h-5 shrink-0 text-blue-500" />
                   <span className={`text-sm sm:text-base font-bold tracking-tight ${
@@ -1247,12 +1278,12 @@ export default function App() {
                     onChange={handleDateSelect}
                     className="sr-only"
                   />
-                </div>
+                </motion.div>
 
                 <div className="flex items-center gap-1.5">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
                     onClick={resetToToday}
                     className={`text-xs sm:text-sm px-3 py-2 rounded-xl font-bold border transition-colors ${
                       isDarkMode 
@@ -1264,8 +1295,8 @@ export default function App() {
                     오늘
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.1, x: -2 }}
+                    whileTap={{ scale: 0.88 }}
                     onClick={() => changeDate(-1)}
                     className={`p-2 rounded-xl border transition-colors ${
                       isDarkMode 
@@ -1277,8 +1308,8 @@ export default function App() {
                     <ChevronLeft className="w-4 h-4" />
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.1, x: 2 }}
+                    whileTap={{ scale: 0.88 }}
                     onClick={() => changeDate(1)}
                     className={`p-2 rounded-xl border transition-colors ${
                       isDarkMode 
@@ -1297,11 +1328,16 @@ export default function App() {
                   <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
                     선택한 날짜 총 칼로리
                   </span>
-                  <span className={`text-xs sm:text-sm px-3 py-1 rounded-full font-bold ${
-                    isDarkMode ? 'bg-neutral-800 text-orange-400' : 'bg-orange-100 text-orange-800 border border-orange-200'
-                  }`}>
+                  <motion.span 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                    className={`text-xs sm:text-sm px-3 py-1 rounded-full font-bold ${
+                      isDarkMode ? 'bg-neutral-800 text-orange-400' : 'bg-orange-100 text-orange-800 border border-orange-200'
+                    }`}
+                  >
                     {meal.calories}
-                  </span>
+                  </motion.span>
                 </div>
               )}
 
@@ -1328,11 +1364,11 @@ export default function App() {
                       <motion.div
                         key={idx}
                         variants={listItemVariants}
-                        whileHover={{ scale: 1.01, x: 2 }}
-                        className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-sm transition-all ${
+                        whileHover={{ scale: 1.02, x: 4, transition: { type: "spring", stiffness: 400 } }}
+                        className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-sm transition-colors ${
                           isDarkMode 
-                            ? 'bg-neutral-950/80 border-neutral-800/80' 
-                            : 'bg-slate-50 border-slate-200/80'
+                            ? 'bg-neutral-950/80 border-neutral-800/80 hover:border-neutral-700' 
+                            : 'bg-slate-50 border-slate-200/80 hover:border-slate-300'
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
@@ -1348,8 +1384,8 @@ export default function App() {
 
                         {dish.allergy && (
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.1, y: -1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })}
                             className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all ${
                               isDarkMode 
@@ -1376,9 +1412,9 @@ export default function App() {
               {/* 🗳️ 급식 평가 섹션 */}
               {isWithin7Days && (
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1, duration: 0.25 }}
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 20, delay: 0.1 }}
                   className={`mt-5 p-3.5 sm:p-4 rounded-2xl border ${
                     isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
                   }`}
@@ -1409,13 +1445,13 @@ export default function App() {
                       return (
                         <motion.button
                           key={opt.label}
-                          whileHover={!isDisabled ? { scale: 1.06, y: -2 } : {}}
-                          whileTap={!isDisabled ? { scale: 0.88 } : {}}
+                          whileHover={!isDisabled ? { scale: 1.12, y: -4, transition: { type: "spring", stiffness: 400 } } : {}}
+                          whileTap={!isDisabled ? { scale: 0.85 } : {}}
                           onClick={() => handleVoteRating(opt.label)}
                           disabled={isDisabled}
-                          className={`px-1 py-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-colors min-w-0 ${
+                          className={`px-1 py-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-colors min-w-0 shadow-sm ${
                             isSelected 
-                              ? 'ring-2 ring-blue-500 border-blue-500 font-black' 
+                              ? 'ring-2 ring-blue-500 border-blue-500 font-black shadow-blue-500/20' 
                               : opt.color
                           } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
@@ -1434,8 +1470,8 @@ export default function App() {
 
             <div className="mt-5 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
               <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowAllergyModal(true)}
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
                   isDarkMode 
@@ -1448,8 +1484,8 @@ export default function App() {
               </motion.button>
 
               <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={loadMealData}
                 disabled={mealLoading}
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm border transition-colors ${
@@ -1466,9 +1502,9 @@ export default function App() {
 
           {/* 📚 시간표 Card */}
           <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.05 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 22, delay: 0.05 }}
             className={`p-5 sm:p-6 rounded-3xl border flex flex-col justify-between ${
               activeTab === 'schedule' ? 'block' : 'hidden md:block'
             } ${
@@ -1480,9 +1516,12 @@ export default function App() {
                 isDarkMode ? 'border-neutral-800' : 'border-slate-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
+                  <motion.div 
+                    whileHover={{ scale: 1.15, rotate: -10 }}
+                    className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600"
+                  >
                     <BookOpen className="w-5.5 h-5.5" />
-                  </div>
+                  </motion.div>
                   <div>
                     <h2 className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                       실시간 시간표
@@ -1517,19 +1556,19 @@ export default function App() {
                   <div className="flex items-center justify-center mt-3">
                     {isDarkMode ? (
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                        whileTap={{ scale: 0.92 }}
                         onClick={() => confirmComciStep(1)}
-                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-colors"
                       >
                         다음으로 <ArrowRight className="w-4 h-4" />
                       </motion.button>
                     ) : (
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                        whileTap={{ scale: 0.92 }}
                         onClick={() => confirmComciStep(2)}
-                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                        className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-colors"
                       >
                         <Eye className="w-4 h-4" /> 표시하기
                       </motion.button>
@@ -1552,10 +1591,10 @@ export default function App() {
 
                   <div className="flex items-center justify-center mt-3">
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                      whileTap={{ scale: 0.92 }}
                       onClick={() => setWebviewStep(2)}
-                      className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm transition-colors"
+                      className="text-sm px-5 py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-colors"
                     >
                       <Eye className="w-4 h-4" /> 표시하기
                     </motion.button>

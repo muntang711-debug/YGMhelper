@@ -36,20 +36,31 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.14';
+const CURRENT_VERSION = '1.2.15';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
-// 극락의 최신 도파민 MZ 평가 옵션 리스트
+// 극락의 최신 도파민 MZ 평가 옵션 리스트 (라이트/다크 시인성 완벽 대응)
 const RATING_OPTIONS = [
-  { label: 'GOAT야르', icon: Crown, color: 'text-amber-300 border-amber-400/60 bg-gradient-to-r from-amber-500/30 via-orange-500/30 to-yellow-500/30 hover:from-amber-500/50 shadow-xl shadow-amber-500/30 ring-1 ring-amber-400/40' },
-  { label: '도파민극락', icon: Flame, color: 'text-pink-300 border-pink-400/60 bg-gradient-to-r from-pink-500/30 to-rose-500/30 hover:from-pink-500/50 shadow-xl shadow-pink-500/30 ring-1 ring-pink-400/40' },
-  { label: '알잘딱', icon: ThumbsUp, color: 'text-cyan-300 border-cyan-400/60 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 hover:from-cyan-500/50 shadow-xl shadow-cyan-500/30 ring-1 ring-cyan-400/40' },
-  { label: '음...', icon: Meh, color: 'text-slate-300 border-slate-500/50 bg-slate-800/60 hover:bg-slate-700/70 shadow-md ring-1 ring-slate-600/40' },
-  { label: '억까임', icon: Frown, color: 'text-rose-300 border-rose-400/60 bg-gradient-to-r from-rose-500/30 to-red-600/30 hover:from-rose-500/50 shadow-xl shadow-rose-500/30 ring-1 ring-rose-400/40' }
+  { label: 'GOAT야르', icon: Crown, color: 'text-amber-800 dark:text-amber-300 border-amber-400/80 bg-gradient-to-r from-amber-400/20 via-orange-400/20 to-yellow-400/20 dark:from-amber-500/30 dark:via-orange-500/30 dark:to-yellow-500/30 hover:from-amber-500/40 shadow-xl shadow-amber-500/20 ring-1 ring-amber-400/50' },
+  { label: '도파민극락', icon: Flame, color: 'text-pink-800 dark:text-pink-300 border-pink-400/80 bg-gradient-to-r from-pink-400/20 to-rose-400/20 dark:from-pink-500/30 dark:to-rose-500/30 hover:from-pink-500/40 shadow-xl shadow-pink-500/20 ring-1 ring-pink-400/50' },
+  { label: '알잘딱', icon: ThumbsUp, color: 'text-cyan-800 dark:text-cyan-300 border-cyan-400/80 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 dark:from-cyan-500/30 dark:to-blue-500/30 hover:from-cyan-500/40 shadow-xl shadow-cyan-500/20 ring-1 ring-cyan-400/50' },
+  { label: '음...', icon: Meh, color: 'text-slate-800 dark:text-slate-200 border-slate-400/80 bg-slate-200/90 dark:bg-slate-800/60 hover:bg-slate-300 dark:hover:bg-slate-700/70 shadow-md ring-1 ring-slate-400/50' },
+  { label: '억까임', icon: Frown, color: 'text-rose-800 dark:text-rose-300 border-rose-400/80 bg-gradient-to-r from-rose-400/20 to-red-500/20 dark:from-rose-500/30 dark:to-red-600/30 hover:from-rose-500/40 shadow-xl shadow-rose-500/20 ring-1 ring-rose-400/50' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.14 완전 보존)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.15 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.15',
+    date: '2026.08.28',
+    title: '버전 1.2.15 패치노트: 라이트/다크 모드 급식 평가 버튼 시인성(텍스트/아이콘 명도 대비) 정밀 교정 패치⚡️',
+    changes: [
+      '라이트 모드에서 급식 평가 버튼(GOAT야르, 도파민극락, 알잘딱, 음..., 억까임)의 글씨와 아이콘이 하얗게 날아가던 가시성 버그 완전 해결',
+      '라이트 모드/다크 모드 각각에 최적화된 고대비 컬러 매핑(text-*-800 dark:text-*-300) 적용으로 가독성 극대화',
+      '800Hz 고탄성 타격감 및 버튼 1:1 레이아웃 구조 완벽 유지',
+      'v1.0.0부터 v1.2.15까지 단 하나도 누락 없는 패치 히스토리 보존'
+    ]
+  },
   {
     version: '1.2.14',
     date: '2026.08.28',
@@ -374,7 +385,6 @@ const TiltCard = ({ children, className = '' }) => {
   };
 
   const handleMouseReset = () => {
-    // 800Hz 초고속 스프링으로 지연 없이 무중력 원위치 복귀
     setTilt({ x: 0, y: 0 });
   };
 
@@ -808,7 +818,7 @@ export default function App() {
                     >
                       <Download className="w-5 h-5 animate-pulse" />
                     </motion.div>
-                    <h2 className="font-black text-base bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">📲 YGMhelper 앱 설치 폼미쳤다!</h2>
+                    <h2 className="font-black text-base bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">📲 YGMhelper 앱 설치 폼미쳤다!</h2>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.3, rotate: 90 }}
@@ -828,10 +838,10 @@ export default function App() {
                       isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <p className="font-extrabold text-blue-400 flex items-center gap-1.5 mb-1">
+                    <p className="font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mb-1">
                       <Share className="w-4 h-4" /> 아이폰 (iOS Safari)
                     </p>
-                    <p className="text-slate-600 dark:text-neutral-400">
+                    <p className="text-slate-700 dark:text-neutral-400">
                       사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 야르 극락 세팅 완료!
                     </p>
                   </motion.div>
@@ -843,10 +853,10 @@ export default function App() {
                       isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <p className="font-extrabold text-emerald-400 flex items-center gap-1.5 mb-1">
+                    <p className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1">
                       📱 안드로이드 (Chrome)
                     </p>
-                    <p className="text-slate-600 dark:text-neutral-400">
+                    <p className="text-slate-700 dark:text-neutral-400">
                       우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 도파민 앱 생성 야르!
                     </p>
                   </motion.div>
@@ -896,7 +906,7 @@ export default function App() {
                     >
                       <Megaphone className="w-5 h-5" />
                     </motion.div>
-                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">📢 초긴급 도파민 공지! (GOAT)</h2>
+                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-400 dark:via-pink-400 dark:to-rose-400 bg-clip-text text-transparent">📢 초긴급 도파민 공지! (GOAT)</h2>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.3, rotate: 90 }}
@@ -975,7 +985,7 @@ export default function App() {
                     <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl shadow-indigo-500/40">
                       <FileText className="w-5 h-5 animate-pulse" />
                     </div>
-                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">📜 폼 미친 패치노트 히스토리</h2>
+                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">📜 폼 미친 패치노트 히스토리</h2>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.3, rotate: 90 }}
@@ -989,7 +999,7 @@ export default function App() {
 
                 <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
                   <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
-                    <div className="hidden sm:block my-1 text-[11px] font-black text-purple-400 uppercase tracking-wider px-2 shrink-0">버전 히스토리</div>
+                    <div className="hidden sm:block my-1 text-[11px] font-black text-purple-500 dark:text-purple-400 uppercase tracking-wider px-2 shrink-0">버전 히스토리</div>
 
                     {PATCH_HISTORY.map((patch) => (
                       <motion.button
@@ -1029,7 +1039,7 @@ export default function App() {
                           className="space-y-3 pr-1"
                         >
                           <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
-                            <h3 className="font-black text-sm sm:text-base text-purple-400">
+                            <h3 className="font-black text-sm sm:text-base text-purple-600 dark:text-purple-400">
                               {patch.title}
                             </h3>
                             <span className="text-xs text-slate-400 font-bold shrink-0">{patch.date}</span>
@@ -1038,8 +1048,8 @@ export default function App() {
                           <div className={`p-4 rounded-2xl border text-xs sm:text-sm font-medium ${
                             isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                           }`}>
-                            <p className="font-extrabold text-xs text-purple-400 mb-2 flex items-center gap-1">
-                              <Zap className="w-3.5 h-3.5 fill-purple-400" /> 도파민 패치 핵심 요약
+                            <p className="font-extrabold text-xs text-purple-600 dark:text-purple-400 mb-2 flex items-center gap-1">
+                              <Zap className="w-3.5 h-3.5 fill-purple-600 dark:fill-purple-400" /> 도파민 패치 핵심 요약
                             </p>
                             <ul className="list-disc list-inside space-y-1.5 pl-1">
                               {patch.changes.map((change, idx) => (
@@ -1107,7 +1117,7 @@ export default function App() {
                     </div>
                     <div>
                       <h2 className="font-extrabold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
-                      <p className="text-xs text-amber-400 font-bold">알러지 요소 정밀 체크</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-bold">알러지 요소 정밀 체크</p>
                     </div>
                   </div>
                   <motion.button
@@ -1186,7 +1196,7 @@ export default function App() {
                     <div className="p-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40">
                       <Info className="w-5 h-5 animate-pulse" />
                     </div>
-                    <h2 className="font-extrabold text-base bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">전체 알러지 성분 알잘딱 정리</h2>
+                    <h2 className="font-extrabold text-base bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent">전체 알러지 성분 알잘딱 정리</h2>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.3, rotate: 90 }}
@@ -1252,7 +1262,7 @@ export default function App() {
             </motion.div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-lg tracking-tight bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="font-black text-lg tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
                   YGMhelper
                 </h1>
                 <motion.span 
@@ -1308,7 +1318,7 @@ export default function App() {
                 }`}
                 title="메뉴 열기"
               >
-                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-purple-400' : ''}`} />
+                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-purple-500 dark:text-purple-400' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
@@ -1331,7 +1341,7 @@ export default function App() {
                         isDarkMode ? 'hover:bg-neutral-800 text-neutral-200' : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <Megaphone className="w-4 h-4 text-purple-400" />
+                      <Megaphone className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       <span>공지사항</span>
                     </motion.button>
 
@@ -1344,7 +1354,7 @@ export default function App() {
                         isDarkMode ? 'hover:bg-neutral-800 text-pink-400' : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <FileText className="w-4 h-4 text-pink-400" />
+                      <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
                       <span>패치노트</span>
                     </motion.button>
                   </motion.div>
@@ -1430,7 +1440,7 @@ export default function App() {
                       <Utensils className="w-5.5 h-5.5 animate-pulse" />
                     </motion.div>
                     <div>
-                      <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent">
+                      <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-400 dark:via-amber-400 dark:to-yellow-400 bg-clip-text text-transparent">
                         지리는 급식 라인업 (GOAT야르)
                       </h2>
                       <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 극락 맛도리 식단표</p>
@@ -1448,7 +1458,7 @@ export default function App() {
                     onClick={openDatePicker}
                     className="flex items-center gap-2 cursor-pointer select-none flex-wrap"
                   >
-                    <CalendarIcon className="w-5 h-5 shrink-0 text-purple-400 animate-pulse" />
+                    <CalendarIcon className="w-5 h-5 shrink-0 text-purple-600 dark:text-purple-400 animate-pulse" />
                     <span className={`text-sm sm:text-base font-black tracking-tight ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
@@ -1538,7 +1548,7 @@ export default function App() {
                       <div className="w-14 h-14 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
                       <Sparkles className="w-6 h-6 text-orange-500 absolute animate-pulse" />
                     </div>
-                    <span className="text-sm font-black text-transparent bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text animate-pulse">
+                    <span className="text-sm font-black text-transparent bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text animate-pulse">
                       야르~ 급식 도파민 데이터 획득 중...
                     </span>
                   </div>
@@ -1593,7 +1603,7 @@ export default function App() {
                               className={`text-xs font-extrabold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all ${
                                 isDarkMode 
                                   ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-amber-500/60 hover:text-amber-400' 
-                                  : 'bg-white border-slate-200 text-slate-500 hover:border-amber-500/60 hover:text-amber-700 shadow-sm'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:border-amber-500/60 hover:text-amber-700 shadow-sm'
                               }`}
                               title="터치하여 알러지 성분 확인"
                             >
@@ -1619,11 +1629,11 @@ export default function App() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: "spring", stiffness: 800, damping: 22 }}
                     className={`mt-6 p-4 rounded-2xl border ${
-                      isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                      isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200/90'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs sm:text-sm font-black flex items-center gap-1.5 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                      <span className="text-xs sm:text-sm font-black flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
                         <span>🍱 실시간 급식 도파민 평가</span>
                         {totalVotes > 0 && (
                           <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black shadow-lg shadow-purple-500/30">
@@ -1632,9 +1642,9 @@ export default function App() {
                         )}
                       </span>
                       {!isToday ? (
-                        <span className="text-[11px] text-amber-500 font-black">오늘 급식만 참여 가능</span>
+                        <span className="text-[11px] text-amber-600 dark:text-amber-500 font-black">오늘 급식만 참여 가능</span>
                       ) : userVotedRating ? (
-                        <span className="text-xs text-emerald-400 font-black">✓ 투표 완료</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black">✓ 투표 완료</span>
                       ) : null}
                     </div>
 
@@ -1654,15 +1664,15 @@ export default function App() {
                             disabled={isDisabled}
                             className={`px-1 py-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
                               isSelected 
-                                ? 'ring-2 ring-purple-500 border-purple-500 font-black shadow-xl shadow-purple-500/40' 
+                                ? 'ring-2 ring-purple-600 border-purple-600 dark:ring-purple-500 dark:border-purple-500 font-black shadow-xl shadow-purple-500/40' 
                                 : opt.color
                             } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
                             <IconComponent className="w-5 h-5 shrink-0 animate-pulse" />
-                            <span className="text-[10px] sm:text-[11px] font-black leading-none whitespace-nowrap tracking-tighter">
+                            <span className="text-[10px] sm:text-[11px] font-black leading-none whitespace-nowrap tracking-tighter text-slate-900 dark:text-white">
                               {opt.label}
                             </span>
-                            <span className="text-[9px] sm:text-[10px] font-black opacity-80">{count}</span>
+                            <span className="text-[9px] sm:text-[10px] font-black opacity-90 text-slate-700 dark:text-slate-300">{count}</span>
                           </motion.button>
                         );
                       })}
@@ -1732,7 +1742,7 @@ export default function App() {
                         <BookOpen className="w-5.5 h-5.5 animate-pulse" />
                       </motion.div>
                       <div>
-                        <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
+                        <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 dark:from-purple-400 dark:via-indigo-400 dark:to-pink-400 bg-clip-text text-transparent">
                           실시간 시간표 (폼미쳤다)
                         </h2>
                         <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
@@ -1766,7 +1776,7 @@ export default function App() {
                           학교 & 학년/반 1회 세팅
                         </h3>
                         <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
-                          첫 접속 시 <span className="font-black text-purple-400">딱 1회만</span> 본인 반 세팅해두면 무한 연동 야르!
+                          첫 접속 시 <span className="font-black text-purple-600 dark:text-purple-400">딱 1회만</span> 본인 반 세팅해두면 무한 연동 야르!
                         </p>
                       </div>
 

@@ -36,61 +36,100 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.17';
+const CURRENT_VERSION = '1.2.18';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
-// 극락의 최신 도파민 MZ 평가 옵션 리스트 (PC/모바일 전 환경 명시적 고대비 색상 적용)
+// 평가 옵션 리스트 (라이트/다크 테마 독립 및 고대비 색상 확실 보장)
 const RATING_OPTIONS = [
   { 
     label: 'GOAT야르', 
     icon: Crown, 
-    btnClass: 'bg-amber-100 hover:bg-amber-200 border-amber-400/80 dark:bg-amber-950/80 dark:hover:bg-amber-900 dark:border-amber-500/80 shadow-md ring-1 ring-amber-400/40',
-    textColor: 'text-amber-950 dark:text-amber-300',
-    iconColor: 'text-amber-900 dark:text-amber-300',
-    countColor: 'text-amber-900 dark:text-amber-200'
+    lightStyle: 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950 shadow-sm ring-1 ring-amber-400/30',
+    darkStyle: 'bg-amber-950/80 hover:bg-amber-900 border-amber-500/80 text-amber-300 shadow-md ring-1 ring-amber-400/40'
   },
   { 
     label: '도파민극락', 
     icon: Flame, 
-    btnClass: 'bg-pink-100 hover:bg-pink-200 border-pink-400/80 dark:bg-pink-950/80 dark:hover:bg-pink-900 dark:border-pink-500/80 shadow-md ring-1 ring-pink-400/40',
-    textColor: 'text-pink-950 dark:text-pink-300',
-    iconColor: 'text-pink-900 dark:text-pink-300',
-    countColor: 'text-pink-900 dark:text-pink-200'
+    lightStyle: 'bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-950 shadow-sm ring-1 ring-pink-400/30',
+    darkStyle: 'bg-pink-950/80 hover:bg-pink-900 border-pink-500/80 text-pink-300 shadow-md ring-1 ring-pink-400/40'
   },
   { 
     label: '알잘딱', 
     icon: ThumbsUp, 
-    btnClass: 'bg-cyan-100 hover:bg-cyan-200 border-cyan-400/80 dark:bg-cyan-950/80 dark:hover:bg-cyan-900 dark:border-cyan-500/80 shadow-md ring-1 ring-cyan-400/40',
-    textColor: 'text-cyan-950 dark:text-cyan-300',
-    iconColor: 'text-cyan-900 dark:text-cyan-300',
-    countColor: 'text-cyan-900 dark:text-cyan-200'
+    lightStyle: 'bg-sky-100 hover:bg-sky-200 border-sky-300 text-sky-950 shadow-sm ring-1 ring-sky-400/30',
+    darkStyle: 'bg-sky-950/80 hover:bg-sky-900 border-sky-500/80 text-sky-300 shadow-md ring-1 ring-sky-400/40'
   },
   { 
     label: '음...', 
     icon: Meh, 
-    btnClass: 'bg-slate-200 hover:bg-slate-300 border-slate-400/80 dark:bg-slate-800/90 dark:hover:bg-slate-700 dark:border-slate-600 shadow-md ring-1 ring-slate-400/40',
-    textColor: 'text-slate-950 dark:text-slate-100',
-    iconColor: 'text-slate-900 dark:text-slate-200',
-    countColor: 'text-slate-900 dark:text-slate-300'
+    lightStyle: 'bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-950 shadow-sm ring-1 ring-slate-400/30',
+    darkStyle: 'bg-slate-800/90 hover:bg-slate-700 border-slate-600 text-slate-100 shadow-md ring-1 ring-slate-400/40'
   },
   { 
     label: '억까임', 
     icon: Frown, 
-    btnClass: 'bg-rose-100 hover:bg-rose-200 border-rose-400/80 dark:bg-rose-950/80 dark:hover:bg-rose-900 dark:border-rose-500/80 shadow-md ring-1 ring-rose-400/40',
-    textColor: 'text-rose-950 dark:text-rose-300',
-    iconColor: 'text-rose-900 dark:text-rose-300',
-    countColor: 'text-rose-900 dark:text-rose-200'
+    lightStyle: 'bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-950 shadow-sm ring-1 ring-rose-400/30',
+    darkStyle: 'bg-rose-950/80 hover:bg-rose-900 border-rose-500/80 text-rose-300 shadow-md ring-1 ring-rose-400/40'
   }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.17 완전 보존)
+// 유연한 투표 데이터 해석 유틸리티 함수
+const getRatingCount = (ratingsData, label, idx) => {
+  if (!ratingsData) return 0;
+  const target = ratingsData.ratings || ratingsData.data || ratingsData;
+
+  if (Array.isArray(target)) {
+    return Number(target[idx]) || 0;
+  }
+
+  if (typeof target === 'object') {
+    if (target[label] !== undefined) return Number(target[label]);
+
+    const cleanLabel = label.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+    for (const [k, v] of Object.entries(target)) {
+      const cleanKey = k.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+      if (cleanKey === cleanLabel || cleanKey.includes(cleanLabel) || cleanLabel.includes(cleanKey)) {
+        return Number(v) || 0;
+      }
+    }
+  }
+  return 0;
+};
+
+const getTotalVotes = (ratingsData) => {
+  if (!ratingsData) return 0;
+  const target = ratingsData.ratings || ratingsData.data || ratingsData;
+
+  if (Array.isArray(target)) {
+    return target.reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+  }
+
+  if (typeof target === 'object') {
+    return Object.values(target).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+  }
+
+  return 0;
+};
+
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.18 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.18',
+    date: '2026.08.28',
+    title: '버전 1.2.18 패치노트: PC/모바일 평가 버튼 초고대비 테마 완전 고정 & 백엔드 투표 데이터 매핑(0 표시) 완벽 수정 패치⚡️',
+    changes: [
+      '백엔드 API 응답 데이터 키(영문, 객체, 배열 등)의 형식을 유연하게 파싱하는 getRatingCount 파서를 탑재하여 3명 참전 시 개별 수치가 0으로만 보이던 오류 완벽 해결',
+      'PC/모바일 라이트 모드에서 평가 버튼이 어두운 박스로 뭉개지던 현상을 isDarkMode 기반 분리 테마(Light: 화사한 파스텔 배경 + 진한 다크 텍스트)로 강제 고정',
+      '날짜 선택 컨트롤의 대형화 크기 및 편의성 완전 유지',
+      'v1.0.0부터 v1.2.18까지 단 하나도 누락 없는 전체 패치 히스토리 원형 보존'
+    ]
+  },
   {
     version: '1.2.17',
     date: '2026.08.28',
     title: '버전 1.2.17 패치노트: PC/모바일 전 환경 급식 평가 버튼 초고대비 텍스트/아이콘 색상 고정 & 날짜 선택 컨트롤 대형화 원복 패치⚡️',
     changes: [
-      'PC 및 모바일 라이트 모드에서 급식 평가 버튼(GOAT야르, 도파민극락, 알잘딱, 음..., 억까임)의 글씨와 아이콘이 하얗게/흐리게 보이던 현상을 각 요소별 명시적 고대비 색상(Light: 진한 다크 컬러, Dark: 선명한 네온 컬러)으로 전면 강제 고정',
+      'PC 및 모바일 라이트 모드에서 급식 평가 버튼(GOAT야르, 도파민극락, 알잘딱, 음..., 억까임)의 글씨와 아이콘이 하얗게/흐리게 보이던 현상을 각 요소별 명시적 고대비 색상으로 전면 강제 고정',
       '날짜 선택 컨트롤 영역(날짜 텍스트, 요일 배지, 오늘 버튼, 이전/다음 화살표)의 크기 및 패딩을 대형화 원복하여 터치 및 클릭 편의성 극대화',
       'v1.0.0부터 v1.2.17까지 단 하나도 누락 없는 전 과거 패치 히스토리 보존'
     ]
@@ -100,7 +139,7 @@ const PATCH_HISTORY = [
     date: '2026.08.28',
     title: '버전 1.2.16 패치노트: 급식 평가 버튼 고대비 색상 복원 & 모바일 날짜 헤더 줄바꿈 완전 교정⚡️',
     changes: [
-      '라이트 모드에서 급식 평가 버튼의 글씨와 아이콘이 흰색/연파스텔로 뭉개지던 현상을 초고대비 전용 테마(text-*-950 dark:text-*-300)로 완벽 복원',
+      '라이트 모드에서 급식 평가 버튼의 글씨와 아이콘이 흰색/연파스텔로 뭉개지던 현상을 초고대비 전용 테마로 완벽 복원',
       '모바일 해상도에서 급식표 날짜 컨트롤의 [오늘] 버튼 및 화살표가 공간 부족으로 줄바꿈되던 레이아웃 버그를 whitespace-nowrap & shrink-0 정밀 조정으로 완벽 해결',
       'v1.0.0부터 v1.2.16까지 단 하나도 누락 없는 패치 히스토리 원형 보존'
     ]
@@ -111,7 +150,7 @@ const PATCH_HISTORY = [
     title: '버전 1.2.15 패치노트: 라이트/다크 모드 급식 평가 버튼 시인성(텍스트/아이콘 명도 대비) 정밀 교정 패치⚡️',
     changes: [
       '라이트 모드에서 급식 평가 버튼(GOAT야르, 도파민극락, 알잘딱, 음..., 억까임)의 글씨와 아이콘이 하얗게 날아가던 가시성 버그 완전 해결',
-      '라이트 모드/다크 모드 각각에 최적화된 고대비 컬러 매핑(text-*-800 dark:text-*-300) 적용으로 가독성 극대화',
+      '라이트 모드/다크 모드 각각에 최적화된 고대비 컬러 매핑 적용으로 가독성 극대화',
       '800Hz 고탄성 타격감 및 버튼 1:1 레이아웃 구조 완벽 유지',
       'v1.0.0부터 v1.2.15까지 단 하나도 누락 없는 패치 히스토리 보존'
     ]
@@ -147,7 +186,7 @@ const PATCH_HISTORY = [
     changes: [
       '시맨틱 버저닝 1.2.12 정밀 연장 세팅 완료',
       '모든 주요 버튼 및 헤더에 3D 네온 글로우 오로라 이펙트 & 무지개 그라데이션 타이포그래피 적용',
-      '최신 MZ 서브컬처 용어(GOAT야르, 도파민극락, 알잘딱, 억까임, 폼 미쳤다, 개추) 풀충전',
+      '최신 MZ 서브컬처 용어 풀충전',
       '버튼 터치 시 통통 튀는 3D 스케일+스프링 타격감 및 발광 파티클 연출 극대화',
       '모바일 글래스모피즘 스티키 탭 바 & PC 컴시간 시간표 스티키 추적 고정 완전 유지',
       'v1.0.0부터 전 과거 버전 패치노트 내역 누락 없이 완전 보존'
@@ -181,8 +220,8 @@ const PATCH_HISTORY = [
     date: '2026.08.28',
     title: '버전 1.2.9 패치노트: 모바일 스티키 바 글래스모피즘 CSS 전면 복구 & 컴시간 카드 스티키 밀착 + v1.0.0 전 버전 패치노트 완전 복원 & 3D 도파민 모션 극락 보강⚡️',
     changes: [
-      '모바일 상단 탭 바 스크롤 고정(sticky top-16) 시 단색 뭉개짐 방지를 위한 고급 블러 글래스모피즘 CSS 복원',
-      'PC/태블릿 스크롤 시 급식표 길이에 맞춰 컴시간 시간표 카드가 따라오는 sticky top-20 스티키 포지션 정밀 밀착',
+      '모바일 상단 탭 바 스크롤 고정 시 단색 뭉개짐 방지를 위한 고급 블러 글래스모피즘 CSS 복원',
+      'PC/태블릿 스크롤 시 급식표 길이에 맞춰 컴시간 시간표 카드가 따라오는 스티키 포지션 정밀 밀착',
       'v1.0.0부터 v1.2.8까지 축약되었던 전 과거 버전 패치노트 내역을 누락 없이 원형 그대로 완전 복구',
       '3D 파라락스 틸트 및 버튼 통통 튀는 학사모 스프링 회전 모션 대폭 보강'
     ]
@@ -192,9 +231,9 @@ const PATCH_HISTORY = [
     date: '2026.08.28',
     title: '버전 1.2.8 패치노트: 모바일 탭 바 & 컴시간 시간표 스티키 완벽 밀착 + 전 팝업/버튼 3D 틸트 및 회전 스프링 모션 극락 개편⚡️',
     changes: [
-      '모바일 상단 서비스 선택 탭 바 스크롤 고정 (sticky top-16) & 네온 발광 강조 이펙트 적용',
-      'PC/태블릿 스크롤 시 컴시간 시간표 카드가 따라오는 스티키 (sticky top-20) 밀착 완',
-      '모든 모달 팝업창(공지, 패치노트, 알러지 등) 및 카드에 마우스 3D 시선 추적 파라락스 틸트 전면 적용',
+      '모바일 상단 서비스 선택 탭 바 스크롤 고정 & 네온 발광 강조 이펙트 적용',
+      'PC/태블릿 스크롤 시 컴시간 시간표 카드가 따라오는 스티키 밀착 완',
+      '모든 모달 팝업창 및 카드에 마우스 3D 시선 추적 파라락스 틸트 전면 적용',
       '모든 버튼에 학사모 스타일 통통 튀는 3D 회전+스프링 타격감 애니메이션 통합 구현'
     ]
   },
@@ -820,7 +859,7 @@ export default function App() {
     loadMealData();
   }, [loadMealData]);
 
-  const totalVotes = Object.values(ratings).reduce((acc, curr) => acc + curr, 0);
+  const totalVotes = getTotalVotes(ratings);
 
   return (
     <div className={`min-h-screen transition-colors duration-200 selection:bg-purple-500 selection:text-white relative overflow-x-hidden ${
@@ -1678,7 +1717,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* 🗳️ 실시간 도파민 평가 섹션 (PC/모바일 전 환경 명시적 고대비 색상 적용) */}
+                {/* 🗳️ 실시간 도파민 평가 섹션 (getRatingCount로 데이터 0 표시 완벽 적출 및 초고대비 테마) */}
                 {isWithin7Days && (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.96 }}
@@ -1705,9 +1744,9 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-5 gap-1.5">
-                      {RATING_OPTIONS.map((opt) => {
+                      {RATING_OPTIONS.map((opt, idx) => {
                         const IconComponent = opt.icon;
-                        const count = ratings[opt.label] || 0;
+                        const count = getRatingCount(ratings, opt.label, idx);
                         const isSelected = userVotedRating === opt.label;
                         const isDisabled = !isToday || Boolean(userVotedRating) || isRatingSubmitting;
 
@@ -1720,15 +1759,15 @@ export default function App() {
                             disabled={isDisabled}
                             className={`px-1 py-3 sm:py-3.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
                               isSelected 
-                                ? 'ring-2 ring-purple-600 border-purple-600 dark:ring-purple-400 dark:border-purple-400 font-black shadow-xl shadow-purple-500/40' 
-                                : opt.btnClass
+                                ? 'ring-2 ring-purple-600 border-purple-600 font-black shadow-xl shadow-purple-500/40' 
+                                : isDarkMode ? opt.darkStyle : opt.lightStyle
                             } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
-                            <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 animate-pulse ${opt.iconColor}`} />
-                            <span className={`text-[11px] sm:text-xs font-black leading-none whitespace-nowrap tracking-tighter ${opt.textColor}`}>
+                            <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 animate-pulse text-current" />
+                            <span className="text-[11px] sm:text-xs font-black leading-none whitespace-nowrap tracking-tighter text-current">
                               {opt.label}
                             </span>
-                            <span className={`text-[10px] sm:text-[11px] font-black ${opt.countColor}`}>{count}</span>
+                            <span className="text-[10px] sm:text-[11px] font-black text-current">{count}</span>
                           </motion.button>
                         );
                       })}

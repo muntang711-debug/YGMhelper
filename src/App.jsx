@@ -33,7 +33,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.3';
+const CURRENT_VERSION = '1.2.4';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 const RATING_OPTIONS = [
@@ -46,6 +46,16 @@ const RATING_OPTIONS = [
 
 // 패치노트 전체 히스토리 데이터베이스
 const PATCH_HISTORY = [
+  {
+    version: '1.2.4',
+    date: '2026.08.28',
+    title: '버전 1.2.4 업데이트: package-lock.json 의존성 버전 정밀 맞춤 및 빌드 서버 동기화 패치',
+    changes: [
+      'motion 라이브러리 버전을 12.43.0 표준 사양으로 정밀 동기화',
+      '배포 서버 npm ci 락파일 충돌 에러 완전 방지 패치 완',
+      'MZ식 알잘딱깔센 모션 인터랙션 스근하게 유지'
+    ]
+  },
   {
     version: '1.2.3',
     date: '2026.08.28',

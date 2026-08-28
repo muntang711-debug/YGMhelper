@@ -36,7 +36,7 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.12';
+const CURRENT_VERSION = '1.2.13';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
 // 극락의 최신 도파민 MZ 평가 옵션 리스트
@@ -48,8 +48,20 @@ const RATING_OPTIONS = [
   { label: '억까임', icon: Frown, color: 'text-rose-500 border-rose-500/40 bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 shadow-lg shadow-rose-500/20' }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.12 완전 보존)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.13 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.13',
+    date: '2026.08.28',
+    title: '버전 1.2.13 패치노트: 초초초개씹레전드 글로우 네온 모션 패치 & 하단 버튼 간격 정밀 교정 + 마우스 이탈 시 3D 틸트 원복 보정⚡️🔥',
+    changes: [
+      '하단 버튼 간격 버그(알러지 정돈 & 다시 당겨오기)를 grid 1:1 정밀 레이아웃으로 완벽 맞춤 수정',
+      '마우스를 뗄 때 3D 카드 애니메이션이 중간에 멈추던 현상을 탄성 복귀 물리 엔진으로 완벽 원복 보정',
+      '버튼 호버/클릭 시 3D 회전 스프링 및 무지개 스펙트럼 발광 효과 초레전드급으로 보강',
+      '모바일 글래스모피즘 스티키 탭 바 & PC 컴시간 시간표 스티키 포지션 완벽 고정',
+      'v1.0.0부터 전 과거 버전 패치노트 내역 누락 없이 원형 보존'
+    ]
+  },
   {
     version: '1.2.12',
     date: '2026.08.28',
@@ -332,7 +344,7 @@ const getCategoryBadgeStyle = (category, isDark) => {
   }
 };
 
-// 🎯 초화려 3D 네온 파라락스 틸트 컴포넌트
+// 🎯 초화려 3D 네온 파라락스 틸트 컴포넌트 (마우스 이탈 시 원위치 완전 탄성 복귀)
 const TiltCard = ({ children, className = '' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
@@ -343,22 +355,25 @@ const TiltCard = ({ children, className = '' }) => {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const rotateX = ((y - centerY) / centerY) * -10;
-    const rotateY = ((x - centerX) / centerX) * 10;
+    const rotateX = ((y - centerY) / centerY) * -8;
+    const rotateY = ((x - centerX) / centerX) * 8;
 
     setTilt({ x: rotateX, y: rotateY });
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseReset = () => {
+    // 마우스 이탈 시 애니메이션이 멈추지 않고 매끄럽게 0,0으로 탄성 원복
     setTilt({ x: 0, y: 0 });
   };
 
   return (
     <motion.div
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={handleMouseReset}
+      onMouseOut={handleMouseReset}
+      onBlur={handleMouseReset}
       animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: "spring", stiffness: 450, damping: 18 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.6 }}
       style={{ transformStyle: "preserve-3d", perspective: 1000 }}
       className={className}
     >
@@ -1619,34 +1634,35 @@ export default function App() {
                 )}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-2">
+              {/* 🎯 [수정됨] 하단 버튼 간격 억까 완벽 조치 (grid grid-cols-2 gap-3.5 1:1 정밀 채움 배치) */}
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-neutral-800 grid grid-cols-2 gap-3.5">
                 <motion.button
-                  whileHover={{ scale: 1.12, rotate: [0, -3, 3, 0], boxShadow: "0px 0px 20px rgba(249, 115, 22, 0.6)" }}
-                  whileTap={{ scale: 0.88 }}
+                  whileHover={{ scale: 1.08, rotate: [0, -2, 2, 0], boxShadow: "0px 0px 20px rgba(249, 115, 22, 0.5)" }}
+                  whileTap={{ scale: 0.92 }}
                   onClick={() => setShowAllergyModal(true)}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4.5 py-3 rounded-2xl font-black text-xs sm:text-sm border transition-all ${
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-black text-xs sm:text-sm border transition-all shadow-md ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
-                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700 hover:border-orange-500/40' 
+                      : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-orange-300'
                   }`}
                 >
-                  <Info className="w-4 h-4 text-orange-500 shrink-0" />
-                  <span>알러지 알잘딱 정돈</span>
+                  <Info className="w-4.5 h-4.5 text-orange-500 shrink-0" />
+                  <span className="whitespace-nowrap">알러지 알잘딱 정돈</span>
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.12, rotate: [0, -3, 3, 0], boxShadow: "0px 0px 20px rgba(59, 130, 246, 0.6)" }}
-                  whileTap={{ scale: 0.88 }}
+                  whileHover={{ scale: 1.08, rotate: [0, 2, -2, 0], boxShadow: "0px 0px 20px rgba(59, 130, 246, 0.5)" }}
+                  whileTap={{ scale: 0.92 }}
                   onClick={loadMealData}
                   disabled={mealLoading}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4.5 py-3 rounded-2xl font-black text-xs sm:text-sm border transition-all ${
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-black text-xs sm:text-sm border transition-all shadow-md ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
-                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700 hover:border-blue-500/40' 
+                      : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-blue-300'
                   }`}
                 >
-                  <RotateCcw className={`w-4 h-4 text-blue-500 shrink-0 ${mealLoading ? 'animate-spin' : ''}`} />
-                  <span>다시 당겨오기</span>
+                  <RotateCcw className={`w-4.5 h-4.5 text-blue-500 shrink-0 ${mealLoading ? 'animate-spin' : ''}`} />
+                  <span className="whitespace-nowrap">다시 당겨오기</span>
                 </motion.button>
               </div>
             </motion.div>

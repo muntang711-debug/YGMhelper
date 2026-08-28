@@ -36,40 +36,65 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.16';
+const CURRENT_VERSION = '1.2.17';
 const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
 
-// 극락의 최신 도파민 MZ 평가 옵션 리스트 (라이트/다크 선명도 및 고대비 완벽 대응)
+// 극락의 최신 도파민 MZ 평가 옵션 리스트 (PC/모바일 전 환경 명시적 고대비 색상 적용)
 const RATING_OPTIONS = [
   { 
     label: 'GOAT야르', 
     icon: Crown, 
-    bgStyle: 'bg-amber-100 hover:bg-amber-200/90 border-amber-300 text-amber-950 dark:bg-amber-950/70 dark:hover:bg-amber-900/80 dark:border-amber-500/60 dark:text-amber-300 shadow-md ring-1 ring-amber-400/30' 
+    btnClass: 'bg-amber-100 hover:bg-amber-200 border-amber-400/80 dark:bg-amber-950/80 dark:hover:bg-amber-900 dark:border-amber-500/80 shadow-md ring-1 ring-amber-400/40',
+    textColor: 'text-amber-950 dark:text-amber-300',
+    iconColor: 'text-amber-900 dark:text-amber-300',
+    countColor: 'text-amber-900 dark:text-amber-200'
   },
   { 
     label: '도파민극락', 
     icon: Flame, 
-    bgStyle: 'bg-pink-100 hover:bg-pink-200/90 border-pink-300 text-pink-950 dark:bg-pink-950/70 dark:hover:bg-pink-900/80 dark:border-pink-500/60 dark:text-pink-300 shadow-md ring-1 ring-pink-400/30' 
+    btnClass: 'bg-pink-100 hover:bg-pink-200 border-pink-400/80 dark:bg-pink-950/80 dark:hover:bg-pink-900 dark:border-pink-500/80 shadow-md ring-1 ring-pink-400/40',
+    textColor: 'text-pink-950 dark:text-pink-300',
+    iconColor: 'text-pink-900 dark:text-pink-300',
+    countColor: 'text-pink-900 dark:text-pink-200'
   },
   { 
     label: '알잘딱', 
     icon: ThumbsUp, 
-    bgStyle: 'bg-cyan-100 hover:bg-cyan-200/90 border-cyan-300 text-cyan-950 dark:bg-cyan-950/70 dark:hover:bg-cyan-900/80 dark:border-cyan-500/60 dark:text-cyan-300 shadow-md ring-1 ring-cyan-400/30' 
+    btnClass: 'bg-cyan-100 hover:bg-cyan-200 border-cyan-400/80 dark:bg-cyan-950/80 dark:hover:bg-cyan-900 dark:border-cyan-500/80 shadow-md ring-1 ring-cyan-400/40',
+    textColor: 'text-cyan-950 dark:text-cyan-300',
+    iconColor: 'text-cyan-900 dark:text-cyan-300',
+    countColor: 'text-cyan-900 dark:text-cyan-200'
   },
   { 
     label: '음...', 
     icon: Meh, 
-    bgStyle: 'bg-slate-200 hover:bg-slate-300/90 border-slate-400 text-slate-950 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 dark:border-slate-600 dark:text-slate-200 shadow-md ring-1 ring-slate-400/30' 
+    btnClass: 'bg-slate-200 hover:bg-slate-300 border-slate-400/80 dark:bg-slate-800/90 dark:hover:bg-slate-700 dark:border-slate-600 shadow-md ring-1 ring-slate-400/40',
+    textColor: 'text-slate-950 dark:text-slate-100',
+    iconColor: 'text-slate-900 dark:text-slate-200',
+    countColor: 'text-slate-900 dark:text-slate-300'
   },
   { 
     label: '억까임', 
     icon: Frown, 
-    bgStyle: 'bg-rose-100 hover:bg-rose-200/90 border-rose-300 text-rose-950 dark:bg-rose-950/70 dark:hover:bg-rose-900/80 dark:border-rose-500/60 dark:text-rose-300 shadow-md ring-1 ring-rose-400/30' 
+    btnClass: 'bg-rose-100 hover:bg-rose-200 border-rose-400/80 dark:bg-rose-950/80 dark:hover:bg-rose-900 dark:border-rose-500/80 shadow-md ring-1 ring-rose-400/40',
+    textColor: 'text-rose-950 dark:text-rose-300',
+    iconColor: 'text-rose-900 dark:text-rose-300',
+    countColor: 'text-rose-900 dark:text-rose-200'
   }
 ];
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.16 완전 보존)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.17 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.2.17',
+    date: '2026.08.28',
+    title: '버전 1.2.17 패치노트: PC/모바일 전 환경 급식 평가 버튼 초고대비 텍스트/아이콘 색상 고정 & 날짜 선택 컨트롤 대형화 원복 패치⚡️',
+    changes: [
+      'PC 및 모바일 라이트 모드에서 급식 평가 버튼(GOAT야르, 도파민극락, 알잘딱, 음..., 억까임)의 글씨와 아이콘이 하얗게/흐리게 보이던 현상을 각 요소별 명시적 고대비 색상(Light: 진한 다크 컬러, Dark: 선명한 네온 컬러)으로 전면 강제 고정',
+      '날짜 선택 컨트롤 영역(날짜 텍스트, 요일 배지, 오늘 버튼, 이전/다음 화살표)의 크기 및 패딩을 대형화 원복하여 터치 및 클릭 편의성 극대화',
+      'v1.0.0부터 v1.2.17까지 단 하나도 누락 없는 전 과거 패치 히스토리 보존'
+    ]
+  },
   {
     version: '1.2.16',
     date: '2026.08.28',
@@ -1478,8 +1503,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 📅 모바일 날짜 헤더 완벽 줄바꿈 방지 적용 파트 */}
-                <div className={`p-2.5 sm:p-3 rounded-2xl border mb-3 flex items-center justify-between gap-1.5 sm:gap-2 ${
+                {/* 📅 모바일/PC 날짜 헤더 대형화 & 가독성/클릭 편의성 완벽 복원 */}
+                <div className={`p-3.5 sm:p-4 rounded-2xl border mb-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar ${
                   isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
                 }`}>
                   <motion.div 
@@ -1487,10 +1512,10 @@ export default function App() {
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 800 }}
                     onClick={openDatePicker}
-                    className="flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none min-w-0 shrink"
+                    className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none shrink-0"
                   >
-                    <CalendarIcon className="w-4.5 h-4.5 sm:w-5 sm:h-5 shrink-0 text-purple-600 dark:text-purple-400 animate-pulse" />
-                    <span className={`text-xs sm:text-base font-black tracking-tight whitespace-nowrap ${
+                    <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-purple-600 dark:text-purple-400 animate-pulse" />
+                    <span className={`text-sm sm:text-lg font-black tracking-tight whitespace-nowrap ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
                       {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
@@ -1498,7 +1523,7 @@ export default function App() {
                     <motion.span 
                       whileHover={{ scale: 1.15 }}
                       transition={{ type: "spring", stiffness: 800 }}
-                      className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 rounded-lg font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shrink-0"
+                      className="text-xs sm:text-sm px-2.5 sm:px-3 py-1 rounded-xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shrink-0"
                     >
                       {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}
                     </motion.span>
@@ -1512,19 +1537,19 @@ export default function App() {
                     />
                   </motion.div>
 
-                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     <motion.button
                       whileHover={{ scale: 1.08, boxShadow: "0px 0px 15px rgba(168, 85, 247, 0.5)" }}
                       whileTap={{ scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 800 }}
                       onClick={resetToToday}
-                      className={`text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl font-black border transition-all whitespace-nowrap shrink-0 ${
+                      className={`text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-black border transition-all whitespace-nowrap shrink-0 ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-200' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-700 bg-white shadow-sm'
+                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
                       }`}
                     >
-                      <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1 shrink-0" />
+                      <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1 shrink-0" />
                       <span>오늘</span>
                     </motion.button>
                     <motion.button
@@ -1532,28 +1557,28 @@ export default function App() {
                       whileTap={{ scale: 0.88 }}
                       transition={{ type: "spring", stiffness: 800 }}
                       onClick={() => changeDate(-1)}
-                      className={`p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 ${
+                      className={`p-2 sm:p-2.5 rounded-xl border transition-all shrink-0 ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-700 bg-white shadow-sm'
+                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
                       }`}
                       title="이전 평일"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.12, x: 2 }}
                       whileTap={{ scale: 0.88 }}
                       transition={{ type: "spring", stiffness: 800 }}
                       onClick={() => changeDate(1)}
-                      className={`p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 ${
+                      className={`p-2 sm:p-2.5 rounded-xl border transition-all shrink-0 ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-700 bg-white shadow-sm'
+                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
                       }`}
                       title="다음 평일"
                     >
-                      <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                   </div>
                 </div>
@@ -1653,7 +1678,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* 🗳️ 실시간 도파민 평가 섹션 (라이트 모드 고대비 완벽 교정) */}
+                {/* 🗳️ 실시간 도파민 평가 섹션 (PC/모바일 전 환경 명시적 고대비 색상 적용) */}
                 {isWithin7Days && (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.96 }}
@@ -1689,21 +1714,21 @@ export default function App() {
                         return (
                           <motion.button
                             key={opt.label}
-                            whileHover={!isDisabled ? { scale: 1.15, transition: { type: "spring", stiffness: 800 } } : {}}
-                            whileTap={!isDisabled ? { scale: 0.85 } : {}}
+                            whileHover={!isDisabled ? { scale: 1.12, transition: { type: "spring", stiffness: 800 } } : {}}
+                            whileTap={!isDisabled ? { scale: 0.88 } : {}}
                             onClick={() => handleVoteRating(opt.label)}
                             disabled={isDisabled}
-                            className={`px-1 py-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
+                            className={`px-1 py-3 sm:py-3.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
                               isSelected 
                                 ? 'ring-2 ring-purple-600 border-purple-600 dark:ring-purple-400 dark:border-purple-400 font-black shadow-xl shadow-purple-500/40' 
-                                : opt.bgStyle
+                                : opt.btnClass
                             } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
-                            <IconComponent className="w-5 h-5 shrink-0 animate-pulse text-current" />
-                            <span className="text-[10px] sm:text-[11px] font-black leading-none whitespace-nowrap tracking-tighter text-current">
+                            <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 animate-pulse ${opt.iconColor}`} />
+                            <span className={`text-[11px] sm:text-xs font-black leading-none whitespace-nowrap tracking-tighter ${opt.textColor}`}>
                               {opt.label}
                             </span>
-                            <span className="text-[9px] sm:text-[10px] font-black opacity-90 text-current">{count}</span>
+                            <span className={`text-[10px] sm:text-[11px] font-black ${opt.countColor}`}>{count}</span>
                           </motion.button>
                         );
                       })}

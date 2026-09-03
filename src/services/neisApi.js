@@ -55,3 +55,42 @@ export const fetchMealSchedule = async (ymdStr) => {
     return { menuItems: [], calories: '', status: 'ERROR' };
   }
 };
+
+// NEIS API 중학교 시간표 보조 요청 함수
+export const fetchNeisTimetable = async (ymdStr, grade = 1, classNum = 1) => {
+  try {
+    const url = `https://open.neis.go.kr/hub/misTimetable?Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&ALL_TI_YMD=${ymdStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.misTimetable && data.misTimetable[1] && data.misTimetable[1].row) {
+      const rows = data.misTimetable[1].row;
+      const list = rows.map((r) => ({
+        period: Number(r.PERIO),
+        subject: r.ITRT_CNTNT ? r.ITRT_CNTNT.trim() : '수업',
+        teacher: '선생님',
+        room: `${grade}-${classNum}교실`,
+        isChanged: false
+      }));
+
+      return {
+        status: 'SUCCESS',
+        list,
+        source: 'NEIS 공식'
+      };
+    }
+
+    return {
+      status: 'NO_DATA',
+      list: [],
+      source: 'NEIS 공식'
+    };
+  } catch (error) {
+    console.error('NEIS 시간표 수신 중 오류 발생:', error);
+    return {
+      status: 'ERROR',
+      list: [],
+      source: 'NEIS 공식'
+    };
+  }
+};

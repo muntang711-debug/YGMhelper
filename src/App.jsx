@@ -16,9 +16,6 @@ import {
   X, 
   Megaphone, 
   AlertCircle, 
-  Eye, 
-  GraduationCap,
-  ArrowRight,
   CheckCircle2,
   Download,
   Share,
@@ -28,126 +25,95 @@ import {
   Smile,
   Meh,
   Frown,
-  Flame,
-  Zap,
-  Crown,
-  Rocket
+  ArrowRight
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.2.19';
-const CURRENT_NOTICE_ID = 'notice_2026_08_22_rating_feature';
+const CURRENT_VERSION = '1.3.0';
+const CURRENT_NOTICE_ID = 'notice_2026_09_03_gemini_design';
 
-// 평가 옵션 리스트 (라이트/다크 테마 독립 및 고대비 색상 확실 보장)
+// 평가 옵션 (단정하고 직관적인 Google/Gemini 스타일 5단계)
 const RATING_OPTIONS = [
   { 
-    label: 'GOAT야르', 
-    icon: Crown, 
-    lightStyle: 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950 shadow-sm ring-1 ring-amber-400/30',
-    darkStyle: 'bg-amber-950/80 hover:bg-amber-900 border-amber-500/80 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+    label: '최고예요', 
+    icon: Sparkles, 
+    colorClass: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-900/40',
+    activeClass: 'ring-2 ring-amber-500 border-amber-500 bg-amber-100 dark:bg-amber-900/60 font-bold shadow-sm'
   },
   { 
-    label: '도파민극락', 
-    icon: Flame, 
-    lightStyle: 'bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-950 shadow-sm ring-1 ring-pink-400/30',
-    darkStyle: 'bg-pink-950/80 hover:bg-pink-900 border-pink-500/80 text-pink-300 shadow-md ring-1 ring-pink-400/40'
-  },
-  { 
-    label: '알잘딱', 
+    label: '맛있어요', 
     icon: ThumbsUp, 
-    lightStyle: 'bg-sky-100 hover:bg-sky-200 border-sky-300 text-sky-950 shadow-sm ring-1 ring-sky-400/30',
-    darkStyle: 'bg-sky-950/80 hover:bg-sky-900 border-sky-500/80 text-sky-300 shadow-md ring-1 ring-sky-400/40'
+    colorClass: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/40',
+    activeClass: 'ring-2 ring-blue-500 border-blue-500 bg-blue-100 dark:bg-blue-900/60 font-bold shadow-sm'
   },
   { 
-    label: '음...', 
+    label: '보통이에요', 
+    icon: Smile, 
+    colorClass: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
+    activeClass: 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60 font-bold shadow-sm'
+  },
+  { 
+    label: '조금 아쉬워요', 
     icon: Meh, 
-    lightStyle: 'bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-950 shadow-sm ring-1 ring-slate-400/30',
-    darkStyle: 'bg-slate-800/90 hover:bg-slate-700 border-slate-600 text-slate-100 shadow-md ring-1 ring-slate-400/40'
+    colorClass: 'text-slate-600 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800',
+    activeClass: 'ring-2 ring-slate-500 border-slate-500 bg-slate-200 dark:bg-slate-700 font-bold shadow-sm'
   },
   { 
-    label: '억까임', 
+    label: '별로예요', 
     icon: Frown, 
-    lightStyle: 'bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-950 shadow-sm ring-1 ring-rose-400/30',
-    darkStyle: 'bg-rose-950/80 hover:bg-rose-900 border-rose-500/80 text-rose-300 shadow-md ring-1 ring-rose-400/40'
+    colorClass: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/40',
+    activeClass: 'ring-2 ring-rose-500 border-rose-500 bg-rose-100 dark:bg-rose-900/60 font-bold shadow-sm'
   }
 ];
 
-// 백엔드 다양한 포맷 대응 다중 에일리어스(Alias) 정의
-const RATING_ALIASES = [
-  ['goat야르', 'goat', '고트', '고트야르', 'opt1', 'option1', 'option_1'],
-  ['도파민극락', '도파민', '극락', 'dopamine', 'opt2', 'option2', 'option_2'],
-  ['알잘딱', '알잘딱깔센', 'aljal', 'opt3', 'option3', 'option_3'],
-  ['음...', '음', 'meh', 'soso', 'opt4', 'option4', 'option_4'],
-  ['억까임', '억까', '맛없음', 'bad', 'worst', 'opt5', 'option5', 'option_5']
-];
+// 레거시 키 대응 매핑
+const LEGACY_KEY_MAP = {
+  '최고예요': ['최고예요', 'goat야르', 'goat', '고트', '고트야르', '야르킁킁', 'opt1'],
+  '맛있어요': ['맛있어요', '도파민극락', '도파민', '극락', '야르', 'opt2'],
+  '보통이에요': ['보통이에요', '알잘딱', '알잘딱깔센', '먹을만함', 'opt3'],
+  '조금 아쉬워요': ['조금 아쉬워요', '음...', '음', '그저그런', 'soso', 'opt4'],
+  '별로예요': ['별로예요', '억까임', '억까', '맛없음', 'bad', 'opt5']
+};
 
-// 백엔드 데이터 완벽 매핑 정밀 추출 유틸리티
-const getRatingCount = (ratingsData, label, idx) => {
-  if (!ratingsData) return 0;
+const getRatingCount = (ratingsData, label) => {
+  if (!ratingsData || typeof ratingsData !== 'object') return 0;
+  if (ratingsData[label] !== undefined) return Number(ratingsData[label]) || 0;
 
-  let target = ratingsData;
-  if (ratingsData.ratings !== undefined) target = ratingsData.ratings;
-  else if (ratingsData.data !== undefined) target = ratingsData.data;
-  else if (ratingsData.votes !== undefined) target = ratingsData.votes;
-
-  // 1. 배열 형태
-  if (Array.isArray(target)) {
-    return Number(target[idx]) || 0;
-  }
-
-  // 2. 객체 형태
-  if (typeof target === 'object' && target !== null) {
-    if (target[label] !== undefined) return Number(target[label]) || 0;
-    if (target[idx] !== undefined) return Number(target[idx]) || 0;
-
-    const aliases = RATING_ALIASES[idx] || [];
-    const cleanLabel = label.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
-
-    for (const [k, v] of Object.entries(target)) {
-      const cleanK = k.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
-
-      // 메타데이터 키 제외
-      if (['total', 'totalvotes', 'totalcount', 'count', 'voters', 'status', 'success', 'date'].includes(cleanK)) {
-        continue;
-      }
-
-      if (cleanK === cleanLabel) return Number(v) || 0;
-
-      for (const alias of aliases) {
-        const cleanAlias = alias.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
-        if (cleanK === cleanAlias || cleanK.includes(cleanAlias) || cleanAlias.includes(cleanK)) {
-          return Number(v) || 0;
-        }
-      }
+  const aliases = LEGACY_KEY_MAP[label] || [];
+  for (const [k, v] of Object.entries(ratingsData)) {
+    const cleanKey = k.toLowerCase().trim();
+    if (aliases.some(alias => alias.toLowerCase() === cleanKey)) {
+      return Number(v) || 0;
     }
   }
-
   return 0;
 };
 
 const getTotalVotes = (ratingsData) => {
-  if (!ratingsData) return 0;
-
-  // 메타데이터 총합 필드가 직접 존재하는 경우
-  if (typeof ratingsData === 'object' && ratingsData !== null) {
-    if (typeof ratingsData.total === 'number') return ratingsData.total;
-    if (typeof ratingsData.totalVotes === 'number') return ratingsData.totalVotes;
-    if (typeof ratingsData.totalCount === 'number') return ratingsData.totalCount;
-    if (typeof ratingsData.count === 'number') return ratingsData.count;
-  }
-
-  // 매핑된 5개 항목 수치 직접 합산
+  if (!ratingsData || typeof ratingsData !== 'object') return 0;
   let sum = 0;
-  RATING_OPTIONS.forEach((opt, idx) => {
-    sum += getRatingCount(ratingsData, opt.label, idx);
+  RATING_OPTIONS.forEach(opt => {
+    sum += getRatingCount(ratingsData, opt.label);
   });
-
   return sum;
 };
 
-// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.2.19 완전 보존)
+// 패치노트 전체 히스토리 데이터베이스 (v1.0.0 ~ v1.3.0 완전 보존)
 const PATCH_HISTORY = [
+  {
+    version: '1.3.0',
+    date: '2026.09.03',
+    title: '버전 1.3.0 패치노트: Google/Gemini 스타일 디자인 전면 개편 & 급식 평가 정상화',
+    changes: [
+      '눈이 편안하고 모던한 Google/Gemini 감성의 미니멀 디자인으로 전면 리뉴얼',
+      '기존의 과도한 네온 및 흔들림 애니메이션을 제거하고, 부드럽고 직관적인 인터랙션으로 개선',
+      '모든 문구를 단정하고 정중한 표준어로 변경하여 가독성과 사용자 경험 극대화',
+      '급식 실시간 평가 백엔드와 프론트엔드의 데이터 동기화 오류 및 400 전송 오류를 완벽 수정',
+      '직관적인 5단계 평가(최고예요, 맛있어요, 보통이에요, 조금 아쉬워요, 별로예요) 도입 및 기존 투표 데이터 완전 호환',
+      'v1.0.0부터의 모든 패치노트 히스토리 원형 유지'
+    ]
+  },
   {
     version: '1.2.19',
     date: '2026.08.28',
@@ -493,92 +459,43 @@ const getDishCategory = (dishName) => {
 const getCategoryBadgeStyle = (category, isDark) => {
   switch (category) {
     case '디저트':
-      return isDark ? 'bg-gradient-to-r from-pink-500/30 to-rose-500/30 text-pink-300 border-pink-400/50 shadow-lg shadow-pink-500/30 animate-pulse ring-1 ring-pink-400/30' : 'bg-pink-100 text-pink-700 border-pink-300 shadow-sm';
+      return isDark 
+        ? 'bg-purple-950/40 text-purple-300 border-purple-800/40' 
+        : 'bg-purple-50 text-purple-700 border-purple-200';
     case '음료':
-      return isDark ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-300 border-cyan-400/50 shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/30' : 'bg-cyan-100 text-cyan-700 border-cyan-300 shadow-sm';
+      return isDark 
+        ? 'bg-cyan-950/40 text-cyan-300 border-cyan-800/40' 
+        : 'bg-cyan-50 text-cyan-700 border-cyan-200';
     case '과일':
-      return isDark ? 'bg-gradient-to-r from-rose-500/30 to-red-500/30 text-rose-300 border-rose-400/50 shadow-lg shadow-rose-500/30 ring-1 ring-rose-400/30' : 'bg-rose-100 text-rose-700 border-rose-300 shadow-sm';
+      return isDark 
+        ? 'bg-rose-950/40 text-rose-300 border-rose-800/40' 
+        : 'bg-rose-50 text-rose-700 border-rose-200';
     case '밥':
-      return isDark ? 'bg-gradient-to-r from-blue-500/30 to-indigo-500/30 text-blue-300 border-blue-400/50 shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30' : 'bg-blue-100 text-blue-700 border-blue-300 shadow-sm';
+      return isDark 
+        ? 'bg-blue-950/40 text-blue-300 border-blue-800/40' 
+        : 'bg-blue-50 text-blue-700 border-blue-200';
     case '국':
-      return isDark ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-300 border-amber-400/50 shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/30' : 'bg-amber-100 text-amber-700 border-amber-300 shadow-sm';
+      return isDark 
+        ? 'bg-amber-950/40 text-amber-300 border-amber-800/40' 
+        : 'bg-amber-50 text-amber-700 border-amber-200';
     default:
-      return isDark ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border-emerald-400/50 shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/30' : 'bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm';
+      return isDark 
+        ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40' 
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
   }
 };
 
-// 🎯 초고속 800Hz 스피드 물리 엔진 적용 3D 네온 틸트
-const TiltCard = ({ children, className = '' }) => {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    const rotateX = ((y - centerY) / centerY) * -9;
-    const rotateY = ((x - centerX) / centerX) * 9;
-
-    setTilt({ x: rotateX, y: rotateY });
-  };
-
-  const handleMouseReset = () => {
-    setTilt({ x: 0, y: 0 });
-  };
-
-  return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseReset}
-      onMouseOut={handleMouseReset}
-      onBlur={handleMouseReset}
-      animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: "spring", stiffness: 800, damping: 25, mass: 0.4 }}
-      style={{ transformStyle: "preserve-3d", perspective: 1000 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// motion/react 초고속 스피드 모달 애니메이션 옵션
+// Google Material 3 스타일의 부드러운 모달 애니메이션
 const modalOverlayVariants = {
-  hidden: { opacity: 0, backdropFilter: "blur(0px)" },
-  visible: { opacity: 1, backdropFilter: "blur(14px)", transition: { duration: 0.12 } },
-  exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.1 } }
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.18, ease: 'easeOut' } },
+  exit: { opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }
 };
 
 const modalContentVariants = {
-  hidden: { opacity: 0, scale: 0.6, y: 60, rotateX: 25 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    y: 0,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 750, damping: 22, mass: 0.5 } 
-  },
-  exit: { 
-    opacity: 0, 
-    scale: 0.7, 
-    y: 30, 
-    transition: { duration: 0.1 } 
-  }
-};
-
-const listContainerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.02, delayChildren: 0 }
-  }
-};
-
-const listItemVariants = {
-  hidden: { opacity: 0, y: 15, scale: 0.9, rotateX: -10 },
-  show: { opacity: 1, y: 0, scale: 1, rotateX: 0, transition: { type: "spring", stiffness: 800, damping: 20 } }
+  hidden: { opacity: 0, scale: 0.96, y: 8 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+  exit: { opacity: 0, scale: 0.96, y: 6, transition: { duration: 0.15, ease: 'easeIn' } }
 };
 
 export default function App() {
@@ -636,7 +553,7 @@ export default function App() {
   const [mealLoading, setMealLoading] = useState(true);
 
   // 평가 관련 상태
-  const [ratings, setRatings] = useState({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
+  const [ratings, setRatings] = useState({ "최고예요": 0, "맛있어요": 0, "보통이에요": 0, "조금 아쉬워요": 0, "별로예요": 0 });
   const [userVotedRating, setUserVotedRating] = useState(null);
   const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
 
@@ -735,7 +652,7 @@ export default function App() {
       setIsWebviewLoading(true);
       const timer = setTimeout(() => {
         setIsWebviewLoading(false);
-      }, 1200);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [webviewStep]);
@@ -750,11 +667,11 @@ export default function App() {
         const data = await res.json();
         setRatings(data);
       } else {
-        setRatings({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
+        setRatings({ "최고예요": 0, "맛있어요": 0, "보통이에요": 0, "조금 아쉬워요": 0, "별로예요": 0 });
       }
     } catch (err) {
       console.error('Failed to load ratings:', err);
-      setRatings({ "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 });
+      setRatings({ "최고예요": 0, "맛있어요": 0, "보통이에요": 0, "조금 아쉬워요": 0, "별로예요": 0 });
     }
   }, [formattedDateStr]);
 
@@ -903,600 +820,524 @@ export default function App() {
 
   useEffect(() => {
     loadMealData();
-  }, [loadMealData]);
+}, [loadMealData]);
 
   const totalVotes = getTotalVotes(ratings);
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 selection:bg-purple-500 selection:text-white relative overflow-x-hidden ${
-      isDarkMode ? 'bg-neutral-950 text-neutral-50' : 'bg-slate-100 text-slate-900'
+    <div className={`min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white relative overflow-x-hidden ${
+      isDarkMode ? 'bg-[#131314] text-[#e3e3e3]' : 'bg-[#f8fafd] text-[#1f1f1f]'
     }`}>
       <style>{`
         @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');
-            font-weight: 400;
-            font-display: swap;
+          font-family: 'Pretendard';
+          src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');
+          font-weight: 400;
+          font-display: swap;
         }
         @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');
-            font-weight: 700;
-            font-display: swap;
+          font-family: 'Pretendard';
+          src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');
+          font-weight: 500;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Pretendard';
+          src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2');
+          font-weight: 600;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Pretendard';
+          src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');
+          font-weight: 700;
+          font-display: swap;
         }
         body, * {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
         }
       `}</style>
 
+      {/* 팝업 모달 영역 */}
       <AnimatePresence>
-        {/* 📱 PWA 앱 설치 안내 모달 */}
+        {/* 앱 설치 가이드 모달 */}
         {showInstallGuide && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           >
-            <TiltCard className="w-full max-w-md">
-              <motion.div 
-                variants={modalContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className={`w-full p-6 rounded-3xl border-2 shadow-2xl relative ${
-                  isDarkMode ? 'bg-neutral-900 border-purple-500/50 text-neutral-100 shadow-purple-500/20' : 'bg-white border-purple-300 text-slate-900 shadow-purple-500/10'
-                }`}
-              >
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <motion.div 
-                      whileHover={{ scale: 1.25, rotate: 360 }}
-                      transition={{ type: "spring", stiffness: 800 }}
-                      className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/40 cursor-pointer"
-                    >
-                      <Download className="w-5 h-5 animate-pulse" />
-                    </motion.div>
-                    <h2 className="font-black text-base bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">📲 YGMhelper 앱 설치 폼미쳤다!</h2>
+            <motion.div 
+              variants={modalContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`w-full max-w-md p-6 rounded-2xl border shadow-xl relative ${
+                isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-[#e3e3e3]' : 'bg-white border-[#e0e2ec] text-[#1f1f1f]'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#333538] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                    <Download className="w-5 h-5" />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.3, rotate: 90 }}
-                    whileTap={{ scale: 0.8 }}
-                    onClick={() => setShowInstallGuide(false)}
-                    className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                  <h2 className="font-bold text-base">앱으로 설치하기</h2>
+                </div>
+                <button
+                  onClick={() => setShowInstallGuide(false)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm leading-relaxed">
+                <div className={`p-4 rounded-xl border ${
+                  isDarkMode ? 'bg-[#131314] border-[#333538]' : 'bg-neutral-50 border-neutral-200'
+                }`}>
+                  <p className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mb-1">
+                    <Share className="w-4 h-4" /> 아이폰 (Safari)
+                  </p>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm">
+                    하단의 <strong>[공유]</strong> 버튼을 누른 후 <strong>[홈 화면에 추가]</strong>를 선택하시면 앱처럼 편리하게 이용하실 수 있습니다.
+                  </p>
                 </div>
 
-                <div className="space-y-4 text-sm font-medium leading-relaxed">
-                  <motion.div 
-                    whileHover={{ scale: 1.04, x: 5 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    className={`p-4 rounded-2xl border ${
-                      isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <p className="font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mb-1">
-                      <Share className="w-4 h-4" /> 아이폰 (iOS Safari)
-                    </p>
-                    <p className="text-slate-700 dark:text-neutral-400">
-                      사파리 하단 <strong>공유 아이콘(↑)</strong> 누르고 <strong>[홈 화면에 추가]</strong> 클릭시 야르 극락 세팅 완료!
-                    </p>
-                  </motion.div>
-
-                  <motion.div 
-                    whileHover={{ scale: 1.04, x: 5 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    className={`p-4 rounded-2xl border ${
-                      isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <p className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1">
-                      📱 안드로이드 (Chrome)
-                    </p>
-                    <p className="text-slate-700 dark:text-neutral-400">
-                      우상단 <strong>메뉴(⋮)</strong> 클릭 후 <strong>[앱 설치]</strong> 누르면 즉시 도파민 앱 생성 야르!
-                    </p>
-                  </motion.div>
+                <div className={`p-4 rounded-xl border ${
+                  isDarkMode ? 'bg-[#131314] border-[#333538]' : 'bg-neutral-50 border-neutral-200'
+                }`}>
+                  <p className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1">
+                    <Monitor className="w-4 h-4" /> 안드로이드 (Chrome)
+                  </p>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm">
+                    우측 상단 <strong>더보기(⋮)</strong> 메뉴를 누른 후 <strong>[앱 설치]</strong> 또는 <strong>[홈 화면에 추가]</strong>를 선택해 주세요.
+                  </p>
                 </div>
+              </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
-                  <motion.button
-                    whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(99, 102, 241, 0.9)" }}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    onClick={() => setShowInstallGuide(false)}
-                    className="text-sm px-6 py-2.5 rounded-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl transition-all"
-                  >
-                    야르~ 도파민 세팅 확인
-                  </motion.button>
-                </div>
-              </motion.div>
-            </TiltCard>
+              <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#333538] flex justify-end">
+                <button
+                  onClick={() => setShowInstallGuide(false)}
+                  className="text-sm px-5 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
 
-        {/* 📢 1. 공지사항 모달 */}
+        {/* 공지사항 모달 */}
         {showNotice && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           >
-            <TiltCard className="w-full max-w-md">
-              <motion.div 
-                variants={modalContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className={`w-full p-6 rounded-3xl border-2 shadow-2xl relative ${
-                  isDarkMode ? 'bg-neutral-900 border-purple-500/50 text-neutral-100 shadow-purple-500/20' : 'bg-white border-purple-300 text-slate-900 shadow-purple-500/10'
-                }`}
-              >
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <motion.div 
-                      animate={{ scale: [1, 1.25, 1], rotate: [0, 15, -15, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white shadow-xl shadow-purple-500/40 cursor-pointer"
-                    >
-                      <Megaphone className="w-5 h-5" />
-                    </motion.div>
-                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-400 dark:via-pink-400 dark:to-rose-400 bg-clip-text text-transparent">📢 초긴급 도파민 공지! (GOAT)</h2>
+            <motion.div 
+              variants={modalContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`w-full max-w-md p-6 rounded-2xl border shadow-xl relative ${
+                isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-[#e3e3e3]' : 'bg-white border-[#e0e2ec] text-[#1f1f1f]'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#333538] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                    <Megaphone className="w-5 h-5" />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.3, rotate: 90 }}
-                    whileTap={{ scale: 0.8 }}
-                    onClick={handleCloseNotice}
-                    className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                  <h2 className="font-bold text-base">공지사항</h2>
+                </div>
+                <button
+                  onClick={handleCloseNotice}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300">
+                    안내
+                  </span>
+                  <h3 className="font-semibold text-sm sm:text-base">오늘의 급식 실시간 평가 기능</h3>
                 </div>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/40 animate-pulse">
-                      HOT 도파민
-                    </span>
-                    <h3 className="font-extrabold text-sm sm:text-base">오늘의 급식 실시간 도파민 평가 개시!</h3>
-                  </div>
-
-                  <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
-                    isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                  }`}>
-                    오늘 급식 솔직한 후기! GOAT야르부터 억까임까지 알잘딱깔센하게 투표하고 도파민 챙기세요!🔥
-                  </div>
+                <div className={`p-4 rounded-xl border text-xs sm:text-sm leading-relaxed ${
+                  isDarkMode ? 'bg-[#131314] border-[#333538] text-neutral-300' : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                }`}>
+                  오늘 급식에 대해 솔직한 평가를 남겨보세요! 최고예요부터 별로예요까지 버튼을 눌러 간편하게 의견을 표현하실 수 있습니다.
                 </div>
+              </div>
 
-                <div className={`flex items-center ${isAutoNotice ? 'justify-between' : 'justify-end'} pt-4 border-t border-slate-200 dark:border-neutral-800`}>
-                  {isAutoNotice && (
-                    <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
-                      <input
-                        type="checkbox"
-                        checked={neverShowNoticeChecked}
-                        onChange={(e) => setNeverShowNoticeChecked(e.target.checked)}
-                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
-                      />
-                      <span>억까 방지 (다시 안 보기)</span>
-                    </label>
-                  )}
+              <div className={`flex items-center ${isAutoNotice ? 'justify-between' : 'justify-end'} pt-4 border-t border-neutral-200 dark:border-[#333538]`}>
+                {isAutoNotice && (
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-medium cursor-pointer select-none text-neutral-600 dark:text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={neverShowNoticeChecked}
+                      onChange={(e) => setNeverShowNoticeChecked(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 cursor-pointer"
+                    />
+                    <span>다시 보지 않기</span>
+                  </label>
+                )}
 
-                  <motion.button
-                    whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(236, 72, 153, 0.9)" }}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    onClick={handleCloseNotice}
-                    className="text-xs sm:text-sm px-6 py-2.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white shadow-2xl transition-all"
-                  >
-                    야르~ 개추 누르고 확인
-                  </motion.button>
-                </div>
-              </motion.div>
-            </TiltCard>
+                <button
+                  onClick={handleCloseNotice}
+                  className="text-xs sm:text-sm px-5 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
 
-        {/* 📜 2. 패치노트 모달 */}
+        {/* 패치노트 모달 */}
         {showPatchModal && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm"
           >
-            <TiltCard className="w-full max-w-2xl">
-              <motion.div 
-                variants={modalContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className={`w-full max-h-[85vh] p-5 sm:p-6 rounded-3xl border-2 shadow-2xl relative flex flex-col justify-between ${
-                  isDarkMode ? 'bg-neutral-900 border-indigo-500/50 text-neutral-100 shadow-indigo-500/20' : 'bg-white border-indigo-300 text-slate-900 shadow-indigo-500/10'
-                }`}
-              >
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-3 shrink-0">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl shadow-indigo-500/40">
-                      <FileText className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">📜 폼 미친 패치노트 히스토리</h2>
+            <motion.div 
+              variants={modalContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`w-full max-w-2xl max-h-[85vh] p-5 sm:p-6 rounded-2xl border shadow-xl relative flex flex-col justify-between ${
+                isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-[#e3e3e3]' : 'bg-white border-[#e0e2ec] text-[#1f1f1f]'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#333538] mb-3 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                    <FileText className="w-5 h-5" />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.3, rotate: 90 }}
-                    whileTap={{ scale: 0.8 }}
-                    onClick={handleClosePatch}
-                    className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                  <h2 className="font-bold text-base sm:text-lg">업데이트 내역</h2>
+                </div>
+                <button
+                  onClick={handleClosePatch}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
+                <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-neutral-200 dark:border-[#333538] pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
+                  <div className="hidden sm:block my-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider px-2 shrink-0">
+                    버전 목록
+                  </div>
+
+                  {PATCH_HISTORY.map((patch) => (
+                    <button
+                      key={patch.version}
+                      onClick={() => setSelectedPatchVersion(patch.version)}
+                      className={`h-9 min-h-[36px] max-h-[36px] px-3 rounded-xl font-medium text-xs sm:text-sm text-left flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
+                        selectedPatchVersion === patch.version
+                          ? 'bg-[#1a73e8] text-white shadow-sm'
+                          : isDarkMode 
+                            ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' 
+                            : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                        <span>v{patch.version}</span>
+                      </div>
+                      {patch.version === CURRENT_VERSION && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold shrink-0 ml-1.5">
+                          최신
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 my-1 flex-1 min-h-0 overflow-hidden">
-                  <div className="w-full sm:w-44 flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-hidden sm:overflow-y-auto shrink-0 pb-2 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-neutral-800 pr-0 sm:pr-3 max-h-[52px] sm:max-h-full">
-                    <div className="hidden sm:block my-1 text-[11px] font-black text-purple-500 dark:text-purple-400 uppercase tracking-wider px-2 shrink-0">버전 히스토리</div>
+                <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1">
+                  {(() => {
+                    const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
+                    if (!patch) return null;
 
-                    {PATCH_HISTORY.map((patch) => (
-                      <motion.button
-                        key={patch.version}
-                        whileHover={{ scale: 1.08, x: 4 }}
-                        whileTap={{ scale: 0.9 }}
-                        transition={{ type: "spring", stiffness: 800 }}
-                        onClick={() => setSelectedPatchVersion(patch.version)}
-                        className={`h-9 min-h-[36px] max-h-[36px] px-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-left flex items-center justify-between transition-all shrink-0 whitespace-nowrap ${
-                          selectedPatchVersion === patch.version
-                            ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/30'
-                            : isDarkMode ? 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                          <span>v{patch.version}</span>
+                    return (
+                      <div key={patch.version} className="space-y-3 pr-1">
+                        <div className="flex items-center justify-between gap-2 border-b border-neutral-200 dark:border-[#333538] pb-2">
+                          <h3 className="font-bold text-sm sm:text-base text-blue-600 dark:text-blue-400">
+                            {patch.title}
+                          </h3>
+                          <span className="text-xs text-neutral-400 font-medium shrink-0">{patch.date}</span>
                         </div>
-                        {patch.version === CURRENT_VERSION && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-gradient-to-r from-amber-400 to-yellow-400 text-neutral-900 font-black shrink-0 ml-1.5 shadow-sm">NEW</span>
-                        )}
-                      </motion.button>
-                    ))}
-                  </div>
 
-                  <div className="flex-1 min-h-0 overflow-y-auto pl-0 sm:pl-2 pt-1 sm:pt-0 pr-1">
-                    {(() => {
-                      const patch = PATCH_HISTORY.find((p) => p.version === selectedPatchVersion);
-                      if (!patch) return null;
-
-                      return (
-                        <motion.div 
-                          key={patch.version}
-                          initial={{ opacity: 0, x: 15, scale: 0.95 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          transition={{ type: "spring", stiffness: 800, damping: 22 }}
-                          className="space-y-3 pr-1"
-                        >
-                          <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2">
-                            <h3 className="font-black text-sm sm:text-base text-purple-600 dark:text-purple-400">
-                              {patch.title}
-                            </h3>
-                            <span className="text-xs text-slate-400 font-bold shrink-0">{patch.date}</span>
-                          </div>
-
-                          <div className={`p-4 rounded-2xl border text-xs sm:text-sm font-medium ${
-                            isDarkMode ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                          }`}>
-                            <p className="font-extrabold text-xs text-purple-600 dark:text-purple-400 mb-2 flex items-center gap-1">
-                              <Zap className="w-3.5 h-3.5 fill-purple-600 dark:fill-purple-400" /> 도파민 패치 핵심 요약
-                            </p>
-                            <ul className="list-disc list-inside space-y-1.5 pl-1">
-                              {patch.changes.map((change, idx) => (
-                                <li key={idx} className="leading-relaxed">{change}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </motion.div>
-                      );
-                    })()}
-                  </div>
+                        <div className={`p-4 rounded-xl border text-xs sm:text-sm ${
+                          isDarkMode ? 'bg-[#131314] border-[#333538] text-neutral-300' : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                        }`}>
+                          <ul className="list-disc list-inside space-y-1.5 pl-1">
+                            {patch.changes.map((change, idx) => (
+                              <li key={idx} className="leading-relaxed">{change}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
+              </div>
 
-                <div className={`flex items-center ${isAutoPatch ? 'justify-between' : 'justify-end'} pt-3 border-t border-slate-200 dark:border-neutral-800 shrink-0 mt-2`}>
-                  {isAutoPatch && (
-                    <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold cursor-pointer select-none text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200">
-                      <input
-                        type="checkbox"
-                        checked={neverShowPatchChecked}
-                        onChange={(e) => setNeverShowPatchChecked(e.target.checked)}
-                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 cursor-pointer"
-                      />
-                      <span>이 버전 끄기</span>
-                    </label>
-                  )}
+              <div className={`flex items-center ${isAutoPatch ? 'justify-between' : 'justify-end'} pt-3 border-t border-neutral-200 dark:border-[#333538] shrink-0 mt-2`}>
+                {isAutoPatch && (
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-medium cursor-pointer select-none text-neutral-600 dark:text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={neverShowPatchChecked}
+                      onChange={(e) => setNeverShowPatchChecked(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 cursor-pointer"
+                    />
+                    <span>이 버전 안내 닫기</span>
+                  </label>
+                )}
 
-                  <motion.button
-                    whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(99, 102, 241, 0.9)" }}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    onClick={handleClosePatch}
-                    className="text-xs sm:text-sm px-6 py-2.5 rounded-2xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl transition-all"
-                  >
-                    야르~ 확인완료
-                  </motion.button>
-                </div>
-              </motion.div>
-            </TiltCard>
+                <button
+                  onClick={handleClosePatch}
+                  className="text-xs sm:text-sm px-5 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
 
-        {/* 🔍 개별 알러지 모달 */}
+        {/* 개별 메뉴 알레르기 모달 */}
         {selectedDishAllergy && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           >
-            <TiltCard className="w-full max-w-md">
-              <motion.div 
-                variants={modalContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className={`w-full p-6 rounded-3xl border-2 shadow-2xl relative ${
-                  isDarkMode ? 'bg-neutral-900 border-amber-500/50 text-neutral-100 shadow-amber-500/20' : 'bg-white border-amber-300 text-slate-900 shadow-amber-500/10'
-                }`}
-              >
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xl shadow-amber-500/40">
-                      <Info className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <div>
-                      <h2 className="font-extrabold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 font-bold">알러지 요소 정밀 체크</p>
-                    </div>
+            <motion.div 
+              variants={modalContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`w-full max-w-md p-6 rounded-2xl border shadow-xl relative ${
+                isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-[#e3e3e3]' : 'bg-white border-[#e0e2ec] text-[#1f1f1f]'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#333538] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                    <Info className="w-5 h-5" />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.3, rotate: 90 }}
-                    whileTap={{ scale: 0.8 }}
-                    onClick={() => setSelectedDishAllergy(null)}
-                    className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                  <div>
+                    <h2 className="font-bold text-base sm:text-lg">{selectedDishAllergy.dishName}</h2>
+                    <p className="text-xs text-neutral-500">알레르기 유발 성분 안내</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setSelectedDishAllergy(null)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="space-y-2 py-2 max-h-[320px] overflow-y-auto">
-                  {selectedDishAllergy.allergyStr
-                    .split('.')
-                    .filter(Boolean)
-                    .map((numStr, idx) => {
-                      const cleanNum = numStr.trim();
-                      const allergyName = ALLERGY_MAP[cleanNum] || `알러지 ${cleanNum}`;
-                      return (
-                        <motion.div 
-                          key={idx}
-                          initial={{ opacity: 0, x: -15, scale: 0.95 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          transition={{ type: "spring", stiffness: 800, damping: 20, delay: idx * 0.01 }}
-                          className={`p-3 rounded-2xl border font-bold text-sm flex items-center gap-3 ${
-                            isDarkMode ? 'bg-neutral-950 border-neutral-800 text-amber-400' : 'bg-amber-50/80 border-amber-200 text-amber-900'
-                          }`}
-                        >
-                          <span className="w-7 h-7 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-xs font-black text-white shadow-md shrink-0">
-                            {cleanNum}
-                          </span>
-                          <span>{allergyName}</span>
-                        </motion.div>
-                      );
-                    })}
-                </div>
+              <div className="space-y-2 py-2 max-h-[300px] overflow-y-auto">
+                {selectedDishAllergy.allergyStr
+                  .split('.')
+                  .filter(Boolean)
+                  .map((numStr, idx) => {
+                    const cleanNum = numStr.trim();
+                    const allergyName = ALLERGY_MAP[cleanNum] || `알레르기 ${cleanNum}`;
+                    return (
+                      <div 
+                        key={idx}
+                        className={`p-3 rounded-xl border font-medium text-sm flex items-center gap-3 ${
+                          isDarkMode ? 'bg-[#131314] border-[#333538] text-neutral-200' : 'bg-neutral-50 border-neutral-200 text-neutral-800'
+                        }`}
+                      >
+                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                          {cleanNum}
+                        </span>
+                        <span>{allergyName}</span>
+                      </div>
+                    );
+                  })}
+              </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
-                  <motion.button
-                    whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(245, 158, 11, 0.9)" }}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    onClick={() => setSelectedDishAllergy(null)}
-                    className="text-sm px-6 py-2.5 rounded-2xl font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xl transition-all"
-                  >
-                    야르~ 체크완료
-                  </motion.button>
-                </div>
-              </motion.div>
-            </TiltCard>
+              <div className="pt-4 border-t border-neutral-200 dark:border-[#333538] flex justify-end">
+                <button
+                  onClick={() => setSelectedDishAllergy(null)}
+                  className="text-sm px-5 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
 
-        {/* 🧬 전체 알러지 정보 모달 */}
+        {/* 전체 알레르기 목록 모달 */}
         {showAllergyModal && (
           <motion.div 
             variants={modalOverlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           >
-            <TiltCard className="w-full max-w-md">
-              <motion.div 
-                variants={modalContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className={`w-full p-6 rounded-3xl border-2 shadow-2xl relative ${
-                  isDarkMode ? 'bg-neutral-900 border-orange-500/50 text-neutral-100 shadow-orange-500/20' : 'bg-white border-orange-300 text-slate-900 shadow-orange-500/10'
-                }`}
-              >
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-neutral-800 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40">
-                      <Info className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <h2 className="font-extrabold text-base bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent">전체 알러지 성분 알잘딱 정리</h2>
+            <motion.div 
+              variants={modalContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`w-full max-w-md p-6 rounded-2xl border shadow-xl relative ${
+                isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-[#e3e3e3]' : 'bg-white border-[#e0e2ec] text-[#1f1f1f]'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#333538] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                    <Info className="w-5 h-5" />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.3, rotate: 90 }}
-                    whileTap={{ scale: 0.8 }}
-                    onClick={() => setShowAllergyModal(false)}
-                    className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                  <div>
+                    <h2 className="font-bold text-base">알레르기 유발 정보 안내</h2>
+                    <p className="text-xs text-neutral-500">식품의약품안전처 지정 19종</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setShowAllergyModal(false)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs font-semibold py-2 max-h-[320px] overflow-y-auto">
-                  {ALLERGY_LIST.map((item, idx) => (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 800, damping: 18, delay: idx * 0.005 }}
-                      className={`p-2.5 rounded-xl border font-bold ${
-                        isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {item}
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
-                  <motion.button
-                    whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(249, 115, 22, 0.9)" }}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 800 }}
-                    onClick={() => setShowAllergyModal(false)}
-                    className="text-sm px-6 py-2.5 rounded-2xl font-black bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-2xl transition-all"
+              <div className="grid grid-cols-2 gap-2 text-xs py-2 max-h-[320px] overflow-y-auto">
+                {ALLERGY_LIST.map((item, idx) => (
+                  <div 
+                    key={idx}
+                    className={`p-2.5 rounded-xl border font-medium ${
+                      isDarkMode ? 'bg-[#131314] border-[#333538] text-neutral-300' : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                    }`}
                   >
-                    야르~ 확인
-                  </motion.button>
-                </div>
-              </motion.div>
-            </TiltCard>
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t border-neutral-200 dark:border-[#333538] flex justify-end">
+                <button
+                  onClick={() => setShowAllergyModal(false)}
+                  className="text-sm px-5 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 📱 상단 네비게이션 헤더 */}
-      <header className={`border-b sticky top-0 z-50 backdrop-blur-xl transition-all ${
-        isDarkMode ? 'bg-neutral-900/85 border-neutral-800/80 shadow-lg shadow-black/40' : 'bg-white/85 border-slate-200/80 shadow-sm'
+      {/* 상단 헤더 (Google / Gemini 스타일) */}
+      <header className={`border-b sticky top-0 z-50 backdrop-blur-md transition-colors ${
+        isDarkMode ? 'bg-[#131314]/90 border-[#282a2c]' : 'bg-white/90 border-[#e0e2ec]'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ type: "spring", stiffness: 800, damping: 20 }}
-            className="flex items-center gap-2.5"
-          >
-            <motion.div 
-              whileHover={{ scale: 1.25, rotate: [0, -25, 25, 0], boxShadow: "0px 0px 30px rgba(99, 102, 241, 0.9)" }}
-              whileTap={{ scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 800 }}
-              className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/40 cursor-pointer"
-            >
-              <GraduationCap className="w-6 h-6 animate-pulse" />
-            </motion.div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+              <Sparkles className="w-5 h-5" />
+            </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-lg tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-lg tracking-tight text-neutral-900 dark:text-neutral-100">
                   YGMhelper
-                </h1>
-                <motion.span 
-                  animate={{ scale: [1, 1.18, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.8 }}
-                  className="text-[10px] px-2 py-0.5 rounded-lg font-black bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30"
-                >
-                  GOAT
-                </motion.span>
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                  서울용곡중
+                </span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {!isStandalone && (
-              <motion.button
-                whileHover={{ scale: 1.15, boxShadow: "0px 0px 25px rgba(59, 130, 246, 0.8)" }}
-                whileTap={{ scale: 0.85 }}
-                transition={{ type: "spring", stiffness: 800 }}
+              <button
                 onClick={handleInstallClick}
-                className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 transition-all"
-                title="앱으로 설치하기"
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
-                <Download className="w-4.5 h-4.5" />
-              </motion.button>
+                <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>앱 설치</span>
+              </button>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.15, rotate: 45, boxShadow: "0px 0px 25px rgba(245, 158, 11, 0.8)" }}
-              whileTap={{ scale: 0.85 }}
-              transition={{ type: "spring", stiffness: 800 }}
+            <button
               onClick={toggleDarkMode}
-              className={`p-2.5 rounded-2xl border transition-all ${
+              className={`p-2 rounded-full border transition-colors ${
                 isDarkMode 
-                  ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-700' 
-                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
+                  ? 'border-neutral-700 hover:bg-neutral-800 text-amber-400' 
+                  : 'border-neutral-200 hover:bg-neutral-100 text-neutral-700'
               }`}
               title="테마 전환"
             >
               {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
-            </motion.button>
+            </button>
 
             <div className="relative" ref={menuRef}>
-              <motion.button
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.85 }}
-                transition={{ type: "spring", stiffness: 800 }}
+              <button
                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                className={`p-2.5 rounded-2xl border flex items-center gap-1 transition-all ${
+                className={`p-2 rounded-full border transition-colors flex items-center ${
                   isDarkMode 
-                    ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
-                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
+                    ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
+                    : 'border-neutral-200 hover:bg-neutral-100 text-neutral-700'
                 }`}
-                title="메뉴 열기"
+                title="메뉴"
               >
-                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180 text-purple-500 dark:text-purple-400' : ''}`} />
-              </motion.button>
+                <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
               <AnimatePresence>
                 {isMenuOpen && (
                   <motion.div 
-                    initial={{ opacity: 0, y: -10, scale: 0.85 }}
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.85 }}
-                    transition={{ type: "spring", stiffness: 800, damping: 20 }}
-                    className={`absolute right-0 mt-2 w-48 rounded-2xl border-2 shadow-2xl p-1.5 z-50 ${
-                      isDarkMode ? 'bg-neutral-900 border-purple-500/40 text-neutral-200 shadow-purple-500/20' : 'bg-white border-purple-200 text-slate-800 shadow-purple-500/10'
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute right-0 mt-2 w-44 rounded-2xl border shadow-lg p-1.5 z-50 ${
+                      isDarkMode ? 'bg-[#1e1f20] border-[#333538] text-neutral-200' : 'bg-white border-[#e0e2ec] text-neutral-800'
                     }`}
                   >
-                    <motion.button
-                      whileHover={{ scale: 1.06, x: 4 }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 800 }}
+                    <button
                       onClick={openNoticeModal}
-                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all ${
-                        isDarkMode ? 'hover:bg-neutral-800 text-neutral-200' : 'hover:bg-slate-100 text-slate-700'
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                        isDarkMode ? 'hover:bg-neutral-800' : 'hover:bg-neutral-100'
                       }`}
                     >
-                      <Megaphone className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <Megaphone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>공지사항</span>
-                    </motion.button>
+                    </button>
 
-                    <motion.button
-                      whileHover={{ scale: 1.06, x: 4 }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 800 }}
+                    <button
                       onClick={openPatchModal}
-                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all ${
-                        isDarkMode ? 'hover:bg-neutral-800 text-pink-400' : 'hover:bg-slate-100 text-slate-700'
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                        isDarkMode ? 'hover:bg-neutral-800' : 'hover:bg-neutral-100'
                       }`}
                     >
-                      <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                      <span>패치노트</span>
-                    </motion.button>
+                      <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>업데이트 내역</span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1505,113 +1346,74 @@ export default function App() {
         </div>
       </header>
 
-      {/* 🖥️ 풀 와이드 메인 영역 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      {/* 메인 콘텐츠 컨테이너 */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
-        {/* 📱 모바일 스티키 탭 바 (sticky top-16 z-40) */}
-        <div className={`relative flex md:hidden p-1.5 mb-4 rounded-2xl sticky top-16 z-40 transition-all duration-200 backdrop-blur-xl backdrop-saturate-180 shadow-2xl ${
-          isDarkMode 
-            ? 'bg-neutral-900/80 border border-white/10 shadow-neutral-950/80 ring-1 ring-white/10' 
-            : 'bg-white/80 border border-white/40 shadow-slate-300/60 ring-1 ring-black/5'
-        }`}>
-          <motion.div 
-            layout
-            transition={{ type: "spring", stiffness: 800, damping: 25 }}
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-lg ${
-              activeTab === 'meal' ? 'left-1.5' : 'left-[calc(50%+0.1875rem)]'
-            } ${
-              isDarkMode ? 'bg-gradient-to-r from-neutral-800 to-neutral-700 ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200'
-            }`}
-          />
-
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 800 }}
+        {/* 모바일 탭 바 (Material 3 Segmented Buttons) */}
+        <div className="flex md:hidden p-1 mb-5 rounded-full bg-neutral-200/70 dark:bg-[#282a2c] sticky top-20 z-40">
+          <button
             onClick={() => setActiveTab('meal')}
-            className={`relative z-10 flex-1 py-3 font-black text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
+            className={`flex-1 py-2.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
               activeTab === 'meal'
-                ? isDarkMode ? 'text-white' : 'text-slate-900'
-                : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
+                ? isDarkMode ? 'bg-[#1e1f20] text-white shadow-sm' : 'bg-white text-blue-600 shadow-sm'
+                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
-            <Utensils className="w-5 h-5 text-orange-500 animate-pulse" />
-            <span>급식표</span>
-          </motion.button>
+            <Utensils className="w-4 h-4" />
+            <span>오늘의 급식</span>
+          </button>
 
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 800 }}
+          <button
             onClick={() => setActiveTab('schedule')}
-            className={`relative z-10 flex-1 py-3 font-black text-base flex items-center justify-center gap-2 transition-colors duration-200 ${
+            className={`flex-1 py-2.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
               activeTab === 'schedule'
-                ? isDarkMode ? 'text-white' : 'text-slate-900'
-                : isDarkMode ? 'text-neutral-400' : 'text-slate-600'
+                ? isDarkMode ? 'bg-[#1e1f20] text-white shadow-sm' : 'bg-white text-blue-600 shadow-sm'
+                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
-            <BookOpen className="w-5 h-5 text-purple-500 animate-pulse" />
+            <BookOpen className="w-4 h-4" />
             <span>실시간 시간표</span>
-          </motion.button>
+          </button>
         </div>
 
-        {/* 💻 PC/태블릿 12컬럼 그리드 */}
+        {/* 2컬럼 레이아웃 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* 🍽️ 급식표 Card */}
-          <TiltCard className={`lg:col-span-7 ${activeTab === 'meal' ? 'block' : 'hidden md:block'}`}>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 800, damping: 22 }}
-              className={`p-5 sm:p-7 rounded-3xl border flex flex-col justify-between h-full shadow-2xl ${
-                isDarkMode ? 'bg-neutral-900/90 border-neutral-800/80 shadow-neutral-950/80' : 'bg-white border-slate-200 shadow-slate-200/80'
-              }`}
-            >
+          {/* 급식표 Card */}
+          <div className={`lg:col-span-7 ${activeTab === 'meal' ? 'block' : 'hidden md:block'}`}>
+            <div className={`p-6 sm:p-7 rounded-2xl border shadow-[0_1px_3px_0_rgba(60,64,67,0.06)] flex flex-col justify-between transition-all ${
+              isDarkMode ? 'bg-[#1e1f20] border-[#333538]' : 'bg-white border-[#e0e2ec]'
+            }`}>
               <div>
-                <div className={`flex items-center justify-between pb-3.5 border-b mb-4 ${
-                  isDarkMode ? 'border-neutral-800' : 'border-slate-200'
-                }`}>
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-[#333538] mb-5">
                   <div className="flex items-center gap-2.5">
-                    <motion.div 
-                      whileHover={{ scale: 1.25, rotate: [0, -15, 15, 0], boxShadow: "0px 0px 30px rgba(249, 115, 22, 0.9)" }}
-                      whileTap={{ scale: 0.85 }}
-                      transition={{ type: "spring", stiffness: 800 }}
-                      className="p-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40 cursor-pointer"
-                    >
-                      <Utensils className="w-5.5 h-5.5 animate-pulse" />
-                    </motion.div>
+                    <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                      <Utensils className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-400 dark:via-amber-400 dark:to-yellow-400 bg-clip-text text-transparent">
-                        지리는 급식 라인업 (GOAT야르)
+                      <h2 className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
+                        오늘의 급식
                       </h2>
-                      <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>YGM 극락 맛도리 식단표</p>
+                      <p className="text-xs text-neutral-500">서울용곡중학교 식단 정보</p>
                     </div>
                   </div>
                 </div>
 
-                {/* 📅 모바일/PC 날짜 헤더 대형화 & 가독성/클릭 편의성 완벽 복원 */}
-                <div className={`p-3.5 sm:p-4 rounded-2xl border mb-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar ${
-                  isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                {/* 날짜 선택 컨트롤 (Google Calendar 스타일) */}
+                <div className={`p-3 rounded-xl border mb-4 flex items-center justify-between gap-2 ${
+                  isDarkMode ? 'bg-[#131314] border-[#333538]' : 'bg-neutral-50 border-neutral-200'
                 }`}>
-                  <motion.div 
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ type: "spring", stiffness: 800 }}
+                  <div 
                     onClick={openDatePicker}
-                    className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none shrink-0"
+                    className="flex items-center gap-2 cursor-pointer select-none py-1 px-2 rounded-lg hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-purple-600 dark:text-purple-400 animate-pulse" />
-                    <span className={`text-sm sm:text-lg font-black tracking-tight whitespace-nowrap ${
-                      isDarkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
+                    <CalendarIcon className="w-4.5 h-4.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="text-sm sm:text-base font-semibold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+                      {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 {currentDate.getDate()}일
                     </span>
-                    <motion.span 
-                      whileHover={{ scale: 1.15 }}
-                      transition={{ type: "spring", stiffness: 800 }}
-                      className="text-xs sm:text-sm px-2.5 sm:px-3 py-1 rounded-xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shrink-0"
-                    >
-                      {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}
-                    </motion.span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 shrink-0">
+                      {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}요일
+                    </span>
 
                     <input
                       ref={dateInputRef}
@@ -1620,412 +1422,317 @@ export default function App() {
                       onChange={handleDateSelect}
                       className="sr-only"
                     />
-                  </motion.div>
+                  </div>
 
-                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <motion.button
-                      whileHover={{ scale: 1.08, boxShadow: "0px 0px 15px rgba(168, 85, 247, 0.5)" }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 800 }}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
                       onClick={resetToToday}
-                      className={`text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-black border transition-all whitespace-nowrap shrink-0 ${
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${
                         isDarkMode 
-                          ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-200' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
+                          ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
+                          : 'border-neutral-300 hover:bg-neutral-100 text-neutral-700 bg-white'
                       }`}
                     >
-                      <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1 shrink-0" />
-                      <span>오늘</span>
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.12, x: -2 }}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: "spring", stiffness: 800 }}
+                      오늘
+                    </button>
+                    <button
                       onClick={() => changeDate(-1)}
-                      className={`p-2 sm:p-2.5 rounded-xl border transition-all shrink-0 ${
+                      className={`p-1.5 rounded-full border transition-colors ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
+                          : 'border-neutral-300 hover:bg-neutral-100 text-neutral-700 bg-white'
                       }`}
-                      title="이전 평일"
+                      title="이전 날짜"
                     >
-                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.12, x: 2 }}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: "spring", stiffness: 800 }}
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => changeDate(1)}
-                      className={`p-2 sm:p-2.5 rounded-xl border transition-all shrink-0 ${
+                      className={`p-1.5 rounded-full border transition-colors ${
                         isDarkMode 
                           ? 'border-neutral-700 hover:bg-neutral-800 text-neutral-300' 
-                          : 'border-slate-300 hover:bg-slate-200 text-slate-800 bg-white shadow-sm'
+                          : 'border-neutral-300 hover:bg-neutral-100 text-neutral-700 bg-white'
                       }`}
-                      title="다음 평일"
+                      title="다음 날짜"
                     >
-                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </motion.button>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
+                {/* 총 칼로리 */}
                 {meal.calories && !mealLoading && (
                   <div className="flex items-center justify-between px-1 mb-3">
-                    <span className={`text-xs sm:text-sm font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
-                      총 칼로리 (벌크업 스펙)
+                    <span className="text-xs text-neutral-500 font-medium">
+                      총 열량
                     </span>
-                    <motion.span 
-                      whileHover={{ scale: 1.15 }}
-                      transition={{ type: "spring", stiffness: 800 }}
-                      className="text-xs sm:text-sm px-3.5 py-1 rounded-full font-black bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30"
-                    >
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       {meal.calories}
-                    </motion.span>
+                    </span>
                   </div>
                 )}
 
+                {/* 메뉴 목록 */}
                 {mealLoading ? (
-                  <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
-                    <div className="relative flex items-center justify-center">
-                      <div className="w-14 h-14 rounded-full border-4 border-orange-500/20 border-t-orange-500 animate-spin" />
-                      <Sparkles className="w-6 h-6 text-orange-500 absolute animate-pulse" />
-                    </div>
-                    <span className="text-sm font-black text-transparent bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text animate-pulse">
-                      야르~ 급식 도파민 데이터 획득 중...
+                  <div className="py-20 flex flex-col items-center justify-center text-neutral-400 gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                    <span className="text-sm font-medium text-neutral-500">
+                      식단 정보를 불러오는 중입니다...
                     </span>
                   </div>
                 ) : meal.menuItems && meal.menuItems.length > 0 ? (
-                  <motion.div 
-                    variants={listContainerVariants}
-                    initial="hidden"
-                    animate="show"
-                    className="space-y-3"
-                  >
+                  <div className="space-y-2">
                     {meal.menuItems.map((dish, idx) => {
                       const category = getDishCategory(dish.name);
                       const badgeClass = getCategoryBadgeStyle(category, isDarkMode);
 
                       return (
-                        <motion.div
+                        <div
                           key={idx}
-                          variants={listItemVariants}
-                          whileHover={{ scale: 1.03, x: 6 }}
-                          whileTap={{ scale: 0.96 }}
-                          transition={{ type: "spring", stiffness: 800, damping: 20 }}
-                          className={`px-4 py-3.5 sm:py-4 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all cursor-pointer ${
+                          className={`px-4 py-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
                             isDarkMode 
-                              ? 'bg-neutral-950/90 border-neutral-800/80 hover:border-purple-500/50 hover:shadow-purple-500/10' 
-                              : 'bg-slate-50 border-slate-200/80 hover:border-purple-300'
+                              ? 'bg-[#131314] border-[#333538] hover:border-neutral-600' 
+                              : 'bg-neutral-50/70 border-neutral-200 hover:border-neutral-300'
                           }`}
                         >
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
-                            <span className={`font-black text-base sm:text-lg leading-snug ${
-                              isDarkMode ? 'text-white' : 'text-slate-900'
-                            }`}>
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-semibold text-sm sm:text-base text-neutral-900 dark:text-neutral-100">
                               {dish.name}
                             </span>
-                            <motion.span 
-                              whileHover={{ scale: 1.18 }}
-                              transition={{ type: "spring", stiffness: 800 }}
-                              className={`text-xs font-black px-2.5 py-0.5 rounded-lg border self-start sm:self-auto ${badgeClass}`}
-                            >
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${badgeClass}`}>
                               {category}
-                            </motion.span>
+                            </span>
                           </div>
 
                           {dish.allergy && (
-                            <motion.button
-                              whileHover={{ scale: 1.15, boxShadow: "0px 0px 18px rgba(245, 158, 11, 0.7)" }}
-                              whileTap={{ scale: 0.85 }}
-                              transition={{ type: "spring", stiffness: 800 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy });
-                              }}
-                              className={`text-xs font-extrabold px-2.5 py-1.5 rounded-xl border shrink-0 transition-all ${
+                            <button
+                              onClick={() => setSelectedDishAllergy({ dishName: dish.name, allergyStr: dish.allergy })}
+                              className={`text-xs px-2 py-1 rounded-md border transition-colors shrink-0 ${
                                 isDarkMode 
-                                  ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-amber-500/60 hover:text-amber-400' 
-                                  : 'bg-white border-slate-200 text-slate-600 hover:border-amber-500/60 hover:text-amber-700 shadow-sm'
+                                  ? 'bg-[#1e1f20] border-neutral-700 text-neutral-400 hover:text-neutral-200' 
+                                  : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
                               }`}
-                              title="터치하여 알러지 성분 확인"
+                              title="알레르기 성분 확인"
                             >
-                              알러지 {dish.allergy}
-                            </motion.button>
+                              알레르기 {dish.allergy}
+                            </button>
                           )}
-                        </motion.div>
+                        </div>
                       );
                     })}
-                  </motion.div>
+                  </div>
                 ) : (
-                  <div className={`p-12 rounded-2xl text-center text-sm font-extrabold ${
-                    isDarkMode ? 'bg-neutral-950/60 text-neutral-400' : 'bg-slate-50 text-slate-500'
+                  <div className={`p-12 rounded-xl text-center text-sm font-medium ${
+                    isDarkMode ? 'bg-[#131314] text-neutral-400' : 'bg-neutral-50 text-neutral-500'
                   }`}>
-                    급식 정보가 없습니다. (오늘 휴교이거나 NEIS 점검 중!)
+                    등록된 급식 정보가 없습니다. (휴교일이거나 식단이 등록되지 않았습니다.)
                   </div>
                 )}
 
-                {/* 🗳️ 실시간 도파민 평가 섹션 (RATING_ALIASES 탑재로 총합 및 개별 데이터 100% 동기화) */}
+                {/* 실시간 급식 평가 섹션 */}
                 {isWithin7Days && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 800, damping: 22 }}
-                    className={`mt-6 p-4 rounded-2xl border ${
-                      isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200/90'
-                    }`}
-                  >
+                  <div className={`mt-6 p-4 rounded-xl border ${
+                    isDarkMode ? 'bg-[#131314] border-[#333538]' : 'bg-neutral-50 border-neutral-200'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs sm:text-sm font-black flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                        <span>🍱 실시간 급식 도파민 평가</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                          오늘의 급식 평가
+                        </span>
                         {totalVotes > 0 && (
-                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black shadow-lg shadow-purple-500/30">
-                            {totalVotes}명 참전
+                          <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                            {totalVotes}명 참여
                           </span>
                         )}
-                      </span>
+                      </div>
+
                       {!isToday ? (
-                        <span className="text-[11px] text-amber-600 dark:text-amber-500 font-black">오늘 급식만 참여 가능</span>
+                        <span className="text-xs text-neutral-400 font-medium">당일만 참여 가능</span>
                       ) : userVotedRating ? (
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black">✓ 투표 완료</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> 투표 완료
+                        </span>
                       ) : null}
                     </div>
 
-                    <div className="grid grid-cols-5 gap-1.5">
-                      {RATING_OPTIONS.map((opt, idx) => {
+                    <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+                      {RATING_OPTIONS.map((opt) => {
                         const IconComponent = opt.icon;
-                        const count = getRatingCount(ratings, opt.label, idx);
+                        const count = getRatingCount(ratings, opt.label);
                         const isSelected = userVotedRating === opt.label;
                         const isDisabled = !isToday || Boolean(userVotedRating) || isRatingSubmitting;
 
                         return (
-                          <motion.button
+                          <button
                             key={opt.label}
-                            whileHover={!isDisabled ? { scale: 1.12, transition: { type: "spring", stiffness: 800 } } : {}}
-                            whileTap={!isDisabled ? { scale: 0.88 } : {}}
                             onClick={() => handleVoteRating(opt.label)}
                             disabled={isDisabled}
-                            className={`px-1 py-3 sm:py-3.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all min-w-0 shadow-md ${
+                            className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
                               isSelected 
-                                ? 'ring-2 ring-purple-600 border-purple-600 font-black shadow-xl shadow-purple-500/40' 
-                                : isDarkMode ? opt.darkStyle : opt.lightStyle
-                            } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                ? opt.activeClass 
+                                : opt.colorClass
+                            } ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-[1.02]'}`}
                           >
-                            <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 animate-pulse text-current" />
-                            <span className="text-[11px] sm:text-xs font-black leading-none whitespace-nowrap tracking-tighter text-current">
+                            <IconComponent className="w-5 h-5 shrink-0" />
+                            <span className="text-xs font-semibold leading-tight whitespace-nowrap">
                               {opt.label}
                             </span>
-                            <span className="text-[10px] sm:text-[11px] font-black text-current">{count}</span>
-                          </motion.button>
+                            <span className="text-[11px] font-bold opacity-80">{count}</span>
+                          </button>
                         );
                       })}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
-              {/* 🎯 하단 버튼 간격 1:1 정밀 균등 배치 (`grid grid-cols-2 gap-3.5`) */}
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-neutral-800 grid grid-cols-2 gap-3.5">
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0px 0px 25px rgba(249, 115, 22, 0.7)" }}
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: "spring", stiffness: 800 }}
+              {/* 하단 보조 버튼 */}
+              <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-[#333538] grid grid-cols-2 gap-3">
+                <button
                   onClick={() => setShowAllergyModal(true)}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-black text-xs sm:text-sm border transition-all shadow-md ${
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium border transition-colors ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700 hover:border-orange-500/50' 
-                      : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-orange-300'
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
+                      : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
-                  <Info className="w-4.5 h-4.5 text-orange-500 shrink-0" />
-                  <span className="whitespace-nowrap">알러지 알잘딱 정돈</span>
-                </motion.button>
+                  <Info className="w-4 h-4 text-neutral-500" />
+                  <span>전체 알레르기 정보</span>
+                </button>
 
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0px 0px 25px rgba(59, 130, 246, 0.7)" }}
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: "spring", stiffness: 800 }}
+                <button
                   onClick={loadMealData}
                   disabled={mealLoading}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-black text-xs sm:text-sm border transition-all shadow-md ${
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium border transition-colors ${
                     isDarkMode 
-                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700 hover:border-blue-500/50' 
-                      : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-blue-300'
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
+                      : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
-                  <RotateCcw className={`w-4.5 h-4.5 text-blue-500 shrink-0 ${mealLoading ? 'animate-spin' : ''}`} />
-                  <span className="whitespace-nowrap">다시 당겨오기</span>
-                </motion.button>
+                  <RotateCcw className={`w-4 h-4 text-blue-600 dark:text-blue-400 ${mealLoading ? 'animate-spin' : ''}`} />
+                  <span>새로고침</span>
+                </button>
               </div>
-            </motion.div>
-          </TiltCard>
+            </div>
+          </div>
 
-          {/* 📚 시간표 Card (스크롤 시 상단 추적 고정 sticky top-20 z-30 self-start) */}
+          {/* 시간표 Card */}
           <div className={`lg:col-span-5 sticky top-20 z-30 self-start ${activeTab === 'schedule' ? 'block' : 'hidden md:block'}`}>
-            <TiltCard>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 800, damping: 22, delay: 0.02 }}
-                className={`p-5 sm:p-7 rounded-3xl border flex flex-col justify-between shadow-2xl ${
-                  isDarkMode ? 'bg-neutral-900/90 border-neutral-800/80 shadow-neutral-950/80' : 'bg-white border-slate-200 shadow-slate-200/80'
-                }`}
-              >
-                <div>
-                  <div className={`flex items-center justify-between pb-3.5 border-b mb-4 ${
-                    isDarkMode ? 'border-neutral-800' : 'border-slate-200'
-                  }`}>
-                    <div className="flex items-center gap-2.5">
-                      <motion.div 
-                        whileHover={{ scale: 1.25, rotate: [0, -15, 15, 0], boxShadow: "0px 0px 30px rgba(168, 85, 247, 0.9)" }}
-                        whileTap={{ scale: 0.85 }}
-                        transition={{ type: "spring", stiffness: 800 }}
-                        className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/40 cursor-pointer"
-                      >
-                        <BookOpen className="w-5.5 h-5.5 animate-pulse" />
-                      </motion.div>
-                      <div>
-                        <h2 className="font-black text-base sm:text-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 dark:from-purple-400 dark:via-indigo-400 dark:to-pink-400 bg-clip-text text-transparent">
-                          실시간 시간표 (폼미쳤다)
-                        </h2>
-                        <p className={`text-xs font-bold ${isDarkMode ? 'text-neutral-400' : 'text-slate-500'}`}>
-                          컴시간알리미 실시간 연동
-                        </p>
-                      </div>
+            <div className={`p-6 sm:p-7 rounded-2xl border shadow-[0_1px_3px_0_rgba(60,64,67,0.06)] flex flex-col justify-between transition-all ${
+              isDarkMode ? 'bg-[#1e1f20] border-[#333538]' : 'bg-white border-[#e0e2ec]'
+            }`}>
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-[#333538] mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                      <BookOpen className="w-5 h-5" />
                     </div>
-
-                    <motion.span 
-                      whileHover={{ scale: 1.15 }}
-                      transition={{ type: "spring", stiffness: 800 }}
-                      className="text-xs px-3 py-1 rounded-xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/40 flex items-center gap-1"
-                    >
-                      <Monitor className="w-3.5 h-3.5 animate-pulse" /> LIVE
-                    </motion.span>
+                    <div>
+                      <h2 className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
+                        실시간 시간표
+                      </h2>
+                      <p className="text-xs text-neutral-500">컴시간알리미 실시간 연동</p>
+                    </div>
                   </div>
 
-                  {webviewStep === 0 && (
-                    <div className={`rounded-2xl border p-6 h-[440px] flex flex-col items-center justify-center text-center gap-4 ${
-                      isDarkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                      <motion.div 
-                        animate={{ scale: [1, 1.18, 1] }}
-                        transition={{ repeat: Infinity, duration: 1.8 }}
-                        className="p-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/40"
-                      >
-                        <CheckCircle2 className="w-8 h-8" />
-                      </motion.div>
-                      <div>
-                        <h3 className={`font-black text-base ${isDarkMode ? 'text-neutral-200' : 'text-slate-900'}`}>
-                          학교 & 학년/반 1회 세팅
-                        </h3>
-                        <p className={`text-xs sm:text-sm mt-1.5 max-w-[260px] leading-relaxed font-semibold ${isDarkMode ? 'text-neutral-400' : 'text-slate-600'}`}>
-                          첫 접속 시 <span className="font-black text-purple-600 dark:text-purple-400">딱 1회만</span> 본인 반 세팅해두면 무한 연동 야르!
-                        </p>
-                      </div>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-1">
+                    <Monitor className="w-3 h-3" /> 연동됨
+                  </span>
+                </div>
 
-                      <div className="flex items-center justify-center mt-3">
-                        {isDarkMode ? (
-                          <motion.button
-                            whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(168, 85, 247, 0.9)" }}
-                            whileTap={{ scale: 0.88 }}
-                            transition={{ type: "spring", stiffness: 800 }}
-                            onClick={() => confirmComciStep(1)}
-                            className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-2xl transition-all"
-                          >
-                            다음 단계로 <ArrowRight className="w-4 h-4" />
-                          </motion.button>
-                        ) : (
-                          <motion.button
-                            whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(168, 85, 247, 0.9)" }}
-                            whileTap={{ scale: 0.88 }}
-                            transition={{ type: "spring", stiffness: 800 }}
-                            onClick={() => confirmComciStep(2)}
-                            className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-2xl transition-all"
-                          >
-                            <Eye className="w-4 h-4" /> 화면 띄우기
-                          </motion.button>
-                        )}
-                      </div>
+                {webviewStep === 0 && (
+                  <div className={`rounded-xl border p-6 h-[440px] flex flex-col items-center justify-center text-center gap-4 ${
+                    isDarkMode ? 'bg-[#131314] border-[#333538]' : 'bg-neutral-50 border-neutral-200'
+                  }`}>
+                    <div className="p-3.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                      <CheckCircle2 className="w-7 h-7" />
                     </div>
-                  )}
+                    <div>
+                      <h3 className="font-bold text-base text-neutral-900 dark:text-neutral-100">
+                        시간표 최초 설정 안내
+                      </h3>
+                      <p className="text-xs sm:text-sm text-neutral-500 mt-1.5 max-w-[260px] leading-relaxed">
+                        처음 1회 학년과 반을 선택하시면 이후 접속 시에도 시간표가 유지됩니다.
+                      </p>
+                    </div>
 
-                  {webviewStep === 1 && (
-                    <div className="rounded-2xl border border-neutral-800 bg-neutral-950/90 h-[440px] p-6 flex flex-col items-center justify-center text-center gap-4">
-                      <motion.div 
-                        animate={{ rotate: [0, -10, 10, -10, 0] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-500/20"
-                      >
-                        <AlertCircle className="w-8 h-8" />
-                      </motion.div>
-                      <div>
-                        <h3 className="font-black text-base text-neutral-200">컴시간 다크모드 미지원 안내</h3>
-                        <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed font-semibold">
-                          원본 소스가 화이트 기반이라 밝은 화면으로 보일 수 있어요!
-                        </p>
-                      </div>
+                    <button
+                      onClick={() => confirmComciStep(isDarkMode ? 1 : 2)}
+                      className="text-sm px-6 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white flex items-center gap-1.5 transition-colors shadow-sm mt-2"
+                    >
+                      <span>시간표 열기</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
-                      <div className="flex items-center justify-center mt-3">
-                        <motion.button
-                          whileHover={{ scale: 1.1, boxShadow: "0px 0px 30px rgba(168, 85, 247, 0.9)" }}
-                          whileTap={{ scale: 0.88 }}
-                          transition={{ type: "spring", stiffness: 800 }}
-                          onClick={() => setWebviewStep(2)}
-                          className="text-sm px-6 py-3.5 rounded-2xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center gap-2 shadow-2xl transition-all"
+                {webviewStep === 1 && (
+                  <div className="rounded-xl border border-neutral-800 bg-[#131314] h-[440px] p-6 flex flex-col items-center justify-center text-center gap-4">
+                    <div className="p-3.5 rounded-full bg-amber-950/60 text-amber-400 border border-amber-800/40">
+                      <AlertCircle className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-neutral-200">화면 밝기 안내</h3>
+                      <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 max-w-[260px] leading-relaxed">
+                        컴시간알리미 외부 서비스는 기본적으로 밝은 배경으로 제공됩니다.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setWebviewStep(2)}
+                      className="text-sm px-6 py-2.5 rounded-full font-medium bg-[#1a73e8] hover:bg-[#1557b0] text-white flex items-center gap-1.5 transition-colors shadow-sm mt-2"
+                    >
+                      <span>시간표 확인</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {webviewStep === 2 && (
+                  <div className="rounded-xl overflow-hidden border border-neutral-200 dark:border-[#333538] bg-white h-[440px] relative w-full">
+                    <AnimatePresence>
+                      {isWebviewLoading && (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute inset-0 z-20 bg-white/80 dark:bg-[#1e1f20]/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2.5"
                         >
-                          <Eye className="w-4 h-4" /> 화면 띄우기
-                        </motion.button>
-                      </div>
-                    </div>
-                  )}
+                          <div className="w-7 h-7 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                          <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                            시간표를 불러오는 중입니다...
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  {webviewStep === 2 && (
-                    <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-white h-[440px] relative w-full shadow-inner">
-                      <AnimatePresence>
-                        {isWebviewLoading && (
-                          <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute inset-0 z-20 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 flex flex-col items-center justify-center gap-3"
-                          >
-                            <div className="relative flex items-center justify-center">
-                              <div className="w-14 h-14 rounded-full border-4 border-purple-600/20 border-t-purple-600 animate-spin" />
-                              <Sparkles className="w-6 h-6 text-purple-600 absolute animate-pulse" />
-                            </div>
-                            <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-neutral-100 tracking-tight">
-                              야르~ 시간표 로딩 중...
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                    <iframe
+                      src={comciStudentUrl}
+                      title="컴시간알리미 시간표"
+                      className="w-full h-full border-0"
+                      style={{
+                        zoom: '0.85',
+                        WebkitFontSmoothing: 'antialiased'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
 
-                      <iframe
-                        src={comciStudentUrl}
-                        title="컴시간알리미 실시간 시간표 웹뷰"
-                        className="w-full h-full border-0"
-                        style={{
-                          zoom: '0.8',
-                          WebkitFontSmoothing: 'antialiased',
-                          MozOsxFontSmoothing: 'grayscale'
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-extrabold text-xs">출처: 컴시간알리미</span>
-                </div>
-              </motion.div>
-            </TiltCard>
+              <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-[#333538] flex items-center justify-between text-xs text-neutral-400">
+                <span>제공: 컴시간알리미</span>
+              </div>
+            </div>
           </div>
 
         </div>
 
-        <div className="mt-8 text-center text-xs text-slate-500 flex items-center justify-center gap-1 font-bold">
-          <Info className="w-3.5 h-3.5" />
-          <span>Domain: ygmhelper.xyz | YGM 전용 스마트 스쿨 도우미</span>
-        </div>
+        {/* 하단 푸터 */}
+        <footer className="mt-12 text-center text-xs text-neutral-500 flex items-center justify-center gap-1 font-normal pb-6">
+          <Info className="w-3.5 h-3.5 text-neutral-400" />
+          <span>YGMhelper · 서울용곡중학교 학생 도우미 (ygmhelper.xyz)</span>
+        </footer>
       </main>
     </div>
   );

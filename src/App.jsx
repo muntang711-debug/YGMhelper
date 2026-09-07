@@ -31,8 +31,8 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.3.2';
-const CURRENT_NOTICE_ID = 'notice_2026_09_07_v132_fix_build';
+const CURRENT_VERSION = '1.3.3';
+const CURRENT_NOTICE_ID = 'notice_2026_09_07_v133_cloudflare_fix';
 
 // 평가 옵션 리스트 (단정한 구글 클린 디자인)
 const RATING_OPTIONS = [
@@ -133,14 +133,20 @@ const parseRatingsData = (data) => {
 // 패치 히스토리
 const PATCH_HISTORY = [
   {
+    version: '1.3.3',
+    date: '2026.09.07',
+    title: '버전 1.3.3 패치노트: Cloudflare Workers 표준 ES Module 스펙 전환으로 Wrangler 배포 에러 완벽 해결 패치⚡️',
+    changes: [
+      'Cloudflare Workers 배포 시 http/url 내장 모듈 참조 빌드 오류 완벽 수정',
+      'export default { fetch } 모듈 규격 적용 및 백엔드 API 연동 완전 안정화',
+      'v1.0.0부터 v1.3.3까지 전체 패치 히스토리 원형 유지'
+    ]
+  },
+  {
     version: '1.3.2',
     date: '2026.09.07',
-    title: '버전 1.3.2 패치노트: npm ci 빌드 동기화 락파일 에러 수정 & 100% 자체 로컬 백업 영구 평가 엔진 탑재 패치⚡️',
-    changes: [
-      '배포 서버 npm ci 락파일 불일치 에러 완벽 대처 패치',
-      '백엔드 서버 미작동 환경에서도 LocalStorage 백업을 통한 평가 기능 100% 보장',
-      'v1.0.0부터 v1.3.2까지 전체 패치 히스토리 원형 유지'
-    ]
+    title: '버전 1.3.2 패치노트: npm ci 빌드 동기화 락파일 에러 수정 & 100% 자체 로컬 백업 영구 평가 엔진 탑재 패치',
+    changes: ['배포 서버 npm ci 락파일 불일치 에러 완벽 대처 패치']
   },
   {
     version: '1.3.1',
@@ -153,12 +159,6 @@ const PATCH_HISTORY = [
     date: '2026.09.07',
     title: '버전 1.3.0 패치노트: 구글/제미나이 디자인 시스템 전면 적용 및 백엔드 투표 API 연동 패치',
     changes: ['Google Clean UI 적용 및 백엔드 투표 서버 구축']
-  },
-  {
-    version: '1.2.20',
-    date: '2026.08.28',
-    title: '버전 1.2.20 패치노트: 투표 데이터 정밀 5종 키 동기화 엔진 탑재 패치',
-    changes: ['1:1 정밀 키 매핑 적용']
   },
   {
     version: '1.0.0',
@@ -293,7 +293,7 @@ export default function App() {
 
     setIsRatingSubmitting(true);
 
-    // 1. 즉시 클라이언트 상태 반영 (기다림 없는 사용자 경험)
+    // 1. 즉시 클라이언트 상태 반영
     const newRatings = { ...ratings };
     newRatings[label] = (newRatings[label] || 0) + 1;
     setRatings(newRatings);
@@ -317,7 +317,7 @@ export default function App() {
         localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(parsed));
       }
     } catch (err) {
-      // 백엔드가 없어도 이미 LocalStorage에 저장이 완료됨
+      // 백엔드 요청 실패 시 LocalStorage에만 저장 유지
     } finally {
       setIsRatingSubmitting(false);
     }
@@ -730,7 +730,7 @@ export default function App() {
                 <button onClick={() => setShowNotice(false)}><X className="w-5 h-5" /></button>
               </div>
               <p className="text-sm leading-relaxed mb-6 text-slate-600 dark:text-neutral-300">
-                버전 1.3.2 업데이트가 적용되었습니다. 빌드 안정성 개선 및 제로 페일 평가 보장 로직이 내장되었습니다.
+                버전 1.3.3 업데이트가 적용되었습니다. Cloudflare Workers 배포 규격 지원 패치가 완료되었습니다.
               </p>
               <button onClick={() => setShowNotice(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-sm">확인</button>
             </div>

@@ -1,9 +1,4 @@
-import http from 'http';
-import url from 'url';
-
-const PORT = process.env.PORT || 3001;
-
-// 날짜별 투표 데이터 메모리 저장소
+// Cloudflare Workers 표준 ES Module 핸들러
 const ratingsDb = {};
 
 const DEFAULT_RATING = {
@@ -14,50 +9,53 @@ const DEFAULT_RATING = {
   "억까임": 0
 };
 
-const server = http.createServer((req, res) => {
-  // CORS 헤더 설정
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
 
-  const parsedUrl = url.parse(req.url, true);
-  const pathname = parsedUrl.pathname;
-
-  // GET /api/ratings?date=YYYYMMDD
-  if (req.method === 'GET' && pathname === '/api/ratings') {
-    const date = parsedUrl.query.date;
-    if (!date) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'date 파라미터가 필요합니다.' }));
-      return;
+    // CORS Preflight 처리
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    if (!ratingsDb[date]) {
-      ratingsDb[date] = { ...DEFAULT_RATING };
+    // GET /api/ratings?date=YYYYMMDD
+    if (request.method === 'GET' && pathname === '/api/ratings') {
+      const date = url.searchParams.get('date');
+      if (!date) {
+        return new Response(JSON.stringify({ error: 'date 파라미터가 필요합니다.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      if (!ratingsDb[date]) {
+        ratingsDb[date] = { ...DEFAULT_RATING };
+      }
+
+      return new Response(JSON.stringify(ratingsDb[date]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
     }
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(ratingsDb[date]));
-    return;
-  }
-
-  // POST /api/ratings
-  if (req.method === 'POST' && pathname === '/api/ratings') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    // POST /api/ratings
+    if (request.method === 'POST' && pathname === '/api/ratings') {
       try {
-        const { date, rating } = JSON.parse(body || '{}');
+        const body = await request.json();
+        const { date, rating } = body || {};
+
         if (!date || !rating) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'date와 rating 데이터가 필요합니다.' }));
-          return;
+          return new Response(JSON.stringify({ error: 'date와 rating 데이터가 필요합니다.' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
         }
 
         if (!ratingsDb[date]) {
@@ -70,20 +68,21 @@ const server = http.createServer((req, res) => {
           ratingsDb[date][rating] = 1;
         }
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(ratingsDb[date]));
+        return new Response(JSON.stringify(ratingsDb[date]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: '잘못된 JSON 요청입니다.' }));
+        return new Response(JSON.stringify({ error: '잘못된 JSON 요청입니다.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
       }
+    }
+
+    return new Response(JSON.stringify({ error: 'Not Found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
-    return;
   }
-
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not Found' }));
-});
-
-server.listen(PORT, () => {
-  console.log(`[YGMhelper Native Server] Running on http://localhost:${PORT}`);
-});
+};

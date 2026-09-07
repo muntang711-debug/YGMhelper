@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar as CalendarIcon, 
-  Utensils, 
-  BookOpen, 
   ChevronLeft, 
   ChevronRight, 
   ChevronDown,
@@ -11,12 +9,10 @@ import {
   Moon, 
   RotateCcw, 
   Info, 
-  Monitor, 
   X, 
   Megaphone, 
   Download,
   Share,
-  History,
   FileText,
   ThumbsUp,
   Meh,
@@ -26,15 +22,17 @@ import {
   AlertCircle,
   Eye,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  Utensils
 } from 'lucide-react';
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.3.3';
-const CURRENT_NOTICE_ID = 'notice_2026_09_07_v133_cloudflare_fix';
+const CURRENT_VERSION = '1.3.4';
+const CURRENT_NOTICE_ID = 'notice_2026_09_07_v134_clean_layout';
 
-// 평가 옵션 리스트 (단정한 구글 클린 디자인)
+// 평가 옵션 리스트 (단정한 아이콘 체계)
 const RATING_OPTIONS = [
   { label: 'GOAT야르', icon: Crown, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800' },
   { label: '도파민극락', icon: Flame, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800' },
@@ -53,7 +51,7 @@ const ALLERGY_MAP = {
 
 const ALLERGY_LIST = Object.entries(ALLERGY_MAP).map(([num, name]) => `${num}. ${name}`);
 
-// 주요 공휴일 데이터베이스 (주말/공휴일 스킵용)
+// 주요 공휴일 데이터베이스
 const HOLIDAYS = {
   "2025-01-01": "신정", "2025-01-28": "설날 연휴", "2025-01-29": "설날", "2025-01-30": "설날 연휴",
   "2025-03-01": "삼일절", "2025-03-03": "대체공휴일", "2025-05-05": "어린이날", "2025-05-06": "부처님오신날",
@@ -112,7 +110,7 @@ const getDishCategory = (dishName) => {
   return '반찬';
 };
 
-// 백엔드 데이터 파싱
+// 데이터 파싱 유틸리티
 const DEFAULT_RATINGS = { "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 };
 
 const parseRatingsData = (data) => {
@@ -130,35 +128,32 @@ const parseRatingsData = (data) => {
   return result;
 };
 
-// 패치 히스토리
+// 히스토리
 const PATCH_HISTORY = [
+  {
+    version: '1.3.4',
+    date: '2026.09.07',
+    title: '버전 1.3.4 패치노트: 데스크톱/모바일 가변 레이아웃 및 UI 안정화 패치',
+    changes: [
+      '데스크톱 환경 급식표 및 시간표 동시 노출 레이아웃 전환',
+      '모바일 환경 전용 탭 선택 바 적용',
+      '프리텐다드(Pretendard) 폰트 고정 및 아이콘 체계 적용',
+      '알러지 정보 및 평가 버튼의 오버플로우 현상 방지',
+      '시간표 불러오기 시 2초간 블러 처리 및 로딩 인디케이터 연동',
+      '급식 평가 API 수신 및 로컬 스토리지 동기화 안전성 강화'
+    ]
+  },
   {
     version: '1.3.3',
     date: '2026.09.07',
-    title: '버전 1.3.3 패치노트: Cloudflare Workers 표준 ES Module 스펙 전환으로 Wrangler 배포 에러 완벽 해결 패치⚡️',
-    changes: [
-      'Cloudflare Workers 배포 시 http/url 내장 모듈 참조 빌드 오류 완벽 수정',
-      'export default { fetch } 모듈 규격 적용 및 백엔드 API 연동 완전 안정화',
-      'v1.0.0부터 v1.3.3까지 전체 패치 히스토리 원형 유지'
-    ]
+    title: '버전 1.3.3 패치노트: Cloudflare Workers 규격 전환 패치',
+    changes: ['Cloudflare Workers 배포 규격 모듈 구조 적용']
   },
   {
     version: '1.3.2',
     date: '2026.09.07',
-    title: '버전 1.3.2 패치노트: npm ci 빌드 동기화 락파일 에러 수정 & 100% 자체 로컬 백업 영구 평가 엔진 탑재 패치',
-    changes: ['배포 서버 npm ci 락파일 불일치 에러 완벽 대처 패치']
-  },
-  {
-    version: '1.3.1',
-    date: '2026.09.07',
-    title: '버전 1.3.1 패치노트: 누락 기능 100% 완전 복원 & 구글 클린 UX 결합 패치',
-    changes: ['알러지 상세/전체 모달, 공휴일 스킵, 요리 자동 분류, PWA 가이드, 컴시간 단계 모달 완전 복원']
-  },
-  {
-    version: '1.3.0',
-    date: '2026.09.07',
-    title: '버전 1.3.0 패치노트: 구글/제미나이 디자인 시스템 전면 적용 및 백엔드 투표 API 연동 패치',
-    changes: ['Google Clean UI 적용 및 백엔드 투표 서버 구축']
+    title: '버전 1.3.2 패치노트: 빌드 동기화 락파일 오류 수정',
+    changes: ['배포 환경 npm ci 락파일 불일치 오류 수정']
   },
   {
     version: '1.0.0',
@@ -190,12 +185,12 @@ export default function App() {
   // 모달 상태
   const [showNotice, setShowNotice] = useState(false);
   const [showPatchModal, setShowPatchModal] = useState(false);
-  const [selectedPatchVersion, setSelectedPatchVersion] = useState(CURRENT_VERSION);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [selectedDishAllergy, setSelectedDishAllergy] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
-  // 컴시간 단계 (0, 1, 2)
+  // 컴시간 로딩 및 단계
+  const [isComciLoading, setIsComciLoading] = useState(true);
   const [webviewStep, setWebviewStep] = useState(() => {
     const isConfirmed = localStorage.getItem('ygm_comci_confirmed') === 'true';
     const savedTheme = localStorage.getItem('ygm_theme');
@@ -218,6 +213,30 @@ export default function App() {
 
   const datePickerValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
+
+  // 컴시간 2초 블러 타이머
+  const triggerComciBlur = useCallback(() => {
+    setIsComciLoading(true);
+    const timer = setTimeout(() => {
+      setIsComciLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'schedule' || window.innerWidth >= 768) {
+      triggerComciBlur();
+    }
+  }, [activeTab, triggerComciBlur]);
+
+  // 다크모드 동기화
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -265,59 +284,57 @@ export default function App() {
     setCurrentDate(selected);
   };
 
-  // 평가 데이터 로드 (서버 시도 + LocalStorage 100% 백업)
+  // 평가 데이터 로드
   const loadRatings = useCallback(async () => {
     const savedVote = localStorage.getItem(`ygm_voted_${formattedDateStr}`);
     setUserVotedRating(savedVote);
 
     const localData = localStorage.getItem(`ygm_ratings_${formattedDateStr}`);
-    const initialLocalRatings = localData ? parseRatingsData(JSON.parse(localData)) : { ...DEFAULT_RATINGS };
-    setRatings(initialLocalRatings);
+    const initialLocal = localData ? parseRatingsData(JSON.parse(localData)) : { ...DEFAULT_RATINGS };
+    setRatings(initialLocal);
 
     try {
       const res = await fetch(`/api/ratings?date=${formattedDateStr}`);
-      if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
         const data = await res.json();
         const parsed = parseRatingsData(data);
         setRatings(parsed);
         localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(parsed));
       }
     } catch (err) {
-      // 서버 요청 실패 시 저장된 LocalStorage 사용
+      // API 통신 실패 시 LocalStorage 유지
     }
   }, [formattedDateStr]);
 
-  // 평가 투표 (서버 호출 + LocalStorage 동시 저장 제로 페일 구조)
+  // 평가 투표 처리
   const handleVoteRating = async (label) => {
     if (!isToday || userVotedRating || isRatingSubmitting) return;
 
     setIsRatingSubmitting(true);
 
-    // 1. 즉시 클라이언트 상태 반영
-    const newRatings = { ...ratings };
-    newRatings[label] = (newRatings[label] || 0) + 1;
+    const newRatings = { ...ratings, [label]: (ratings[label] || 0) + 1 };
     setRatings(newRatings);
     setUserVotedRating(label);
 
     localStorage.setItem(`ygm_voted_${formattedDateStr}`, label);
     localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(newRatings));
 
-    // 2. 백엔드 서버 동기화 시도
     try {
       const res = await fetch('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: formattedDateStr, rating: label })
       });
-
-      if (res.ok) {
-        const updatedData = await res.json();
-        const parsed = parseRatingsData(updatedData);
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
+        const serverData = await res.json();
+        const parsed = parseRatingsData(serverData);
         setRatings(parsed);
         localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(parsed));
       }
     } catch (err) {
-      // 백엔드 요청 실패 시 LocalStorage에만 저장 유지
+      // 통신 에러 발생 시 상태 유지
     } finally {
       setIsRatingSubmitting(false);
     }
@@ -340,28 +357,16 @@ export default function App() {
   const totalVotes = Object.values(ratings).reduce((a, b) => a + (Number(b) || 0), 0);
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-neutral-900 text-neutral-100' : 'bg-[#f0f4f9] text-[#1f1f1f]'}`}>
-      <style>{`
-        :root {
-            --google-blue: #1a73e8;
-            --google-gray-200: #e8eaed;
-            --text-primary: #1f1f1f;
-            --text-secondary: #5f6368;
-            --bg-surface: #ffffff;
-            --bg-container: #f0f4f9; 
-            --gemini-gradient: linear-gradient(90deg, #4285f4 0%, #9b72cb 50%, #d96570 100%);
-        }
-        body { font-family: 'Pretendard', -apple-system, sans-serif; }
-      `}</style>
-
+    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-neutral-900 text-neutral-100' : 'bg-[#f0f4f9] text-[#1f1f1f]'}`}>
+      
       {/* 헤더 */}
-      <header className={`border-b px-6 py-6 text-center ${isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#e8eaed]'}`}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <header className={`border-b px-6 py-5 text-center ${isDarkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#e8eaed]'}`}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="text-left cursor-pointer" onClick={() => setActiveTab('meal')}>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] bg-clip-text text-transparent">
               YGMhelper
             </h1>
-            <p className="text-sm text-[#5f6368] dark:text-neutral-400 font-medium">중학 스마트 스쿨 도우미</p>
+            <p className="text-xs text-[#5f6368] dark:text-neutral-400 font-medium mt-0.5">중학 스마트 스쿨 도우미</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -370,14 +375,14 @@ export default function App() {
               className={`p-2.5 rounded-full border transition-all ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-blue-400' : 'bg-white border-[#e8eaed] text-slate-700'}`}
               title="앱 설치 안내"
             >
-              <Download className="w-5 h-5" />
+              <Download className="w-4 h-4" />
             </button>
 
             <button
               onClick={toggleDarkMode}
               className={`p-2.5 rounded-full border transition-all ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-amber-400' : 'bg-white border-[#e8eaed] text-slate-700'}`}
             >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
             <div className="relative" ref={menuRef}>
@@ -385,22 +390,22 @@ export default function App() {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className={`p-2.5 rounded-full border flex items-center gap-1 ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'}`}
               >
-                <ChevronDown className="w-5 h-5" />
+                <ChevronDown className="w-4 h-4" />
               </button>
 
               {isMenuOpen && (
                 <div className={`absolute right-0 mt-2 w-40 rounded-2xl border p-2 z-50 shadow-lg ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'}`}>
                   <button
                     onClick={() => { setShowNotice(true); setIsMenuOpen(false); }}
-                    className="w-full text-left px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700 rounded-xl"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700 rounded-xl flex items-center gap-2"
                   >
-                    공지사항
+                    <Megaphone className="w-3.5 h-3.5 text-blue-500" /> 공지사항
                   </button>
                   <button
                     onClick={() => { setShowPatchModal(true); setIsMenuOpen(false); }}
-                    className="w-full text-left px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700 rounded-xl"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700 rounded-xl flex items-center gap-2"
                   >
-                    패치노트
+                    <FileText className="w-3.5 h-3.5 text-purple-500" /> 패치노트
                   </button>
                 </div>
               )}
@@ -409,48 +414,50 @@ export default function App() {
         </div>
       </header>
 
-      {/* 메인 콘텐트 */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      {/* 메인 콘텐츠 영역 */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
         
-        {/* 탭 네비게이션 */}
-        <div className="flex gap-3 mb-6">
+        {/* 모바일 화면 전용 탭 전환 바 */}
+        <div className="flex md:hidden gap-2 mb-6">
           <button
             onClick={() => setActiveTab('meal')}
-            className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all border ${
+            className={`flex-1 py-2.5 rounded-full font-bold text-xs transition-all border flex items-center justify-center gap-1.5 ${
               activeTab === 'meal'
                 ? 'bg-[#1a73e8] text-white border-[#1a73e8]'
                 : isDarkMode ? 'bg-neutral-800 text-neutral-300 border-neutral-700' : 'bg-white text-[#5f6368] border-[#e8eaed]'
             }`}
           >
-            급식표
+            <Utensils className="w-3.5 h-3.5" /> 급식표
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all border ${
+            className={`flex-1 py-2.5 rounded-full font-bold text-xs transition-all border flex items-center justify-center gap-1.5 ${
               activeTab === 'schedule'
                 ? 'bg-[#1a73e8] text-white border-[#1a73e8]'
                 : isDarkMode ? 'bg-neutral-800 text-neutral-300 border-neutral-700' : 'bg-white text-[#5f6368] border-[#e8eaed]'
             }`}
           >
-            실시간 시간표
+            <Clock className="w-3.5 h-3.5" /> 실시간 시간표
           </button>
         </div>
 
-        {/* 1. 급식 뷰 */}
-        {activeTab === 'meal' && (
-          <div className={`p-6 rounded-3xl border shadow-sm ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'}`}>
+        {/* 그리드 레이아웃: 데스크톱 2열 동시 노출, 모바일 선택 노출 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          
+          {/* 1. 급식표 카드 */}
+          <div className={`p-6 rounded-3xl border shadow-sm ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'} ${activeTab === 'meal' ? 'block' : 'hidden md:block'}`}>
             
-            {/* 날짜 선택 헤더 */}
+            {/* 날짜 컨트롤 */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-neutral-700 mb-6">
               <div 
                 onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.focus()}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <CalendarIcon className="w-5 h-5 text-[#1a73e8]" />
-                <span className="text-lg font-bold">
+                <CalendarIcon className="w-4 h-4 text-[#1a73e8]" />
+                <span className="text-base font-bold">
                   {currentDate.getFullYear()}.{currentDate.getMonth() + 1}.{currentDate.getDate()}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-neutral-700 text-slate-600 dark:text-neutral-300 font-semibold">
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-neutral-700 text-slate-600 dark:text-neutral-300 font-semibold">
                   {['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]}
                 </span>
                 <input
@@ -465,23 +472,23 @@ export default function App() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => changeDate(-1)}
-                  className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-700"
+                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-700"
                   title="이전 평일"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={resetToToday}
-                  className="text-xs px-3 py-1.5 rounded-full border border-slate-200 dark:border-neutral-700 font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700"
+                  className="text-xs px-2.5 py-1 rounded-full border border-slate-200 dark:border-neutral-700 font-semibold hover:bg-slate-100 dark:hover:bg-neutral-700"
                 >
                   오늘
                 </button>
                 <button
                   onClick={() => changeDate(1)}
-                  className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-700"
+                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-700"
                   title="다음 평일"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -489,28 +496,28 @@ export default function App() {
             {/* 칼로리 표기 */}
             {meal.calories && !mealLoading && (
               <div className="flex justify-between items-center mb-4 text-xs font-semibold text-slate-500 dark:text-neutral-400">
-                <span>총 칼로리</span>
+                <span>총 열량</span>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-neutral-700 text-slate-700 dark:text-neutral-200 font-bold">{meal.calories}</span>
               </div>
             )}
 
-            {/* 식단 리스트 */}
+            {/* 식단 목록 */}
             {mealLoading ? (
-              <div className="py-12 text-center text-sm font-semibold text-slate-400">급식 데이터를 가져오는 중...</div>
+              <div className="py-12 text-center text-xs font-semibold text-slate-400">급식 데이터를 가져오는 중입니다...</div>
             ) : meal.menuItems && meal.menuItems.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {meal.menuItems.map((item, idx) => {
                   const category = getDishCategory(item.name);
                   return (
                     <div
                       key={idx}
-                      className={`p-4 rounded-2xl border flex items-center justify-between ${
+                      className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
                         isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-[#f8f9fa] border-[#e8eaed]'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-bold text-base">{item.name}</span>
-                        <span className="text-[11px] px-2 py-0.5 rounded-md font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                        <span className="font-bold text-sm break-keep">{item.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0">
                           {category}
                         </span>
                       </div>
@@ -518,7 +525,7 @@ export default function App() {
                       {item.allergy && (
                         <button
                           onClick={() => setSelectedDishAllergy({ dishName: item.name, allergyStr: item.allergy })}
-                          className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-neutral-200 bg-slate-200 dark:bg-neutral-800 px-2 py-1 rounded-md font-medium transition-colors"
+                          className="text-[11px] text-slate-500 hover:text-slate-800 dark:hover:text-neutral-200 bg-slate-200 dark:bg-neutral-800 px-2 py-1 rounded-md font-medium transition-colors shrink-0 whitespace-nowrap"
                         >
                           알러지 {item.allergy}
                         </button>
@@ -528,41 +535,41 @@ export default function App() {
                 })}
               </div>
             ) : (
-              <div className="py-12 text-center text-sm text-slate-500 font-medium">급식 정보가 존재하지 않습니다. (휴교일 또는 NEIS 점검 중)</div>
+              <div className="py-12 text-center text-xs text-slate-500 font-medium">급식 정보가 존재하지 않습니다.</div>
             )}
 
             {/* 하단 버튼 */}
-            <div className="grid grid-cols-2 gap-3 mt-6">
+            <div className="grid grid-cols-2 gap-2.5 mt-6">
               <button
                 onClick={() => setShowAllergyModal(true)}
-                className={`py-3 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 ${
+                className={`py-2.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-1.5 ${
                   isDarkMode ? 'bg-neutral-900 border-neutral-700 text-neutral-300' : 'bg-[#f8f9fa] border-[#e8eaed] text-slate-700'
                 }`}
               >
-                <Info className="w-4 h-4 text-orange-500" /> 전체 알러지 성분표
+                <Info className="w-3.5 h-3.5 text-orange-500" /> 전체 알러지 표시
               </button>
               <button
                 onClick={loadMealData}
                 disabled={mealLoading}
-                className={`py-3 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 ${
+                className={`py-2.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-1.5 ${
                   isDarkMode ? 'bg-neutral-900 border-neutral-700 text-neutral-300' : 'bg-[#f8f9fa] border-[#e8eaed] text-slate-700'
                 }`}
               >
-                <RotateCcw className={`w-4 h-4 text-blue-500 ${mealLoading ? 'animate-spin' : ''}`} /> 식단 다시 당겨오기
+                <RotateCcw className={`w-3.5 h-3.5 text-blue-500 ${mealLoading ? 'animate-spin' : ''}`} /> 식단 새로고침
               </button>
             </div>
 
             {/* 실시간 급식 평가 섹션 */}
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-neutral-700">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold flex items-center gap-2">
+            <div className="mt-6 pt-5 border-t border-slate-200 dark:border-neutral-700">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold flex items-center gap-2">
                   <span>급식 실시간 평가</span>
                   <span className="text-xs font-normal text-slate-500">({totalVotes}명 참여)</span>
                 </h3>
-                {!isToday && <span className="text-xs text-amber-600 font-semibold">당일 평가만 가능</span>}
+                {!isToday && <span className="text-[11px] text-amber-600 font-semibold">당일 평가만 가능</span>}
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                 {RATING_OPTIONS.map((opt) => {
                   const IconComp = opt.icon;
                   const count = ratings[opt.label] || 0;
@@ -574,13 +581,13 @@ export default function App() {
                       key={opt.label}
                       onClick={() => handleVoteRating(opt.label)}
                       disabled={isDisabled}
-                      className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all ${opt.bg} ${
+                      className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${opt.bg} ${
                         isSelected ? 'ring-2 ring-[#1a73e8] font-bold' : ''
                       } ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'hover:border-[#1a73e8]'}`}
                     >
-                      <IconComp className={`w-5 h-5 ${opt.color}`} />
-                      <span className="text-xs font-semibold">{opt.label}</span>
-                      <span className="text-xs font-bold text-slate-700 dark:text-neutral-300">{count}</span>
+                      <IconComp className={`w-4 h-4 sm:w-5 sm:h-5 ${opt.color}`} />
+                      <span className="text-[10px] sm:text-xs font-semibold whitespace-nowrap">{opt.label}</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-neutral-300">{count}</span>
                     </button>
                   );
                 })}
@@ -588,73 +595,90 @@ export default function App() {
             </div>
 
           </div>
-        )}
 
-        {/* 2. 시간표 뷰 */}
-        {activeTab === 'schedule' && (
-          <div className={`p-6 rounded-3xl border shadow-sm ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'}`}>
-            <h2 className="text-lg font-bold mb-4">실시간 컴시간 시간표</h2>
+          {/* 2. 시간표 카드 */}
+          <div className={`p-6 rounded-3xl border shadow-sm ${isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-[#e8eaed]'} ${activeTab === 'schedule' ? 'block' : 'hidden md:block'}`}>
+            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#1a73e8]" />
+              <span>실시간 컴시간 시간표</span>
+            </h2>
 
             {webviewStep === 0 && (
-              <div className={`rounded-2xl border p-8 h-[440px] flex flex-col items-center justify-center text-center gap-4 ${isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-[#f8f9fa] border-[#e8eaed]'}`}>
+              <div className={`rounded-2xl border p-8 h-[480px] flex flex-col items-center justify-center text-center gap-4 ${isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-[#f8f9fa] border-[#e8eaed]'}`}>
                 <CheckCircle2 className="w-10 h-10 text-blue-500" />
                 <div>
-                  <h3 className="font-bold text-base">학교 & 학년/반 1회 세팅</h3>
-                  <p className="text-xs text-slate-500 mt-1">첫 접속 시 딱 1회 본인 반 세팅해두면 무한 연동됩니다.</p>
+                  <h3 className="font-bold text-sm">학교 및 학년/반 초기 세팅</h3>
+                  <p className="text-xs text-slate-500 mt-1">최초 1회 본인 학년/반 설정 후 사용하실 수 있습니다.</p>
                 </div>
                 <button
                   onClick={() => {
                     localStorage.setItem('ygm_comci_confirmed', 'true');
                     setWebviewStep(isDarkMode ? 1 : 2);
                   }}
-                  className="px-6 py-2.5 rounded-full bg-[#1a73e8] text-white font-bold text-sm flex items-center gap-2"
+                  className="px-5 py-2 rounded-full bg-[#1a73e8] text-white font-bold text-xs flex items-center gap-1.5"
                 >
-                  시간표 확인하기 <ArrowRight className="w-4 h-4" />
+                  시간표 확인하기 <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
 
             {webviewStep === 1 && (
-              <div className="rounded-2xl border border-neutral-700 bg-neutral-900 p-8 h-[440px] flex flex-col items-center justify-center text-center gap-4">
+              <div className="rounded-2xl border border-neutral-700 bg-neutral-900 p-8 h-[480px] flex flex-col items-center justify-center text-center gap-4">
                 <AlertCircle className="w-10 h-10 text-amber-400" />
                 <div>
-                  <h3 className="font-bold text-base text-neutral-200">컴시간 다크모드 미지원 안내</h3>
-                  <p className="text-xs text-neutral-400 mt-1">원본 시간표가 화이트 기반이므로 밝게 표시될 수 있습니다.</p>
+                  <h3 className="font-bold text-sm text-neutral-200">컴시간 화면 안내</h3>
+                  <p className="text-xs text-neutral-400 mt-1">시간표 원본 제공처 특성상 화이트 테마로 표시됩니다.</p>
                 </div>
                 <button
                   onClick={() => setWebviewStep(2)}
-                  className="px-6 py-2.5 rounded-full bg-[#1a73e8] text-white font-bold text-sm flex items-center gap-2"
+                  className="px-5 py-2 rounded-full bg-[#1a73e8] text-white font-bold text-xs flex items-center gap-1.5"
                 >
-                  <Eye className="w-4 h-4" /> 화면 띄우기
+                  <Eye className="w-3.5 h-3.5" /> 화면 띄우기
                 </button>
               </div>
             )}
 
             {webviewStep === 2 && (
-              <div className="w-full h-[480px] rounded-2xl overflow-hidden border border-[#e8eaed]">
+              <div className="relative w-full h-[480px] rounded-2xl overflow-hidden border border-[#e8eaed]">
                 <iframe
                   src={comciStudentUrl}
                   title="컴시간 시간표"
                   className="w-full h-full border-0"
                 />
+                
+                {/* 2초간 블러 오버레이 및 로딩 인디케이터 */}
+                <AnimatePresence>
+                  {isComciLoading && (
+                    <motion.div
+                      initial={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute inset-0 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md flex flex-col items-center justify-center gap-3 z-10"
+                    >
+                      <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-semibold text-slate-600 dark:text-neutral-300">시간표 불러오는 중...</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
-        )}
+
+        </div>
 
       </main>
 
-      {/* 모달: 개별 알러지 정보 모달 */}
+      {/* 모달: 개별 알러지 정보 */}
       <AnimatePresence>
         {selectedDishAllergy && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className={`w-full max-w-sm p-6 rounded-3xl border shadow-xl ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-white border-[#e8eaed]'}`}>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-bold text-base">{selectedDishAllergy.dishName}</h3>
-                  <p className="text-xs text-slate-500">알러지 정보 체크</p>
+                  <h3 className="font-bold text-sm">{selectedDishAllergy.dishName}</h3>
+                  <p className="text-xs text-slate-500">알러지 표시 항목</p>
                 </div>
-                <button onClick={() => setSelectedDishAllergy(null)}><X className="w-5 h-5" /></button>
+                <button onClick={() => setSelectedDishAllergy(null)}><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
                 {selectedDishAllergy.allergyStr.split('.').filter(Boolean).map((num, idx) => {
@@ -667,20 +691,20 @@ export default function App() {
                   );
                 })}
               </div>
-              <button onClick={() => setSelectedDishAllergy(null)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-sm">확인</button>
+              <button onClick={() => setSelectedDishAllergy(null)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-xs">확인</button>
             </div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* 모달: 전체 알러지 성분표 모달 */}
+      {/* 모달: 전체 알러지 성분표 */}
       <AnimatePresence>
         {showAllergyModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className={`w-full max-w-md p-6 rounded-3xl border shadow-xl ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-white border-[#e8eaed]'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-base">전체 알러지 성분 표시 번호</h3>
-                <button onClick={() => setShowAllergyModal(false)}><X className="w-5 h-5" /></button>
+                <h3 className="font-bold text-sm">전체 알러지 표시 번호 정보</h3>
+                <button onClick={() => setShowAllergyModal(false)}><X className="w-4 h-4" /></button>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-6 max-h-72 overflow-y-auto text-xs">
                 {ALLERGY_LIST.map((item, idx) => (
@@ -689,32 +713,32 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowAllergyModal(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-sm">확인</button>
+              <button onClick={() => setShowAllergyModal(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-xs">확인</button>
             </div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* 모달: PWA 설치 안내 모달 */}
+      {/* 모달: 앱 설치 안내 */}
       <AnimatePresence>
         {showInstallGuide && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className={`w-full max-w-md p-6 rounded-3xl border shadow-xl ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-white border-[#e8eaed]'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-base flex items-center gap-2"><Download className="w-5 h-5 text-blue-500" /> YGMhelper 앱 설치 안내</h3>
-                <button onClick={() => setShowInstallGuide(false)}><X className="w-5 h-5" /></button>
+                <h3 className="font-bold text-sm flex items-center gap-2"><Download className="w-4 h-4 text-blue-500" /> 앱 설치 안내</h3>
+                <button onClick={() => setShowInstallGuide(false)}><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-3 mb-6 text-xs leading-relaxed font-medium">
                 <div className="p-3 rounded-2xl border border-slate-200 dark:border-neutral-700">
-                  <p className="font-bold text-blue-600 mb-1 flex items-center gap-1"><Share className="w-3.5 h-3.5" /> 아이폰 (iOS Safari)</p>
-                  <p className="text-slate-600 dark:text-neutral-400">사파리 하단 공유 버튼(↑) 클릭 후 <strong>[홈 화면에 추가]</strong> 선택</p>
+                  <p className="font-bold text-blue-600 mb-1 flex items-center gap-1"><Share className="w-3.5 h-3.5" /> iOS Safari</p>
+                  <p className="text-slate-600 dark:text-neutral-400">사파리 하단 공유 버튼 클릭 후 [홈 화면에 추가] 선택</p>
                 </div>
                 <div className="p-3 rounded-2xl border border-slate-200 dark:border-neutral-700">
-                  <p className="font-bold text-emerald-600 mb-1">📱 안드로이드 (Chrome)</p>
-                  <p className="text-slate-600 dark:text-neutral-400">우상단 메뉴(⋮) 클릭 후 <strong>[앱 설치]</strong> 선택</p>
+                  <p className="font-bold text-emerald-600 mb-1">Android Chrome</p>
+                  <p className="text-slate-600 dark:text-neutral-400">우상단 메뉴 클릭 후 [앱 설치] 선택</p>
                 </div>
               </div>
-              <button onClick={() => setShowInstallGuide(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-sm">확인</button>
+              <button onClick={() => setShowInstallGuide(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-xs">확인</button>
             </div>
           </div>
         )}
@@ -726,13 +750,13 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className={`w-full max-w-md p-6 rounded-3xl border shadow-xl ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-white border-[#e8eaed]'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg">📢 공지사항</h3>
-                <button onClick={() => setShowNotice(false)}><X className="w-5 h-5" /></button>
+                <h3 className="font-bold text-sm flex items-center gap-1.5"><Megaphone className="w-4 h-4 text-blue-500" /> 공지사항</h3>
+                <button onClick={() => setShowNotice(false)}><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-sm leading-relaxed mb-6 text-slate-600 dark:text-neutral-300">
-                버전 1.3.3 업데이트가 적용되었습니다. Cloudflare Workers 배포 규격 지원 패치가 완료되었습니다.
+              <p className="text-xs leading-relaxed mb-6 text-slate-600 dark:text-neutral-300">
+                버전 1.3.4 업데이트가 적용되었습니다. 데스크톱 동시 레이아웃 지원 및 알러지/평가 오버플로우 수정이 완료되었습니다.
               </p>
-              <button onClick={() => setShowNotice(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-sm">확인</button>
+              <button onClick={() => setShowNotice(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-xs">확인</button>
             </div>
           </div>
         )}
@@ -744,15 +768,15 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className={`w-full max-w-lg p-6 rounded-3xl border shadow-xl max-h-[80vh] overflow-y-auto ${isDarkMode ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-white border-[#e8eaed]'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg">📜 패치노트 (v{CURRENT_VERSION})</h3>
-                <button onClick={() => setShowPatchModal(false)}><X className="w-5 h-5" /></button>
+                <h3 className="font-bold text-sm flex items-center gap-1.5"><FileText className="w-4 h-4 text-purple-500" /> 패치노트 (v{CURRENT_VERSION})</h3>
+                <button onClick={() => setShowPatchModal(false)}><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-4">
                 {PATCH_HISTORY.map((patch) => (
                   <div key={patch.version} className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-700">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm text-[#1a73e8]">v{patch.version}</span>
-                      <span className="text-xs text-slate-400">{patch.date}</span>
+                      <span className="font-bold text-xs text-[#1a73e8]">v{patch.version}</span>
+                      <span className="text-[11px] text-slate-400">{patch.date}</span>
                     </div>
                     <p className="font-semibold text-xs mb-2">{patch.title}</p>
                     <ul className="list-disc list-inside text-xs text-slate-600 dark:text-neutral-300 space-y-1">

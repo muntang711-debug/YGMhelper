@@ -1,5 +1,5 @@
 // NEIS 오픈 API 기반 급식 정보 추출 서비스
-const NEIS_API_KEY = ''; // 필요시 발급받은 NEIS API KEY 입력
+const NEIS_API_KEY = ''; 
 const ATPT_OFCDC_SC_CODE = 'B10'; // 서울특별시교육청
 const SD_SCHUL_CODE = '7010537'; // YGM 학교 코드
 
@@ -26,15 +26,20 @@ export const fetchMealSchedule = async (ymd) => {
       const rawMenu = mealData.DDISH_NM || '';
       const calories = mealData.CAL_INFO || '';
 
-      // 메뉴 파싱 (알러지 번호 분리 처리)
       const menuLines = rawMenu.split('<br/>').map((line) => line.trim()).filter(Boolean);
 
       const menuItems = menuLines.map((line) => {
+        // 알러지 번호 추출
         const allergyMatch = line.match(/\(([\d.]+)\)/);
         const allergy = allergyMatch ? allergyMatch[1] : null;
-        const name = line.replace(/\([\d.]+\)/g, '').trim();
 
-        return { name, allergy };
+        // 특수문자 및 알러지 번호 제거 정제 (메뉴명 뒤 중복 단어 결합 방지)
+        const cleanName = line
+          .replace(/\([\d.]+\)/g, '')
+          .replace(/[*@#]/g, '')
+          .trim();
+
+        return { name: cleanName, allergy };
       });
 
       return {

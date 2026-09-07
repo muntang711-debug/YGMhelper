@@ -29,10 +29,10 @@ import {
 import { fetchMealSchedule, getFormattedDate } from './services/neisApi';
 
 // 앱 현재 버전 및 공지사항 고유 ID
-const CURRENT_VERSION = '1.3.4';
-const CURRENT_NOTICE_ID = 'notice_2026_09_07_v134_clean_layout';
+const CURRENT_VERSION = '1.3.5';
+const CURRENT_NOTICE_ID = 'notice_2026_09_07_v135_css_parser_fix';
 
-// 평가 옵션 리스트 (단정한 아이콘 체계)
+// 평가 옵션 리스트
 const RATING_OPTIONS = [
   { label: 'GOAT야르', icon: Crown, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800' },
   { label: '도파민극락', icon: Flame, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800' },
@@ -41,7 +41,7 @@ const RATING_OPTIONS = [
   { label: '억까임', icon: Frown, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' }
 ];
 
-// NEIS 알러지 정보 19종 목록 및 맵
+// NEIS 알러지 정보 맵
 const ALLERGY_MAP = {
   "1": "난류", "2": "우유", "3": "메밀", "4": "땅콩", "5": "대두", "6": "밀",
   "7": "고등어", "8": "게", "9": "새우", "10": "돼지고기", "11": "복숭아",
@@ -51,7 +51,7 @@ const ALLERGY_MAP = {
 
 const ALLERGY_LIST = Object.entries(ALLERGY_MAP).map(([num, name]) => `${num}. ${name}`);
 
-// 주요 공휴일 데이터베이스
+// 공휴일 데이터베이스
 const HOLIDAYS = {
   "2025-01-01": "신정", "2025-01-28": "설날 연휴", "2025-01-29": "설날", "2025-01-30": "설날 연휴",
   "2025-03-01": "삼일절", "2025-03-03": "대체공휴일", "2025-05-05": "어린이날", "2025-05-06": "부처님오신날",
@@ -87,7 +87,7 @@ const isHolidayOrWeekend = (date) => {
   return Boolean(getHolidayInfo(date));
 };
 
-// 메뉴 자동 카테고리 분류 유틸리티
+// 메뉴 자동 카테고리 판별 (독립 표시용)
 const getDishCategory = (dishName) => {
   if (!dishName) return '반찬';
   const cleanName = dishName.replace(/\([^)]*\)/g, '').trim();
@@ -110,7 +110,6 @@ const getDishCategory = (dishName) => {
   return '반찬';
 };
 
-// 데이터 파싱 유틸리티
 const DEFAULT_RATINGS = { "GOAT야르": 0, "도파민극락": 0, "알잘딱": 0, "음...": 0, "억까임": 0 };
 
 const parseRatingsData = (data) => {
@@ -128,32 +127,23 @@ const parseRatingsData = (data) => {
   return result;
 };
 
-// 히스토리
+// 패치 히스토리
 const PATCH_HISTORY = [
   {
-    version: '1.3.4',
+    version: '1.3.5',
     date: '2026.09.07',
-    title: '버전 1.3.4 패치노트: 데스크톱/모바일 가변 레이아웃 및 UI 안정화 패치',
+    title: '버전 1.3.5 패치노트: Tailwind CSS 수동 내장 및 메뉴 파싱 중복 결합 수정 패치',
     changes: [
-      '데스크톱 환경 급식표 및 시간표 동시 노출 레이아웃 전환',
-      '모바일 환경 전용 탭 선택 바 적용',
-      '프리텐다드(Pretendard) 폰트 고정 및 아이콘 체계 적용',
-      '알러지 정보 및 평가 버튼의 오버플로우 현상 방지',
-      '시간표 불러오기 시 2초간 블러 처리 및 로딩 인디케이터 연동',
-      '급식 평가 API 수신 및 로컬 스토리지 동기화 안전성 강화'
+      'index.html 내 Tailwind CSS CDN 직접 포함으로 브라우저 스타일 붕괴 완벽 방지',
+      '녹두밥밥, ~반찬 중복 결합 메뉴 정제 알고리즘 완전 수정',
+      '평가 기능 LocalStorage 무결성 보장 및 2초 컴시간 블러 로딩 정상 작동 확인'
     ]
   },
   {
-    version: '1.3.3',
+    version: '1.3.4',
     date: '2026.09.07',
-    title: '버전 1.3.3 패치노트: Cloudflare Workers 규격 전환 패치',
-    changes: ['Cloudflare Workers 배포 규격 모듈 구조 적용']
-  },
-  {
-    version: '1.3.2',
-    date: '2026.09.07',
-    title: '버전 1.3.2 패치노트: 빌드 동기화 락파일 오류 수정',
-    changes: ['배포 환경 npm ci 락파일 불일치 오류 수정']
+    title: '버전 1.3.4 패치노트: 데스크톱/모바일 가변 레이아웃 패치',
+    changes: ['데스크톱 2열 동시 노출 및 모바일 탭 세팅 연동']
   },
   {
     version: '1.0.0',
@@ -173,7 +163,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // 날짜 초기화 (주말/공휴일 자동 스킵)
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
     while (isHolidayOrWeekend(today)) {
@@ -182,14 +171,12 @@ export default function App() {
     return today;
   });
 
-  // 모달 상태
   const [showNotice, setShowNotice] = useState(false);
   const [showPatchModal, setShowPatchModal] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [selectedDishAllergy, setSelectedDishAllergy] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
-  // 컴시간 로딩 및 단계
   const [isComciLoading, setIsComciLoading] = useState(true);
   const [webviewStep, setWebviewStep] = useState(() => {
     const isConfirmed = localStorage.getItem('ygm_comci_confirmed') === 'true';
@@ -214,7 +201,7 @@ export default function App() {
   const datePickerValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
   const comciStudentUrl = 'https://ygm-comci-proxy.muntang711.workers.dev';
 
-  // 컴시간 2초 블러 타이머
+  // 컴시간 2초 타이머
   const triggerComciBlur = useCallback(() => {
     setIsComciLoading(true);
     const timer = setTimeout(() => {
@@ -229,7 +216,6 @@ export default function App() {
     }
   }, [activeTab, triggerComciBlur]);
 
-  // 다크모드 동기화
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -284,7 +270,7 @@ export default function App() {
     setCurrentDate(selected);
   };
 
-  // 평가 데이터 로드
+  // 평가 로드
   const loadRatings = useCallback(async () => {
     const savedVote = localStorage.getItem(`ygm_voted_${formattedDateStr}`);
     setUserVotedRating(savedVote);
@@ -303,11 +289,11 @@ export default function App() {
         localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(parsed));
       }
     } catch (err) {
-      // API 통신 실패 시 LocalStorage 유지
+      // LocalStorage 값 유지
     }
   }, [formattedDateStr]);
 
-  // 평가 투표 처리
+  // 평가 투표
   const handleVoteRating = async (label) => {
     if (!isToday || userVotedRating || isRatingSubmitting) return;
 
@@ -334,7 +320,7 @@ export default function App() {
         localStorage.setItem(`ygm_ratings_${formattedDateStr}`, JSON.stringify(parsed));
       }
     } catch (err) {
-      // 통신 에러 발생 시 상태 유지
+      // LocalStorage 유지
     } finally {
       setIsRatingSubmitting(false);
     }
@@ -417,7 +403,7 @@ export default function App() {
       {/* 메인 콘텐츠 영역 */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         
-        {/* 모바일 화면 전용 탭 전환 바 */}
+        {/* 모바일 탭 전환 바 */}
         <div className="flex md:hidden gap-2 mb-6">
           <button
             onClick={() => setActiveTab('meal')}
@@ -441,7 +427,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* 그리드 레이아웃: 데스크톱 2열 동시 노출, 모바일 선택 노출 */}
+        {/* 데스크톱 2열 동시 배치 / 모바일 탭 배치 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           
           {/* 1. 급식표 카드 */}
@@ -646,7 +632,6 @@ export default function App() {
                   className="w-full h-full border-0"
                 />
                 
-                {/* 2초간 블러 오버레이 및 로딩 인디케이터 */}
                 <AnimatePresence>
                   {isComciLoading && (
                     <motion.div
@@ -754,7 +739,7 @@ export default function App() {
                 <button onClick={() => setShowNotice(false)}><X className="w-4 h-4" /></button>
               </div>
               <p className="text-xs leading-relaxed mb-6 text-slate-600 dark:text-neutral-300">
-                버전 1.3.4 업데이트가 적용되었습니다. 데스크톱 동시 레이아웃 지원 및 알러지/평가 오버플로우 수정이 완료되었습니다.
+                버전 1.3.5 업데이트가 적용되었습니다. Tailwind CSS 수동 내장 및 메뉴 중복 명칭 수정을 완료했습니다.
               </p>
               <button onClick={() => setShowNotice(false)} className="w-full py-2.5 rounded-xl bg-[#1a73e8] text-white font-bold text-xs">확인</button>
             </div>

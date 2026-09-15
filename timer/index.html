@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>YGM헬퍼 타이머</title>
+
+    <link
+        rel="stylesheet"
+        href="../style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+<body>
+
+    <!-- 상단 헤더 -->
+    <header class="header">
+
+        <div class="header-inner">
+
+            <h1 class="logo">
+                YGM헬퍼
+            </h1>
+
+            <nav class="nav">
+
+                <a href="/">
+                    홈으로 돌아가기
+                </a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <!-- 메인 영역 -->
+    <main class="timer-main">
+
+        <section class="timer-section">
+
+            <div class="section-title timer-title">
+                <h2>YGM헬퍼 타이머</h2>
+            </div>
+
+
+            <div class="timer-card">
+
+                <div
+                    class="timer-display"
+                    id="timer-display"
+                    aria-live="polite"
+                >
+                    <span id="timer-minutes">05</span>
+                    <span class="timer-colon">:</span>
+                    <span id="timer-seconds">00</span>
+                </div>
+
+
+                <div class="timer-labels" aria-hidden="true">
+                    <span>분</span>
+                    <span>초</span>
+                </div>
+
+
+                <div class="timer-inputs">
+
+                    <label class="timer-input-group">
+                        <span>분</span>
+                        <input
+                            type="number"
+                            id="minutes-input"
+                            min="0"
+                            max="99"
+                            value="5"
+                            inputmode="numeric"
+                        >
+                    </label>
+
+                    <label class="timer-input-group">
+                        <span>초</span>
+                        <input
+                            type="number"
+                            id="seconds-input"
+                            min="0"
+                            max="59"
+                            value="0"
+                            inputmode="numeric"
+                        >
+                    </label>
+
+                </div>
+
+
+                <div class="timer-actions">
+
+                    <button
+                        type="button"
+                        class="timer-button primary"
+                        id="start-pause-btn"
+                    >
+                        시작
+                    </button>
+
+                    <button
+                        type="button"
+                        class="timer-button"
+                        id="reset-btn"
+                    >
+                        초기화
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="../script.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>

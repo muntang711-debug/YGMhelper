@@ -1,0 +1,233 @@
+/* =========================
+   타이머
+========================= */
+
+.timer-main {
+    min-height: calc(100vh - 70px);
+}
+
+.timer-section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 55px 24px 90px;
+}
+
+.timer-title {
+    margin-bottom: 30px;
+}
+
+.timer-card {
+    padding: 42px 36px 36px;
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 18px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.04);
+    text-align: center;
+}
+
+.timer-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    color: #222;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(72px, 15vw, 150px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -4px;
+}
+
+.timer-colon {
+    position: relative;
+    top: -4px;
+}
+
+.timer-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 320px;
+    margin: 14px auto 0;
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.timer-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 320px;
+    margin: 28px auto 0;
+}
+
+.timer-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    color: #777;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.timer-input-group input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid #dedede;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #333;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+}
+
+.timer-input-group input:focus {
+    border-color: #5b45d6;
+    box-shadow: 0 0 0 3px rgba(91, 69, 214, 0.1);
+}
+
+.timer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 320px;
+    margin: 18px auto 0;
+}
+
+.timer-button {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #555;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.timer-button:hover {
+    background: #f7f7f7;
+    border-color: #d4d4d4;
+    color: #333;
+}
+
+.timer-button:active {
+    transform: scale(0.98);
+}
+
+.timer-button.primary {
+    background: #5b45d6;
+    border-color: #5b45d6;
+    color: #ffffff;
+}
+
+.timer-button.primary:hover {
+    background: #4e3bc0;
+    border-color: #4e3bc0;
+    color: #ffffff;
+}
+
+.timer-card.finished .timer-display {
+    color: #5b45d6;
+}
+
+/* =========================
+   다크모드
+========================= */
+
+html.dark-mode .timer-card {
+    background: #1a1b20;
+    border-color: #2b2c33;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+}
+
+html.dark-mode .timer-display {
+    color: #f1f1f3;
+}
+
+html.dark-mode .timer-labels,
+html.dark-mode .timer-input-group {
+    color: #a4a4ae;
+}
+
+html.dark-mode .timer-input-group input {
+    background: #202126;
+    border-color: #3a3b43;
+    color: #e5e5e8;
+}
+
+html.dark-mode .timer-input-group input:focus {
+    border-color: #7d6bea;
+    box-shadow: 0 0 0 3px rgba(125, 107, 234, 0.18);
+}
+
+html.dark-mode .timer-button {
+    background: #202126;
+    border-color: #393a42;
+    color: #c5c5cc;
+}
+
+html.dark-mode .timer-button:hover {
+    background: #292a30;
+    border-color: #494a53;
+    color: #eeeeef;
+}
+
+html.dark-mode .timer-button.primary {
+    background: #6754dc;
+    border-color: #6754dc;
+    color: #ffffff;
+}
+
+html.dark-mode .timer-button.primary:hover {
+    background: #7866ed;
+    border-color: #7866ed;
+    color: #ffffff;
+}
+
+html.dark-mode .timer-card.finished .timer-display {
+    color: #a99cff;
+}
+
+/* =========================
+   모바일
+========================= */
+
+@media (max-width: 700px) {
+
+    .timer-section {
+        padding: 40px 20px 70px;
+    }
+
+    .timer-title {
+        margin-bottom: 24px;
+    }
+
+    .timer-card {
+        padding: 34px 20px 24px;
+    }
+
+    .timer-display {
+        gap: 4px;
+        font-size: clamp(64px, 21vw, 100px);
+        letter-spacing: -3px;
+    }
+
+    .timer-inputs,
+    .timer-actions {
+        max-width: none;
+    }
+}

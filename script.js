@@ -3,6 +3,7 @@
 // =========================
 
 
+
 // =========================
 // NEIS Open API 설정
 // =========================
@@ -10,7 +11,9 @@
 const NEIS_API_KEY = "0e63108664b64083ad86d34278cdcebe";
 
 const OFFICE_CODE = "B10";
+
 const SCHOOL_CODE = "7134139";
+
 
 
 // =========================
@@ -20,6 +23,7 @@ const SCHOOL_CODE = "7134139";
 const MIN_MEAL_DATE = "20210101";
 
 
+
 // =========================
 // 현재 선택된 급식 날짜
 // =========================
@@ -27,31 +31,53 @@ const MIN_MEAL_DATE = "20210101";
 let selectedMealDate = getToday();
 
 
+
 // =========================
 // 알레르기 번호 → 이름
 // =========================
 
 const allergyNames = {
+
     "1": "난류",
+
     "2": "우유",
+
     "3": "메밀",
+
     "4": "땅콩",
+
     "5": "대두",
+
     "6": "밀",
+
     "7": "고등어",
+
     "8": "게",
+
     "9": "새우",
+
     "10": "돼지고기",
+
     "11": "복숭아",
+
     "12": "토마토",
+
     "13": "아황산류",
+
     "14": "호두",
+
     "15": "닭고기",
+
     "16": "쇠고기",
+
     "17": "오징어",
+
     "18": "조개류",
+
     "19": "잣"
+
 };
+
 
 
 // =========================
@@ -63,11 +89,15 @@ function getToday() {
     const today = new Date();
 
     const year = today.getFullYear();
+
     const month = String(today.getMonth() + 1).padStart(2, "0");
+
     const day = String(today.getDate()).padStart(2, "0");
 
     return `${year}${month}${day}`;
+
 }
+
 
 
 // =========================
@@ -90,7 +120,9 @@ function dateStringToDate(dateString) {
         month - 1,
         day
     );
+
 }
+
 
 
 // =========================
@@ -109,7 +141,9 @@ function dateToString(date) {
         String(date.getDate()).padStart(2, "0");
 
     return `${year}${month}${day}`;
+
 }
+
 
 
 // =========================
@@ -122,7 +156,9 @@ function formatDate(dateString) {
         dateStringToDate(dateString);
 
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+
 }
+
 
 
 // =========================
@@ -130,8 +166,11 @@ function formatDate(dateString) {
 // =========================
 
 function isSameDate(dateA, dateB) {
+
     return dateA === dateB;
+
 }
+
 
 
 // =========================
@@ -156,12 +195,15 @@ function getMaxMealDate() {
         today.getDate();
 
 
+
     let maxDate;
+
 
 
     if (currentDay >= 28) {
 
         // 다음 달의 마지막 날
+
         maxDate =
             new Date(
                 currentYear,
@@ -172,17 +214,22 @@ function getMaxMealDate() {
     } else {
 
         // 현재 달의 마지막 날
+
         maxDate =
             new Date(
                 currentYear,
                 currentMonth + 1,
                 0
             );
+
     }
 
 
+
     return dateToString(maxDate);
+
 }
+
 
 
 // =========================
@@ -192,10 +239,15 @@ function getMaxMealDate() {
 function isValidMealDate(dateString) {
 
     return (
+
         dateString >= MIN_MEAL_DATE &&
+
         dateString <= getMaxMealDate()
+
     );
+
 }
+
 
 
 // =========================
@@ -208,26 +260,37 @@ function displaySelectedDate() {
         document.getElementById("today-date");
 
 
+
     if (!dateElement) {
+
         return;
+
     }
+
 
 
     const today =
         getToday();
 
 
+
     let text =
         formatDate(selectedMealDate);
 
 
+
     if (isSameDate(selectedMealDate, today)) {
+
         text += " · 오늘";
+
     }
 
 
+
     dateElement.textContent = text;
+
 }
+
 
 
 // =========================
@@ -237,12 +300,19 @@ function displaySelectedDate() {
 function escapeHtml(text) {
 
     return text
+
         .replace(/&/g, "&amp;")
+
         .replace(/</g, "&lt;")
+
         .replace(/>/g, "&gt;")
+
         .replace(/"/g, "&quot;")
+
         .replace(/'/g, "&#039;");
+
 }
+
 
 
 // =========================
@@ -257,38 +327,56 @@ function parseMealMenu(menu) {
             .trim();
 
 
+
     const allergyMatch =
         cleanedMenu.match(
-            /\s*\(([\d.]+)\)\s*$/
+            /\s\(*([\d.]+)\)\s*$/
         );
+
 
 
     if (!allergyMatch) {
 
         return {
+
             name: cleanedMenu,
+
             allergy: []
+
         };
+
     }
+
 
 
     const allergyNumbers =
         allergyMatch[1]
+
             .split(".")
+
             .filter(number => number !== "");
+
 
 
     const name =
         cleanedMenu
+
             .replace(allergyMatch[0], "")
+
             .trim();
 
 
+
     return {
+
         name: name,
+
         allergy: allergyNumbers
+
     };
+
 }
+
 
 
 // =========================
@@ -301,6 +389,7 @@ function setDateSelectValues(dateString) {
         dateStringToDate(dateString);
 
 
+
     const yearSelect =
         document.getElementById("date-year");
 
@@ -311,13 +400,21 @@ function setDateSelectValues(dateString) {
         document.getElementById("date-day");
 
 
+
     if (
+
         !yearSelect ||
+
         !monthSelect ||
+
         !daySelect
+
     ) {
+
         return;
+
     }
+
 
 
     yearSelect.value =
@@ -327,12 +424,19 @@ function setDateSelectValues(dateString) {
         String(date.getMonth() + 1);
 
 
+
     updateDateDayOptions(
+
         date.getFullYear(),
+
         date.getMonth() + 1,
+
         date.getDate()
+
     );
+
 }
+
 
 
 // =========================
@@ -345,34 +449,49 @@ function populateYearOptions() {
         document.getElementById("date-year");
 
 
+
     if (!yearSelect) {
+
         return;
+
     }
 
 
+
     yearSelect.innerHTML = "";
+
 
 
     const currentYear =
         new Date().getFullYear();
 
 
+
     // 2021년부터 현재 연도까지만
+
     for (
+
         let year = 2021;
+
         year <= currentYear;
+
         year++
+
     ) {
 
         const option =
             document.createElement("option");
 
         option.value = String(year);
+
         option.textContent = `${year}년`;
 
         yearSelect.appendChild(option);
+
     }
+
 }
+
 
 
 // =========================
@@ -385,29 +504,42 @@ function populateMonthOptions() {
         document.getElementById("date-month");
 
 
+
     if (!monthSelect) {
+
         return;
+
     }
+
 
 
     monthSelect.innerHTML = "";
 
 
+
     for (
+
         let month = 1;
+
         month <= 12;
+
         month++
+
     ) {
 
         const option =
             document.createElement("option");
 
         option.value = String(month);
+
         option.textContent = `${month}월`;
 
         monthSelect.appendChild(option);
+
     }
+
 }
+
 
 
 // =========================
@@ -415,57 +547,84 @@ function populateMonthOptions() {
 // =========================
 
 function updateDateDayOptions(
+
     year,
+
     month,
+
     selectedDay
+
 ) {
 
     const daySelect =
         document.getElementById("date-day");
 
 
+
     if (!daySelect) {
+
         return;
+
     }
+
 
 
     const maxDay =
         new Date(
+
             year,
+
             month,
+
             0
+
         ).getDate();
+
 
 
     daySelect.innerHTML = "";
 
 
+
     for (
+
         let day = 1;
+
         day <= maxDay;
+
         day++
+
     ) {
 
         const option =
             document.createElement("option");
 
         option.value = String(day);
+
         option.textContent = `${day}일`;
 
         daySelect.appendChild(option);
+
     }
+
 
 
     const validSelectedDay =
         Math.min(
+
             Number(selectedDay) || 1,
+
             maxDay
+
         );
+
 
 
     daySelect.value =
         String(validSelectedDay);
+
 }
+
 
 
 // =========================
@@ -484,13 +643,21 @@ function getDateFromSelects() {
         document.getElementById("date-day");
 
 
+
     if (
+
         !yearSelect ||
+
         !monthSelect ||
+
         !daySelect
+
     ) {
+
         return null;
+
     }
+
 
 
     const year =
@@ -503,25 +670,40 @@ function getDateFromSelects() {
         Number(daySelect.value);
 
 
+
     if (
+
         !year ||
+
         !month ||
+
         !day
+
     ) {
+
         return null;
+
     }
+
 
 
     const date =
         new Date(
+
             year,
+
             month - 1,
+
             day
+
         );
 
 
+
     return dateToString(date);
+
 }
+
 
 
 // =========================
@@ -541,32 +723,46 @@ function updateDateNavigationButtons(dateString) {
         );
 
 
+
     if (
+
         !previousButton ||
+
         !nextButton
+
     ) {
+
         return;
+
     }
+
 
 
     const currentDate =
         dateStringToDate(dateString);
 
 
+
     const previousDate =
         new Date(currentDate);
 
     previousDate.setDate(
+
         previousDate.getDate() - 1
+
     );
+
 
 
     const nextDate =
         new Date(currentDate);
 
     nextDate.setDate(
+
         nextDate.getDate() + 1
+
     );
+
 
 
     const previousDateString =
@@ -576,16 +772,23 @@ function updateDateNavigationButtons(dateString) {
         dateToString(nextDate);
 
 
+
     previousButton.disabled =
         !isValidMealDate(
+
             previousDateString
+
         );
 
     nextButton.disabled =
         !isValidMealDate(
+
             nextDateString
+
         );
+
 }
+
 
 
 // =========================
@@ -645,24 +848,41 @@ function setupDateModal() {
         );
 
 
+
     if (
+
         !modal ||
+
         !openButton ||
+
         !closeButton ||
+
         !cancelButton ||
+
         !applyButton ||
+
         !previousButton ||
+
         !todayButton ||
+
         !nextButton ||
+
         !yearSelect ||
+
         !monthSelect
+
     ) {
+
         return;
+
     }
 
 
+
     populateYearOptions();
+
     populateMonthOptions();
+
 
 
     // =========================
@@ -671,6 +891,7 @@ function setupDateModal() {
 
     let temporaryDate =
         selectedMealDate;
+
 
 
     // =========================
@@ -683,30 +904,45 @@ function setupDateModal() {
             selectedMealDate;
 
 
+
         setDateSelectValues(
+
             temporaryDate
+
         );
+
 
 
         updateDateNavigationButtons(
+
             temporaryDate
+
         );
+
 
 
         modal.classList.add("active");
 
         modal.setAttribute(
+
             "aria-hidden",
+
             "false"
+
         );
 
         document.documentElement.classList.add(
+
             "modal-open"
+
         );
 
 
+
         closeButton.focus();
+
     }
+
 
 
     // =========================
@@ -718,14 +954,21 @@ function setupDateModal() {
         modal.classList.remove("active");
 
         modal.setAttribute(
+
             "aria-hidden",
+
             "true"
+
         );
 
         document.documentElement.classList.remove(
+
             "modal-open"
+
         );
+
     }
+
 
 
     // =========================
@@ -738,26 +981,40 @@ function setupDateModal() {
             getDateFromSelects();
 
 
+
         if (!newDate) {
+
             return;
+
         }
+
 
 
         if (
+
             !isValidMealDate(newDate)
+
         ) {
+
             return;
+
         }
+
 
 
         temporaryDate =
             newDate;
 
 
+
         updateDateNavigationButtons(
+
             temporaryDate
+
         );
+
     }
+
 
 
     // =========================
@@ -765,27 +1022,42 @@ function setupDateModal() {
     // =========================
 
     yearSelect.addEventListener(
+
         "change",
+
         () => {
 
             const currentDay =
                 Number(
+
                     document.getElementById(
+
                         "date-day"
+
                     ).value
+
                 ) || 1;
 
 
+
             updateDateDayOptions(
+
                 Number(yearSelect.value),
+
                 Number(monthSelect.value),
+
                 currentDay
+
             );
 
 
+
             updateTemporaryDateFromSelects();
+
         }
+
     );
+
 
 
     // =========================
@@ -793,27 +1065,42 @@ function setupDateModal() {
     // =========================
 
     monthSelect.addEventListener(
+
         "change",
+
         () => {
 
             const currentDay =
                 Number(
+
                     document.getElementById(
+
                         "date-day"
+
                     ).value
+
                 ) || 1;
 
 
+
             updateDateDayOptions(
+
                 Number(yearSelect.value),
+
                 Number(monthSelect.value),
+
                 currentDay
+
             );
 
 
+
             updateTemporaryDateFromSelects();
+
         }
+
     );
+
 
 
     // =========================
@@ -822,21 +1109,29 @@ function setupDateModal() {
 
     const daySelect =
         document.getElementById(
+
             "date-day"
+
         );
+
 
 
     if (daySelect) {
 
         daySelect.addEventListener(
+
             "change",
+
             () => {
 
                 updateTemporaryDateFromSelects();
 
             }
+
         );
+
     }
+
 
 
     // =========================
@@ -844,45 +1139,68 @@ function setupDateModal() {
     // =========================
 
     previousButton.addEventListener(
+
         "click",
+
         () => {
 
             const currentDate =
                 dateStringToDate(
+
                     temporaryDate
+
                 );
 
 
+
             currentDate.setDate(
+
                 currentDate.getDate() - 1
+
             );
+
 
 
             const previousDate =
                 dateToString(currentDate);
 
 
+
             if (
+
                 !isValidMealDate(previousDate)
+
             ) {
+
                 return;
+
             }
+
 
 
             temporaryDate =
                 previousDate;
 
 
+
             setDateSelectValues(
+
                 temporaryDate
+
             );
+
 
 
             updateDateNavigationButtons(
+
                 temporaryDate
+
             );
+
         }
+
     );
+
 
 
     // =========================
@@ -890,23 +1208,34 @@ function setupDateModal() {
     // =========================
 
     todayButton.addEventListener(
+
         "click",
+
         () => {
 
             temporaryDate =
                 getToday();
 
 
+
             setDateSelectValues(
+
                 temporaryDate
+
             );
+
 
 
             updateDateNavigationButtons(
+
                 temporaryDate
+
             );
+
         }
+
     );
+
 
 
     // =========================
@@ -914,45 +1243,68 @@ function setupDateModal() {
     // =========================
 
     nextButton.addEventListener(
+
         "click",
+
         () => {
 
             const currentDate =
                 dateStringToDate(
+
                     temporaryDate
+
                 );
 
 
+
             currentDate.setDate(
+
                 currentDate.getDate() + 1
+
             );
+
 
 
             const nextDate =
                 dateToString(currentDate);
 
 
+
             if (
+
                 !isValidMealDate(nextDate)
+
             ) {
+
                 return;
+
             }
+
 
 
             temporaryDate =
                 nextDate;
 
 
+
             setDateSelectValues(
+
                 temporaryDate
+
             );
+
 
 
             updateDateNavigationButtons(
+
                 temporaryDate
+
             );
+
         }
+
     );
+
 
 
     // =========================
@@ -960,23 +1312,33 @@ function setupDateModal() {
     // =========================
 
     applyButton.addEventListener(
+
         "click",
+
         () => {
 
             const newDate =
                 getDateFromSelects();
 
 
+
             if (
+
                 !newDate ||
+
                 !isValidMealDate(newDate)
+
             ) {
+
                 return;
+
             }
+
 
 
             selectedMealDate =
                 newDate;
+
 
 
             displaySelectedDate();
@@ -984,8 +1346,11 @@ function setupDateModal() {
             closeModal();
 
             loadMeal();
+
         }
+
     );
+
 
 
     // =========================
@@ -993,9 +1358,13 @@ function setupDateModal() {
     // =========================
 
     cancelButton.addEventListener(
+
         "click",
+
         closeModal
+
     );
+
 
 
     // =========================
@@ -1003,9 +1372,13 @@ function setupDateModal() {
     // =========================
 
     closeButton.addEventListener(
+
         "click",
+
         closeModal
+
     );
+
 
 
     // =========================
@@ -1013,17 +1386,25 @@ function setupDateModal() {
     // =========================
 
     modal.addEventListener(
+
         "click",
+
         (event) => {
 
             if (
+
                 event.target === modal
+
             ) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 
 
     // =========================
@@ -1031,18 +1412,27 @@ function setupDateModal() {
     // =========================
 
     document.addEventListener(
+
         "keydown",
+
         (event) => {
 
             if (
+
                 event.key === "Escape" &&
+
                 modal.classList.contains("active")
+
             ) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 
 
     // =========================
@@ -1050,10 +1440,15 @@ function setupDateModal() {
     // =========================
 
     openButton.addEventListener(
+
         "click",
+
         openModal
+
     );
+
 }
+
 
 
 // =========================
@@ -1071,9 +1466,13 @@ async function loadMeal() {
         );
 
 
+
     if (!mealList) {
+
         return;
+
     }
+
 
 
     // =========================
@@ -1086,29 +1485,45 @@ async function loadMeal() {
 
         reloadButton.textContent =
             "🔄 불러오는 중...";
+
     }
 
 
+
     mealList.innerHTML = `
+
         <li class="meal-loading">
+
             급식 정보를 불러오는 중...
+
         </li>
+
     `;
+
 
 
     const selectedDate =
         selectedMealDate;
 
 
+
     const apiUrl =
         `https://open.neis.go.kr/hub/mealServiceDietInfo` +
+
         `?KEY=${NEIS_API_KEY}` +
+
         `&Type=json` +
+
         `&pIndex=1` +
+
         `&pSize=100` +
+
         `&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}` +
+
         `&SD_SCHUL_CODE=${SCHOOL_CODE}` +
+
         `&MLSV_YMD=${selectedDate}`;
+
 
 
     try {
@@ -1117,16 +1532,22 @@ async function loadMeal() {
             await fetch(apiUrl);
 
 
+
         if (!response.ok) {
 
             throw new Error(
+
                 "NEIS API 요청에 실패했습니다."
+
             );
+
         }
+
 
 
         const data =
             await response.json();
+
 
 
         // =========================
@@ -1136,10 +1557,15 @@ async function loadMeal() {
         if (data.RESULT) {
 
             throw new Error(
+
                 data.RESULT.MESSAGE ||
+
                 "NEIS API 오류"
+
             );
+
         }
+
 
 
         // =========================
@@ -1147,37 +1573,56 @@ async function loadMeal() {
         // =========================
 
         if (
+
             !data.mealServiceDietInfo ||
+
             data.mealServiceDietInfo.length < 2
+
         ) {
 
             mealList.innerHTML = `
+
                 <li class="meal-error">
+
                     선택한 날짜에는 급식 정보가 없습니다.
+
                 </li>
+
             `;
 
             return;
+
         }
+
 
 
         const mealData =
             data.mealServiceDietInfo[1].row;
 
 
+
         if (
+
             !mealData ||
+
             mealData.length === 0
+
         ) {
 
             mealList.innerHTML = `
+
                 <li class="meal-error">
+
                     선택한 날짜에는 급식 정보가 없습니다.
+
                 </li>
+
             `;
 
             return;
+
         }
+
 
 
         // =========================
@@ -1188,28 +1633,41 @@ async function loadMeal() {
             mealData[0];
 
 
+
         const menuText =
             meal.DDISH_NM || "";
 
 
+
         // NEIS의 <br/> 기준으로 메뉴 분리
+
         const menus =
             menuText
+
                 .split(/<br\s*\/?>/gi)
+
                 .map(menu => menu.trim())
+
                 .filter(menu => menu !== "");
+
 
 
         if (menus.length === 0) {
 
             mealList.innerHTML = `
+
                 <li class="meal-error">
+
                     선택한 날짜의 급식 메뉴가 없습니다.
+
                 </li>
+
             `;
 
             return;
+
         }
+
 
 
         // =========================
@@ -1217,17 +1675,23 @@ async function loadMeal() {
         // =========================
 
         mealList.innerHTML =
+
             menus
+
                 .map(menu => {
 
                     const parsedMenu =
                         parseMealMenu(menu);
 
 
+
                     const safeMenuName =
                         escapeHtml(
+
                             parsedMenu.name
+
                         );
+
 
 
                     // =========================
@@ -1235,28 +1699,34 @@ async function loadMeal() {
                     // =========================
 
                     if (
+
                         parsedMenu.allergy.length === 0
+
                     ) {
 
                         return `
+
                             <li>
 
                                 <span class="meal-name">
+
                                     ${safeMenuName}
+
                                 </span>
 
                             </li>
+
                         `;
+
                     }
+
 
 
                     /*
                         여러 알레르기 번호를
                         하나의 버튼으로 묶는다.
-
                         예:
                         (5.6.9)
-
                         → [5.6.9]
                     */
 
@@ -1264,50 +1734,75 @@ async function loadMeal() {
                         parsedMenu.allergy.join(".");
 
 
+
                     return `
+
                         <li>
 
                             <span class="meal-name">
+
                                 ${safeMenuName}
+
                             </span>
 
                             <span class="meal-allergy">
 
                                 <button
+
                                     type="button"
+
                                     class="meal-allergy-btn"
+
                                     data-meal-name="${safeMenuName}"
+
                                     data-allergy-numbers="${allergyText}"
+
                                     aria-label="${safeMenuName} 알레르기 정보 확인"
+
                                 >
+
                                     ${allergyText}
+
                                 </button>
 
                             </span>
 
                         </li>
+
                     `;
 
                 })
+
                 .join("");
+
 
 
     } catch (error) {
 
         console.error(
+
             "급식 정보를 불러오는 중 오류가 발생했습니다:",
+
             error
+
         );
 
 
+
         mealList.innerHTML = `
+
             <li class="meal-error">
+
                 급식 정보를 불러오지 못했습니다.
+
             </li>
 
             <li class="meal-error">
+
                 잠시 후 다시 확인해주세요.
+
             </li>
+
         `;
 
     } finally {
@@ -1322,9 +1817,13 @@ async function loadMeal() {
 
             reloadButton.textContent =
                 "🔄 급식 다시 불러오기";
+
         }
+
     }
+
 }
+
 
 
 // =========================
@@ -1354,14 +1853,23 @@ function setupMealAllergyModal() {
         );
 
 
+
     if (
+
         !modal ||
+
         !closeButton ||
+
         !menuName ||
+
         !result
+
     ) {
+
         return;
+
     }
+
 
 
     // =========================
@@ -1369,7 +1877,9 @@ function setupMealAllergyModal() {
     // =========================
 
     document.addEventListener(
+
         "click",
+
         (event) => {
 
             const button =
@@ -1378,76 +1888,109 @@ function setupMealAllergyModal() {
                 );
 
 
+
             if (!button) {
+
                 return;
+
             }
+
 
 
             const mealName =
                 button.dataset.mealName ||
+
                 "메뉴";
+
 
 
             const allergyNumbers =
                 button.dataset.allergyNumbers ||
+
                 "";
+
 
 
             const numbers =
                 allergyNumbers
+
                     .split(".")
+
                     .filter(number => number !== "");
 
 
+
             // 메뉴 이름
+
             menuName.textContent =
                 mealName;
 
 
+
             // 알레르기 목록
+
             result.innerHTML =
                 numbers
+
                     .map(number => {
 
                         const allergyName =
                             allergyNames[number] ||
+
                             "알 수 없음";
 
 
+
                         return `
+
                             <div class="meal-allergy-result-item">
 
                                 <span class="meal-allergy-result-number">
+
                                     ${escapeHtml(number)}
+
                                 </span>
 
                                 ${escapeHtml(allergyName)}
 
                             </div>
+
                         `;
 
                     })
+
                     .join("");
 
 
+
             // 팝업 열기
+
             modal.classList.add("active");
 
             modal.setAttribute(
+
                 "aria-hidden",
+
                 "false"
+
             );
+
 
 
             document.documentElement.classList.add(
+
                 "modal-open"
+
             );
+
 
 
             closeButton.focus();
 
         }
+
     );
+
 
 
     // =========================
@@ -1459,51 +2002,81 @@ function setupMealAllergyModal() {
         modal.classList.remove("active");
 
         modal.setAttribute(
+
             "aria-hidden",
+
             "true"
+
         );
 
         document.documentElement.classList.remove(
+
             "modal-open"
+
         );
+
     }
 
 
+
     // X 버튼
+
     closeButton.addEventListener(
+
         "click",
+
         closeModal
+
     );
+
 
 
     // 팝업 바깥 클릭
+
     modal.addEventListener(
+
         "click",
+
         (event) => {
 
             if (event.target === modal) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 
 
     // ESC
+
     document.addEventListener(
+
         "keydown",
+
         (event) => {
 
             if (
+
                 event.key === "Escape" &&
+
                 modal.classList.contains("active")
+
             ) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 }
+
 
 
 // =========================
@@ -1528,13 +2101,21 @@ function setupAllergyModal() {
         );
 
 
+
     if (
+
         !modal ||
+
         !openButton ||
+
         !closeButton
+
     ) {
+
         return;
+
     }
+
 
 
     // =========================
@@ -1546,16 +2127,23 @@ function setupAllergyModal() {
         modal.classList.add("active");
 
         modal.setAttribute(
+
             "aria-hidden",
+
             "false"
+
         );
 
         document.documentElement.classList.add(
+
             "modal-open"
+
         );
 
         closeButton.focus();
+
     }
+
 
 
     // =========================
@@ -1567,58 +2155,93 @@ function setupAllergyModal() {
         modal.classList.remove("active");
 
         modal.setAttribute(
+
             "aria-hidden",
+
             "true"
+
         );
 
         document.documentElement.classList.remove(
+
             "modal-open"
+
         );
+
     }
 
 
+
     // 버튼으로 열기
+
     openButton.addEventListener(
+
         "click",
+
         openModal
+
     );
+
 
 
     // X 버튼으로 닫기
+
     closeButton.addEventListener(
+
         "click",
+
         closeModal
+
     );
+
 
 
     // 팝업 바깥을 눌러서 닫기
+
     modal.addEventListener(
+
         "click",
+
         (event) => {
 
             if (event.target === modal) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 
 
     // ESC 키로 닫기
+
     document.addEventListener(
+
         "keydown",
+
         (event) => {
 
             if (
+
                 event.key === "Escape" &&
+
                 modal.classList.contains("active")
+
             ) {
+
                 closeModal();
+
             }
 
         }
+
     );
+
 }
+
 
 
 // =========================
@@ -1633,20 +2256,29 @@ function setupReloadButton() {
         );
 
 
+
     if (!reloadButton) {
+
         return;
+
     }
 
 
+
     reloadButton.addEventListener(
+
         "click",
+
         () => {
 
             loadMeal();
 
         }
+
     );
+
 }
+
 
 
 // =========================
@@ -1662,101 +2294,156 @@ function setupNavigationHighlight() {
         document.querySelectorAll(".nav a");
 
 
+
     if (
+
         !nav ||
+
         navLinks.length === 0
+
     ) {
+
         return;
+
     }
+
 
 
     navLinks.forEach((link) => {
 
         link.addEventListener(
+
             "click",
+
             (event) => {
 
                 const targetId =
                     link.getAttribute("href");
 
 
+
                 if (
+
                     !targetId ||
+
                     !targetId.startsWith("#")
+
                 ) {
+
                     return;
+
                 }
+
 
 
                 const target =
                     document.querySelector(targetId);
 
 
+
                 if (!target) {
+
                     return;
+
                 }
+
 
 
                 // 애니메이션 중이면 클릭 차단
+
                 if (
+
                     nav.classList.contains("nav-locked")
+
                 ) {
+
                     event.preventDefault();
+
                     return;
+
                 }
+
 
 
                 event.preventDefault();
 
 
+
                 // 네비게이션 잠금
+
                 nav.classList.add(
+
                     "nav-locked"
+
                 );
+
 
 
                 // 해당 카드로 부드럽게 이동
+
                 target.scrollIntoView({
+
                     behavior: "smooth",
+
                     block: "start"
+
                 });
 
 
+
                 // 기존 강조 애니메이션 초기화
+
                 target.classList.remove(
+
                     "nav-highlight"
+
                 );
+
 
 
                 // 애니메이션 재실행을 위한 강제 리플로우
+
                 void target.offsetWidth;
 
 
+
                 // 강조색 + 위로 2번 통통 튀기기
+
                 target.classList.add(
+
                     "nav-highlight"
+
                 );
+
 
 
                 // CSS:
                 // 0.8초 × 2회 = 총 1.6초
+
                 setTimeout(() => {
 
                     target.classList.remove(
+
                         "nav-highlight"
+
                     );
 
                     nav.classList.remove(
+
                         "nav-locked"
+
                     );
 
                 }, 1600);
 
             }
+
         );
 
     });
+
 }
+
 
 
 // =========================
@@ -1769,9 +2456,13 @@ function setupThemeToggle() {
         document.querySelector(".nav");
 
 
+
     if (!nav) {
+
         return;
+
     }
+
 
 
     // =========================
@@ -1787,6 +2478,7 @@ function setupThemeToggle() {
         "theme-toggle";
 
 
+
     // =========================
     // 저장된 테마 가져오기
     // =========================
@@ -1797,18 +2489,58 @@ function setupThemeToggle() {
         );
 
 
-    if (savedTheme === "dark") {
 
-        document.documentElement.classList.add(
-            "dark-mode"
+    // =========================
+    // 초기 테마 설정
+    //
+    // 사용자가 직접 선택한 테마가
+    // 저장되어 있으면 저장값 우선
+    //
+    // 저장된 값이 없으면
+    // 시스템 설정을 따라감
+    //
+    // 주의:
+    // 시간표 iframe에는 어떤 테마
+    // 변경도 적용하지 않는다.
+    // =========================
+
+    if (
+
+        savedTheme === "dark" ||
+
+        savedTheme === "light"
+
+    ) {
+
+        document.documentElement.classList.toggle(
+
+            "dark-mode",
+
+            savedTheme === "dark"
+
         );
 
     } else {
 
-        document.documentElement.classList.remove(
-            "dark-mode"
+        const prefersDark =
+            window.matchMedia(
+
+                "(prefers-color-scheme: dark)"
+
+            ).matches;
+
+
+
+        document.documentElement.classList.toggle(
+
+            "dark-mode",
+
+            prefersDark
+
         );
+
     }
+
 
 
     // =========================
@@ -1819,8 +2551,11 @@ function setupThemeToggle() {
 
         const isDark =
             document.documentElement.classList.contains(
+
                 "dark-mode"
+
             );
+
 
 
         if (isDark) {
@@ -1828,13 +2563,19 @@ function setupThemeToggle() {
             themeButton.textContent = "☀️";
 
             themeButton.setAttribute(
+
                 "aria-label",
+
                 "라이트모드로 전환"
+
             );
 
             themeButton.setAttribute(
+
                 "title",
+
                 "라이트모드"
+
             );
 
         } else {
@@ -1842,19 +2583,29 @@ function setupThemeToggle() {
             themeButton.textContent = "🌙";
 
             themeButton.setAttribute(
+
                 "aria-label",
+
                 "다크모드로 전환"
+
             );
 
             themeButton.setAttribute(
+
                 "title",
+
                 "다크모드"
+
             );
+
         }
+
     }
 
 
+
     updateThemeButton();
+
 
 
     // =========================
@@ -1862,45 +2613,67 @@ function setupThemeToggle() {
     // =========================
 
     nav.appendChild(
+
         themeButton
+
     );
+
 
 
     // =========================
     // 테마 전환
+    //
+    // 사이트 자체의 document만 변경한다.
+    // 시간표 iframe은 변경하지 않는다.
     // =========================
 
     themeButton.addEventListener(
+
         "click",
+
         () => {
 
             const isDark =
                 document.documentElement.classList.toggle(
+
                     "dark-mode"
+
                 );
+
 
 
             if (isDark) {
 
                 localStorage.setItem(
+
                     "ygmhelper-theme",
+
                     "dark"
+
                 );
 
             } else {
 
                 localStorage.setItem(
+
                     "ygmhelper-theme",
+
                     "light"
+
                 );
+
             }
+
 
 
             updateThemeButton();
 
         }
+
     );
+
 }
+
 
 
 // =========================

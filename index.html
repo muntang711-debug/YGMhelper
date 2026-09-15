@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>YGM헬퍼</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- 상단 헤더 -->
+    <header class="header">
+        <div class="header-inner">
+
+            <h1 class="logo">YGM헬퍼</h1>
+
+            <nav class="nav">
+                <a href="#meal">급식표</a>
+                <a href="#timetable">시간표</a>
+            </nav>
+
+        </div>
+    </header>
+
+
+    <!-- 메인 영역 -->
+    <main>
+
+        <!-- 오늘의 정보 -->
+        <section class="today-section">
+
+            <div class="section-title">
+                <button
+                    type="button"
+                    class="date-button"
+                    id="today-date"
+                    aria-label="급식 날짜 선택"
+                >
+                    날짜를 불러오는 중...
+                </button>
+
+                <h2>오늘의 학교생활</h2>
+            </div>
+
+
+            <div class="info-container">
+
+                <!-- 급식 카드 -->
+                <article class="info-card" id="meal">
+
+                    <div class="card-header">
+
+                        <div>
+                            <span class="card-icon">🍚</span>
+                            <h3>오늘의 급식</h3>
+                        </div>
+
+                        <span class="card-badge">급식</span>
+
+                    </div>
+
+
+                    <div class="meal-content">
+
+                        <ul class="meal-list" id="meal-list">
+                            <li class="meal-loading">
+                                급식 정보를 불러오는 중...
+                            </li>
+                        </ul>
+
+
+                        <!-- 급식 기능 버튼 -->
+                        <div class="meal-actions">
+
+                            <button
+                                type="button"
+                                class="meal-action-btn"
+                                id="reload-meal-btn"
+                            >
+                                🔄 급식 다시 불러오기
+                            </button>
+
+                            <button
+                                type="button"
+                                class="meal-action-btn"
+                                id="allergy-info-btn"
+                            >
+                                ⚠️ 알레르기 번호 안내
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- 시간표 카드 -->
+                <article class="info-card" id="timetable">
+
+                    <div class="card-header">
+
+                        <div>
+                            <span class="card-icon">🕐</span>
+                            <h3>오늘의 시간표</h3>
+                        </div>
+
+                        <span class="card-badge">시간표</span>
+
+                    </div>
+
+
+                    <div class="timetable-webview">
+                        <iframe
+                            src="https://ygm-comci-proxy.muntang711.workers.dev/"
+                            title="용곡중학교 시간표"
+                            loading="lazy"
+                            frameborder="0"
+                        ></iframe>
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- 날짜 선택 팝업 -->
+    <div
+        class="modal-overlay"
+        id="date-modal"
+        aria-hidden="true"
+    >
+
+        <div
+            class="date-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="date-modal-title"
+        >
+
+            <div class="modal-header">
+
+                <div>
+                    <span class="modal-icon">📅</span>
+
+                    <h2 id="date-modal-title">
+                        날짜 선택
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="date-modal-close"
+                    aria-label="날짜 선택 닫기"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- 날짜 빠른 이동 -->
+            <div class="date-navigation">
+
+                <button
+                    type="button"
+                    class="date-navigation-btn"
+                    id="previous-date-btn"
+                >
+                    ← 전날
+                </button>
+
+                <button
+                    type="button"
+                    class="date-navigation-btn today"
+                    id="today-date-btn"
+                >
+                    오늘
+                </button>
+
+                <button
+                    type="button"
+                    class="date-navigation-btn"
+                    id="next-date-btn"
+                >
+                    다음날 →
+                </button>
+
+            </div>
+
+
+            <!-- 날짜 드롭다운 -->
+            <div class="date-selects">
+
+                <label>
+                    <span>연도</span>
+
+                    <select id="date-year">
+                    </select>
+                </label>
+
+                <label>
+                    <span>월</span>
+
+                    <select id="date-month">
+                    </select>
+                </label>
+
+                <label>
+                    <span>일</span>
+
+                    <select id="date-day">
+                    </select>
+                </label>
+
+            </div>
+
+
+            <!-- 날짜 적용 버튼 -->
+            <div class="date-modal-actions">
+
+                <button
+                    type="button"
+                    class="date-action-btn"
+                    id="date-modal-cancel"
+                >
+                    취소
+                </button>
+
+                <button
+                    type="button"
+                    class="date-action-btn primary"
+                    id="date-modal-apply"
+                >
+                    날짜 적용
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- 알레르기 번호 안내 팝업 -->
+    <div
+        class="modal-overlay"
+        id="allergy-modal"
+        aria-hidden="true"
+    >
+
+        <div
+            class="allergy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="allergy-modal-title"
+        >
+
+            <div class="modal-header">
+
+                <div>
+                    <span class="modal-icon">⚠️</span>
+
+                    <h2 id="allergy-modal-title">
+                        알레르기 번호 안내
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="allergy-modal-close"
+                    aria-label="알레르기 안내 닫기"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- 알레르기 번호 목록 -->
+            <div class="allergy-list">
+
+                <div class="allergy-item">
+                    <span class="allergy-number">1</span>
+                    <span>난류</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">2</span>
+                    <span>우유</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">3</span>
+                    <span>메밀</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">4</span>
+                    <span>땅콩</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">5</span>
+                    <span>대두</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">6</span>
+                    <span>밀</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">7</span>
+                    <span>고등어</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">8</span>
+                    <span>게</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">9</span>
+                    <span>새우</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">10</span>
+                    <span>돼지고기</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">11</span>
+                    <span>복숭아</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">12</span>
+                    <span>토마토</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">13</span>
+                    <span>아황산류</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">14</span>
+                    <span>호두</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">15</span>
+                    <span>닭고기</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">16</span>
+                    <span>쇠고기</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">17</span>
+                    <span>오징어</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">18</span>
+                    <span>조개류</span>
+                </div>
+
+                <div class="allergy-item">
+                    <span class="allergy-number">19</span>
+                    <span>잣</span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- 메뉴별 알레르기 상세 팝업 -->
+    <div
+        class="modal-overlay"
+        id="meal-allergy-modal"
+        aria-hidden="true"
+    >
+
+        <div
+            class="meal-allergy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="meal-allergy-title"
+        >
+
+            <div class="modal-header">
+
+                <div>
+                    <span class="modal-icon">⚠️</span>
+
+                    <h2 id="meal-allergy-title">
+                        알레르기 정보
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="meal-allergy-modal-close"
+                    aria-label="메뉴 알레르기 정보 닫기"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="meal-allergy-content">
+
+                <p
+                    class="meal-allergy-menu-name"
+                    id="meal-allergy-menu-name"
+                >
+                    메뉴
+                </p>
+
+                <div
+                    class="meal-allergy-result"
+                    id="meal-allergy-result"
+                >
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>

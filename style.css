@@ -1,0 +1,1266 @@
+/* =========================
+   Pretendard 웹폰트
+========================= */
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
+    font-weight: 100;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraLight.woff2') format('woff2');
+    font-weight: 200;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Black.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+
+/* =========================
+   기본 설정
+========================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 90px;
+
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    background: #f5f6fa;
+    color: #222;
+    line-height: 1.6;
+}
+
+
+/* =========================
+   기본 페이지 스크롤바
+========================= */
+
+html::-webkit-scrollbar {
+    width: 7px;
+}
+
+html::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+    background: #d8d5e8;
+    border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+    background: #bdb8d5;
+}
+
+
+/* =========================
+   모달 열림 상태
+========================= */
+
+html.modal-open {
+    overflow: hidden;
+}
+
+
+/* =========================
+   헤더
+========================= */
+
+.header {
+    width: 100%;
+    height: 70px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #e8e8e8;
+
+    position: sticky;
+    top: 0;
+
+    z-index: 1000;
+}
+
+.header-inner {
+    max-width: 1100px;
+    height: 70px;
+
+    margin: 0 auto;
+    padding: 0 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 800;
+    color: #5b45d6;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.nav a {
+    text-decoration: none;
+
+    color: #555;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    transition: color 0.2s ease;
+}
+
+.nav a:hover {
+    color: #5b45d6;
+}
+
+
+/* =========================
+   메인
+========================= */
+
+main {
+    min-height: calc(100vh - 160px);
+}
+
+
+/* =========================
+   오늘의 정보
+========================= */
+
+.today-section {
+    max-width: 1100px;
+
+    margin: 0 auto;
+
+    padding: 55px 24px 90px;
+}
+
+.section-title {
+    margin-bottom: 30px;
+}
+
+.section-title p {
+    color: #777;
+
+    font-size: 14px;
+
+    margin-bottom: 4px;
+}
+
+
+/* =========================
+   날짜 버튼
+========================= */
+
+.date-button {
+    display: inline-flex;
+
+    align-items: center;
+
+    margin-bottom: 4px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+    color: #777;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+
+    cursor: pointer;
+
+    transition: color 0.2s ease;
+}
+
+.date-button:hover {
+    color: #5b45d6;
+}
+
+.date-button:focus-visible {
+    outline: 2px solid #5b45d6;
+    outline-offset: 3px;
+
+    border-radius: 4px;
+}
+
+.section-title h2 {
+    font-size: 28px;
+    font-weight: 800;
+
+    letter-spacing: -0.5px;
+}
+
+
+/* =========================
+   카드 영역
+========================= */
+
+.info-container {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 24px;
+
+    align-items: start;
+}
+
+.info-card {
+    background: #ffffff;
+
+    border: 1px solid #e8e8e8;
+    border-radius: 18px;
+
+    padding: 28px;
+
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.04);
+
+    transition: box-shadow 0.2s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================
+   카드 헤더
+========================= */
+
+.card-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 24px;
+}
+
+.card-header > div {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+.card-icon {
+    font-size: 24px;
+}
+
+.card-header h3 {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.card-badge {
+    background: #f0eeff;
+    color: #5b45d6;
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+/* =========================
+   시간표
+========================= */
+
+.timetable-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.class-item {
+    display: flex;
+
+    align-items: center;
+
+    padding: 15px 4px;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+.class-item:last-child {
+    border-bottom: none;
+}
+
+.period {
+    width: 65px;
+
+    color: #888;
+
+    font-size: 14px;
+}
+
+.subject {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+
+/* =========================
+   시간표 웹뷰
+========================= */
+
+.timetable-webview {
+    width: 100%;
+
+    height: 500px;
+
+    overflow: hidden;
+
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+
+    background: #ffffff;
+}
+
+.timetable-webview iframe {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    border: none;
+
+    background: #ffffff;
+}
+
+
+/* =========================
+   급식
+========================= */
+
+.meal-content {
+    text-align: center;
+}
+
+.meal-list {
+    list-style: none;
+
+    text-align: left;
+}
+
+.meal-list li {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    min-height: 46px;
+
+    padding: 11px 4px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    font-size: 15px;
+}
+
+.meal-list li:last-child {
+    border-bottom: none;
+}
+
+.meal-name {
+    flex: 1;
+
+    color: #333;
+
+    font-weight: 500;
+}
+
+
+/* =========================
+   급식 알레르기 번호
+========================= */
+
+.meal-allergy {
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+}
+
+.meal-allergy-btn {
+    padding: 3px 8px;
+
+    border: 1px solid #dedede;
+    border-radius: 6px;
+
+    background: #f8f8f8;
+    color: #777;
+
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.meal-allergy-btn:hover {
+    background: #eeeeee;
+
+    border-color: #d0d0d0;
+
+    color: #444;
+}
+
+.meal-allergy-btn:active {
+    background: #e6e6e6;
+}
+
+
+/* =========================
+   급식 로딩 / 오류
+========================= */
+
+.meal-loading,
+.meal-error {
+    display: block !important;
+
+    color: #888;
+
+    text-align: center;
+}
+
+
+/* =========================
+   급식 기능 버튼
+========================= */
+
+.meal-actions {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+.meal-action-btn {
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #555;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.meal-action-btn:hover {
+    background: #f7f7f7;
+
+    border-color: #d4d4d4;
+
+    color: #333;
+}
+
+.meal-action-btn:active {
+    background: #eeeeee;
+}
+
+.meal-action-btn:disabled {
+    opacity: 0.6;
+
+    cursor: wait;
+}
+
+
+/* =========================
+   공통 팝업
+========================= */
+
+.modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 2000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(30, 30, 30, 0.45);
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition:
+        opacity 0.2s ease,
+        visibility 0.2s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+
+    visibility: visible;
+}
+
+
+/* =========================
+   날짜 선택 팝업
+========================= */
+
+.date-modal {
+    width: 100%;
+    max-width: 460px;
+
+    padding: 26px;
+
+    background: #ffffff;
+
+    border-radius: 18px;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+    transform: translateY(8px);
+
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.active .date-modal,
+.modal-overlay.active .allergy-modal,
+.modal-overlay.active .meal-allergy-modal {
+    transform: translateY(0);
+}
+
+
+/* =========================
+   날짜 팝업 - 전날 / 오늘 / 다음날
+========================= */
+
+.date-navigation {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr 1fr;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+.date-navigation-btn {
+    width: 100%;
+
+    min-height: 42px;
+
+    padding: 9px 12px;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #555;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.date-navigation-btn:hover {
+    background: #f7f7f7;
+
+    border-color: #d4d4d4;
+
+    color: #333;
+}
+
+.date-navigation-btn:active {
+    background: #eeeeee;
+}
+
+.date-navigation-btn.today {
+    background: #f0eeff;
+
+    border-color: #ddd7ff;
+
+    color: #5b45d6;
+}
+
+.date-navigation-btn.today:hover {
+    background: #e9e5ff;
+
+    border-color: #d3ccfa;
+
+    color: #5b45d6;
+}
+
+.date-navigation-btn:disabled {
+    opacity: 0.4;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   날짜 팝업 - 드롭다운
+========================= */
+
+.date-selects {
+    display: grid;
+
+    grid-template-columns: 1.3fr 1fr 1fr;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+.date-selects label {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+}
+
+.date-selects label span {
+    color: #777;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.date-selects select {
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: 0 10px;
+
+    border: 1px solid #dedede;
+    border-radius: 9px;
+
+    background: #ffffff;
+    color: #333;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.date-selects select:hover {
+    border-color: #c8c8c8;
+}
+
+.date-selects select:focus {
+    border-color: #5b45d6;
+
+    box-shadow: 0 0 0 3px rgba(91, 69, 214, 0.1);
+}
+
+
+/* =========================
+   날짜 팝업 - 버튼
+========================= */
+
+.date-modal-actions {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+}
+
+.date-action-btn {
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #555;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.date-action-btn:hover {
+    background: #f7f7f7;
+
+    border-color: #d4d4d4;
+
+    color: #333;
+}
+
+.date-action-btn.primary {
+    background: #5b45d6;
+
+    border-color: #5b45d6;
+
+    color: #ffffff;
+}
+
+.date-action-btn.primary:hover {
+    background: #4e3bc0;
+
+    border-color: #4e3bc0;
+
+    color: #ffffff;
+}
+
+
+/* =========================
+   알레르기 번호 안내 팝업
+========================= */
+
+.allergy-modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    padding: 26px;
+
+    background: #ffffff;
+
+    border-radius: 18px;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+    transform: translateY(8px);
+
+    transition: transform 0.2s ease;
+}
+
+
+/* =========================
+   메뉴별 알레르기 팝업
+========================= */
+
+.meal-allergy-modal {
+    width: 100%;
+    max-width: 460px;
+
+    padding: 26px;
+
+    background: #ffffff;
+
+    border-radius: 18px;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+    transform: translateY(8px);
+
+    transition: transform 0.2s ease;
+}
+
+.meal-allergy-content {
+    text-align: center;
+}
+
+.meal-allergy-menu-name {
+    margin-bottom: 20px;
+
+    color: #222;
+
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.meal-allergy-result {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: 8px;
+}
+
+.meal-allergy-result-item {
+    padding: 9px 13px;
+
+    background: #f0eeff;
+
+    border: 1px solid #ddd7ff;
+    border-radius: 10px;
+
+    color: #5b45d6;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.meal-allergy-result-number {
+    margin-right: 4px;
+
+    color: #5b45d6;
+
+    font-weight: 800;
+}
+
+
+/* =========================
+   팝업 헤더
+========================= */
+
+.modal-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    flex-shrink: 0;
+
+    margin-bottom: 20px;
+}
+
+.modal-header > div {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+}
+
+.modal-icon {
+    font-size: 22px;
+}
+
+.modal-header h2 {
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.modal-close {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f3f3f3;
+
+    color: #666;
+
+    font-family: inherit;
+    font-size: 25px;
+    font-weight: 400;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #e9e9e9;
+
+    color: #222;
+}
+
+
+/* =========================
+   알레르기 목록
+========================= */
+
+.allergy-list {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 8px;
+
+    min-height: 0;
+
+    overflow-y: auto;
+
+    padding-right: 6px;
+}
+
+
+/* =========================
+   알레르기 스크롤바
+========================= */
+
+.allergy-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+.allergy-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.allergy-list::-webkit-scrollbar-thumb {
+    background: #cfc9f2;
+
+    border-radius: 10px;
+}
+
+.allergy-list::-webkit-scrollbar-thumb:hover {
+    background: #b7afe5;
+}
+
+
+/* =========================
+   알레르기 항목
+========================= */
+
+.allergy-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    min-height: 42px;
+
+    padding: 7px 10px;
+
+    background: #f0eeff;
+
+    border: 1px solid #e2ddff;
+
+    border-radius: 9px;
+
+    color: #444;
+
+    font-size: 14px;
+}
+
+.allergy-item:hover {
+    background: #e9e5ff;
+
+    border-color: #d3ccfa;
+}
+
+.allergy-number {
+    display: inline-block;
+
+    flex-shrink: 0;
+
+    min-width: 27px;
+
+    color: #5b45d6;
+
+    font-size: 14px;
+    font-weight: 800;
+
+    text-align: center;
+}
+
+
+/* =========================
+   푸터
+========================= */
+
+.footer {
+    padding: 32px 24px;
+
+    background: #ebe8ff;
+
+    color: #777;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    border-top: 1px solid #ddd8ff;
+}
+
+.footer p:first-child {
+    color: #5b45d6;
+
+    font-weight: 800;
+
+    margin-bottom: 4px;
+}
+
+
+/* =========================
+   모바일
+========================= */
+
+@media (max-width: 700px) {
+
+    .header {
+        height: 60px;
+    }
+
+    .header-inner {
+        height: 60px;
+
+        padding: 0 18px;
+    }
+
+    .logo {
+        font-size: 21px;
+    }
+
+    .nav {
+        gap: 16px;
+    }
+
+    .nav a {
+        font-size: 13px;
+    }
+
+    .today-section {
+        padding: 40px 20px 70px;
+    }
+
+    .section-title {
+        margin-bottom: 24px;
+    }
+
+    .section-title h2 {
+        font-size: 25px;
+    }
+
+    .info-container {
+        grid-template-columns: 1fr;
+    }
+
+    .info-card {
+        padding: 22px;
+    }
+
+    .meal-list li {
+        gap: 12px;
+    }
+
+    .meal-allergy-btn {
+        padding: 3px 7px;
+
+        font-size: 10px;
+    }
+
+    .meal-actions {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 8px;
+    }
+
+    .meal-action-btn {
+        padding: 9px 6px;
+
+        font-size: 12px;
+    }
+
+    .timetable-webview {
+        height: 500px;
+    }
+
+    .date-modal {
+        padding: 22px;
+
+        border-radius: 18px;
+    }
+
+    .date-navigation {
+        gap: 8px;
+    }
+
+    .date-selects {
+        grid-template-columns: 1fr 1fr 1fr;
+
+        gap: 7px;
+    }
+
+    .date-selects select {
+        padding: 0 7px;
+
+        font-size: 13px;
+    }
+
+    .date-modal-actions {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 8px;
+    }
+
+    .allergy-modal {
+        max-height: 88vh;
+
+        padding: 22px;
+
+        border-radius: 18px;
+    }
+
+    .allergy-list {
+        grid-template-columns: 1fr;
+
+        overflow-y: auto;
+    }
+
+    .meal-allergy-modal {
+        padding: 22px;
+
+        border-radius: 18px;
+    }
+
+}
+/* 네비게이션으로 이동했을 때 선택된 카드 강조 */
+.info-card.nav-highlight {
+    animation: nav-card-bounce 0.8s ease-in-out 2;
+    background: #f0eeff;
+    border-color: #cfc7ff;
+}
+
+@keyframes nav-card-bounce {
+    0%,
+    100% {
+        transform: translateY(0);
+        box-shadow: 0 8px 24px rgba(91, 69, 214, 0.08);
+    }
+
+    25% {
+        transform: translateY(-12px);
+        box-shadow: 0 16px 30px rgba(91, 69, 214, 0.18);
+    }
+
+    50% {
+        transform: translateY(0);
+        box-shadow: 0 8px 24px rgba(91, 69, 214, 0.08);
+    }
+
+    75% {
+        transform: translateY(-12px);
+        box-shadow: 0 16px 30px rgba(91, 69, 214, 0.18);
+    }
+}
+
+/* 네비게이션 이동 애니메이션 중 클릭 방지 */
+.nav.nav-locked {
+    pointer-events: none;
+}

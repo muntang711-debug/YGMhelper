@@ -1178,6 +1178,14 @@ main {
 
     .timetable-webview {
         height: 500px;
+        overflow: hidden;
+    }
+
+    .timetable-webview iframe {
+        width: 133.333333%;
+        height: 666.666667px;
+        transform: scale(0.75);
+        transform-origin: top left;
     }
 
     .date-modal {

@@ -1345,12 +1345,14 @@ html.dark-mode .subject {
 }
 
 html.dark-mode .timetable-webview {
-    background: #18191e;
+    background: #ffffff;
     border-color: #303139;
+    color-scheme: only light;
 }
 
 html.dark-mode .timetable-webview iframe {
-    background: #18191e;
+    background: #ffffff;
+    color-scheme: only light;
 }
 
 html.dark-mode .meal-list li {

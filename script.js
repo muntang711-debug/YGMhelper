@@ -1760,6 +1760,150 @@ function setupNavigationHighlight() {
 
 
 // =========================
+// 라이트 / 다크모드
+// =========================
+
+function setupThemeToggle() {
+
+    const nav =
+        document.querySelector(".nav");
+
+
+    if (!nav) {
+        return;
+    }
+
+
+    // =========================
+    // 테마 버튼 생성
+    // =========================
+
+    const themeButton =
+        document.createElement("button");
+
+    themeButton.type = "button";
+
+    themeButton.className =
+        "theme-toggle";
+
+
+    // =========================
+    // 저장된 테마 가져오기
+    // =========================
+
+    const savedTheme =
+        localStorage.getItem(
+            "ygmhelper-theme"
+        );
+
+
+    if (savedTheme === "dark") {
+
+        document.documentElement.classList.add(
+            "dark-mode"
+        );
+
+    } else {
+
+        document.documentElement.classList.remove(
+            "dark-mode"
+        );
+    }
+
+
+    // =========================
+    // 버튼 상태 변경
+    // =========================
+
+    function updateThemeButton() {
+
+        const isDark =
+            document.documentElement.classList.contains(
+                "dark-mode"
+            );
+
+
+        if (isDark) {
+
+            themeButton.textContent = "☀️";
+
+            themeButton.setAttribute(
+                "aria-label",
+                "라이트모드로 전환"
+            );
+
+            themeButton.setAttribute(
+                "title",
+                "라이트모드"
+            );
+
+        } else {
+
+            themeButton.textContent = "🌙";
+
+            themeButton.setAttribute(
+                "aria-label",
+                "다크모드로 전환"
+            );
+
+            themeButton.setAttribute(
+                "title",
+                "다크모드"
+            );
+        }
+    }
+
+
+    updateThemeButton();
+
+
+    // =========================
+    // 네비게이션 오른쪽에 버튼 추가
+    // =========================
+
+    nav.appendChild(
+        themeButton
+    );
+
+
+    // =========================
+    // 테마 전환
+    // =========================
+
+    themeButton.addEventListener(
+        "click",
+        () => {
+
+            const isDark =
+                document.documentElement.classList.toggle(
+                    "dark-mode"
+                );
+
+
+            if (isDark) {
+
+                localStorage.setItem(
+                    "ygmhelper-theme",
+                    "dark"
+                );
+
+            } else {
+
+                localStorage.setItem(
+                    "ygmhelper-theme",
+                    "light"
+                );
+            }
+
+
+            updateThemeButton();
+
+        }
+    );
+}
+
+
+// =========================
 // YGM헬퍼 시작
 // =========================
 
@@ -1776,3 +1920,5 @@ setupAllergyModal();
 setupMealAllergyModal();
 
 setupNavigationHighlight();
+
+setupThemeToggle();

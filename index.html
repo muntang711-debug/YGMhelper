@@ -103,34 +103,43 @@
 
                     <div class="card-header">
 
-                        <div>
+                        <div class="timetable-header-left">
                             <span class="card-icon">🕐</span>
                             <h3>오늘의 시간표</h3>
+
+                            <div
+                                class="timetable-source-buttons"
+                                role="group"
+                                aria-label="시간표 출처 선택"
+                            >
+                                <button
+                                    type="button"
+                                    class="timetable-source-btn active"
+                                    data-timetable-source="neis"
+                                >
+                                    나이스
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="timetable-source-btn"
+                                    data-timetable-source="comcigan"
+                                >
+                                    컴시간
+                                </button>
+                            </div>
                         </div>
 
-
                     </div>
 
 
-                    <div class="timetable-source-control">
-
-                        <label>
-                            <span>시간표 출처</span>
-                            <select id="timetable-source">
-                                <option value="neis">나이스</option>
-                                <option value="comcigan">컴시간 (실험적인 기능)</option>
-                            </select>
-                        </label>
-
-                        <p
-                            class="timetable-source-note"
-                            id="timetable-source-note"
-                            hidden
-                        >
-                            컴시간 시간표는 실험적인 기능입니다.
-                        </p>
-
-                    </div>
+                    <p
+                        class="timetable-source-note"
+                        id="timetable-source-note"
+                        hidden
+                    >
+                        컴시간 시간표는 실험적인 기능입니다.
+                    </p>
 
 
                     <div class="timetable-controls">

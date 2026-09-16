@@ -41,10 +41,9 @@ let selectedTimetableSource =
 const COMCIGAN_PROXY_URL =
     "https://ygm-comci-proxy.muntang711.workers.dev";
 
-const COMCIGAN_SCHOOL_CODE = "39737";
+const COMCIGAN_SCHOOL_NAME = "용곡중학교";
 
-let comciganTimetableData = null;
-let comciganReady = false;
+let comciganMeta = null;
 
 
 // =========================
@@ -52,7 +51,6 @@ let comciganReady = false;
 // =========================
 
 const allergyNames = {
-
     "1": "난류",
     "2": "우유",
     "3": "메밀",
@@ -72,7 +70,6 @@ const allergyNames = {
     "17": "오징어",
     "18": "조개류",
     "19": "잣"
-
 };
 
 
@@ -81,22 +78,13 @@ const allergyNames = {
 // =========================
 
 function getToday() {
-
     const today = new Date();
 
-    const year =
-        today.getFullYear();
-
-    const month =
-        String(today.getMonth() + 1)
-            .padStart(2, "0");
-
-    const day =
-        String(today.getDate())
-            .padStart(2, "0");
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
 
     return `${year}${month}${day}`;
-
 }
 
 
@@ -105,22 +93,11 @@ function getToday() {
 // =========================
 
 function dateStringToDate(dateString) {
+    const year = Number(dateString.slice(0, 4));
+    const month = Number(dateString.slice(4, 6));
+    const day = Number(dateString.slice(6, 8));
 
-    const year =
-        Number(dateString.slice(0, 4));
-
-    const month =
-        Number(dateString.slice(4, 6));
-
-    const day =
-        Number(dateString.slice(6, 8));
-
-    return new Date(
-        year,
-        month - 1,
-        day
-    );
-
+    return new Date(year, month - 1, day);
 }
 
 
@@ -129,20 +106,11 @@ function dateStringToDate(dateString) {
 // =========================
 
 function dateToString(date) {
-
-    const year =
-        date.getFullYear();
-
-    const month =
-        String(date.getMonth() + 1)
-            .padStart(2, "0");
-
-    const day =
-        String(date.getDate())
-            .padStart(2, "0");
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}${month}${day}`;
-
 }
 
 
@@ -151,12 +119,9 @@ function dateToString(date) {
 // =========================
 
 function formatDate(dateString) {
-
-    const date =
-        dateStringToDate(dateString);
+    const date = dateStringToDate(dateString);
 
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-
 }
 
 
@@ -165,9 +130,7 @@ function formatDate(dateString) {
 // =========================
 
 function isSameDate(dateA, dateB) {
-
     return dateA === dateB;
-
 }
 
 
@@ -176,57 +139,33 @@ function isSameDate(dateA, dateB) {
 // =========================
 
 function getMaxMealDate() {
+    const today = dateStringToDate(getToday());
 
-    const today =
-        dateStringToDate(getToday());
-
-    const currentYear =
-        today.getFullYear();
-
-    const currentMonth =
-        today.getMonth();
-
-    const currentDay =
-        today.getDate();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
 
     let maxDate;
 
     if (currentDay >= 28) {
-
-        maxDate =
-            new Date(
-                currentYear,
-                currentMonth + 2,
-                0
-            );
-
+        maxDate = new Date(currentYear, currentMonth + 2, 0);
     } else {
-
-        maxDate =
-            new Date(
-                currentYear,
-                currentMonth + 1,
-                0
-            );
-
+        maxDate = new Date(currentYear, currentMonth + 1, 0);
     }
 
     return dateToString(maxDate);
-
 }
 
 
 // =========================
-// 날짜 선택 가능 여부
+// 날짜 선택 가능한지 확인
 // =========================
 
 function isValidMealDate(dateString) {
-
     return (
         dateString >= MIN_MEAL_DATE &&
         dateString <= getMaxMealDate()
     );
-
 }
 
 
@@ -235,32 +174,21 @@ function isValidMealDate(dateString) {
 // =========================
 
 function displaySelectedDate() {
-
-    const dateElement =
-        document.getElementById("today-date");
+    const dateElement = document.getElementById("today-date");
 
     if (!dateElement) {
         return;
     }
 
-    const today =
-        getToday();
+    const today = getToday();
 
-    let text =
-        formatDate(selectedMealDate);
+    let text = formatDate(selectedMealDate);
 
-    if (
-        isSameDate(
-            selectedMealDate,
-            today
-        )
-    ) {
+    if (isSameDate(selectedMealDate, today)) {
         text += " · 오늘";
     }
 
-    dateElement.textContent =
-        text;
-
+    dateElement.textContent = text;
 }
 
 
@@ -269,62 +197,47 @@ function displaySelectedDate() {
 // =========================
 
 function escapeHtml(text) {
-
     return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-
 }
 
 
 // =========================
-// 알레르기 번호 분리
+// 급식 알레르기 번호 분리
 // =========================
 
 function parseMealMenu(menu) {
+    const cleanedMenu = menu
+        .replace(/&amp;/g, "&")
+        .trim();
 
-    const cleanedMenu =
-        menu
-            .replace(/&amp;/g, "&")
-            .trim();
-
-    const allergyMatch =
-        cleanedMenu.match(
-            /\s\(*([\d.]+)\)\s*$/
-        );
+    const allergyMatch = cleanedMenu.match(
+        /\s\(*([\d.]+)\)\s*$/
+    );
 
     if (!allergyMatch) {
-
         return {
             name: cleanedMenu,
             allergy: []
         };
-
     }
 
-    const allergyNumbers =
-        allergyMatch[1]
-            .split(".")
-            .filter(
-                number => number !== ""
-            );
+    const allergyNumbers = allergyMatch[1]
+        .split(".")
+        .filter(number => number !== "");
 
-    const name =
-        cleanedMenu
-            .replace(
-                allergyMatch[0],
-                ""
-            )
-            .trim();
+    const name = cleanedMenu
+        .replace(allergyMatch[0], "")
+        .trim();
 
     return {
         name,
         allergy: allergyNumbers
     };
-
 }
 
 
@@ -333,51 +246,24 @@ function parseMealMenu(menu) {
 // =========================
 
 function setDateSelectValues(dateString) {
+    const date = dateStringToDate(dateString);
 
-    const date =
-        dateStringToDate(
-            dateString
-        );
+    const yearSelect = document.getElementById("date-year");
+    const monthSelect = document.getElementById("date-month");
+    const daySelect = document.getElementById("date-day");
 
-    const yearSelect =
-        document.getElementById(
-            "date-year"
-        );
-
-    const monthSelect =
-        document.getElementById(
-            "date-month"
-        );
-
-    const daySelect =
-        document.getElementById(
-            "date-day"
-        );
-
-    if (
-        !yearSelect ||
-        !monthSelect ||
-        !daySelect
-    ) {
+    if (!yearSelect || !monthSelect || !daySelect) {
         return;
     }
 
-    yearSelect.value =
-        String(
-            date.getFullYear()
-        );
-
-    monthSelect.value =
-        String(
-            date.getMonth() + 1
-        );
+    yearSelect.value = String(date.getFullYear());
+    monthSelect.value = String(date.getMonth() + 1);
 
     updateDateDayOptions(
         date.getFullYear(),
         date.getMonth() + 1,
         date.getDate()
     );
-
 }
 
 
@@ -386,11 +272,7 @@ function setDateSelectValues(dateString) {
 // =========================
 
 function populateYearOptions() {
-
-    const yearSelect =
-        document.getElementById(
-            "date-year"
-        );
+    const yearSelect = document.getElementById("date-year");
 
     if (!yearSelect) {
         return;
@@ -398,32 +280,16 @@ function populateYearOptions() {
 
     yearSelect.innerHTML = "";
 
-    const currentYear =
-        new Date().getFullYear();
+    const currentYear = new Date().getFullYear();
 
-    for (
-        let year = 2021;
-        year <= currentYear;
-        year++
-    ) {
+    for (let year = 2021; year <= currentYear; year++) {
+        const option = document.createElement("option");
 
-        const option =
-            document.createElement(
-                "option"
-            );
+        option.value = String(year);
+        option.textContent = `${year}년`;
 
-        option.value =
-            String(year);
-
-        option.textContent =
-            `${year}년`;
-
-        yearSelect.appendChild(
-            option
-        );
-
+        yearSelect.appendChild(option);
     }
-
 }
 
 
@@ -432,11 +298,7 @@ function populateYearOptions() {
 // =========================
 
 function populateMonthOptions() {
-
-    const monthSelect =
-        document.getElementById(
-            "date-month"
-        );
+    const monthSelect = document.getElementById("date-month");
 
     if (!monthSelect) {
         return;
@@ -444,29 +306,14 @@ function populateMonthOptions() {
 
     monthSelect.innerHTML = "";
 
-    for (
-        let month = 1;
-        month <= 12;
-        month++
-    ) {
+    for (let month = 1; month <= 12; month++) {
+        const option = document.createElement("option");
 
-        const option =
-            document.createElement(
-                "option"
-            );
+        option.value = String(month);
+        option.textContent = `${month}월`;
 
-        option.value =
-            String(month);
-
-        option.textContent =
-            `${month}월`;
-
-        monthSelect.appendChild(
-            option
-        );
-
+        monthSelect.appendChild(option);
     }
-
 }
 
 
@@ -474,62 +321,32 @@ function populateMonthOptions() {
 // 날짜 드롭다운 일 생성
 // =========================
 
-function updateDateDayOptions(
-    year,
-    month,
-    selectedDay
-) {
-
-    const daySelect =
-        document.getElementById(
-            "date-day"
-        );
+function updateDateDayOptions(year, month, selectedDay) {
+    const daySelect = document.getElementById("date-day");
 
     if (!daySelect) {
         return;
     }
 
-    const maxDay =
-        new Date(
-            year,
-            month,
-            0
-        ).getDate();
+    const maxDay = new Date(year, month, 0).getDate();
 
     daySelect.innerHTML = "";
 
-    for (
-        let day = 1;
-        day <= maxDay;
-        day++
-    ) {
+    for (let day = 1; day <= maxDay; day++) {
+        const option = document.createElement("option");
 
-        const option =
-            document.createElement(
-                "option"
-            );
+        option.value = String(day);
+        option.textContent = `${day}일`;
 
-        option.value =
-            String(day);
-
-        option.textContent =
-            `${day}일`;
-
-        daySelect.appendChild(
-            option
-        );
-
+        daySelect.appendChild(option);
     }
 
-    const validSelectedDay =
-        Math.min(
-            Number(selectedDay) || 1,
-            maxDay
-        );
+    const validSelectedDay = Math.min(
+        Number(selectedDay) || 1,
+        maxDay
+    );
 
-    daySelect.value =
-        String(validSelectedDay);
-
+    daySelect.value = String(validSelectedDay);
 }
 
 
@@ -538,55 +355,25 @@ function updateDateDayOptions(
 // =========================
 
 function getDateFromSelects() {
+    const yearSelect = document.getElementById("date-year");
+    const monthSelect = document.getElementById("date-month");
+    const daySelect = document.getElementById("date-day");
 
-    const yearSelect =
-        document.getElementById(
-            "date-year"
-        );
-
-    const monthSelect =
-        document.getElementById(
-            "date-month"
-        );
-
-    const daySelect =
-        document.getElementById(
-            "date-day"
-        );
-
-    if (
-        !yearSelect ||
-        !monthSelect ||
-        !daySelect
-    ) {
+    if (!yearSelect || !monthSelect || !daySelect) {
         return null;
     }
 
-    const year =
-        Number(yearSelect.value);
+    const year = Number(yearSelect.value);
+    const month = Number(monthSelect.value);
+    const day = Number(daySelect.value);
 
-    const month =
-        Number(monthSelect.value);
-
-    const day =
-        Number(daySelect.value);
-
-    if (
-        !year ||
-        !month ||
-        !day
-    ) {
+    if (!year || !month || !day) {
         return null;
     }
 
     return dateToString(
-        new Date(
-            year,
-            month - 1,
-            day
-        )
+        new Date(year, month - 1, day)
     );
-
 }
 
 
@@ -594,41 +381,25 @@ function getDateFromSelects() {
 // 날짜 팝업 버튼 상태 갱신
 // =========================
 
-function updateDateNavigationButtons(
-    dateString
-) {
-
+function updateDateNavigationButtons(dateString) {
     const previousButton =
-        document.getElementById(
-            "previous-date-btn"
-        );
+        document.getElementById("previous-date-btn");
 
     const nextButton =
-        document.getElementById(
-            "next-date-btn"
-        );
+        document.getElementById("next-date-btn");
 
-    if (
-        !previousButton ||
-        !nextButton
-    ) {
+    if (!previousButton || !nextButton) {
         return;
     }
 
     const currentDate =
-        dateStringToDate(
-            dateString
-        );
+        dateStringToDate(dateString);
 
     const previousDate =
-        new Date(
-            currentDate
-        );
+        new Date(currentDate);
 
     const nextDate =
-        new Date(
-            currentDate
-        );
+        new Date(currentDate);
 
     previousDate.setDate(
         previousDate.getDate() - 1
@@ -640,18 +411,13 @@ function updateDateNavigationButtons(
 
     previousButton.disabled =
         !isValidMealDate(
-            dateToString(
-                previousDate
-            )
+            dateToString(previousDate)
         );
 
     nextButton.disabled =
         !isValidMealDate(
-            dateToString(
-                nextDate
-            )
+            dateToString(nextDate)
         );
-
 }
 
 
@@ -660,56 +426,35 @@ function updateDateNavigationButtons(
 // =========================
 
 function setupDateModal() {
-
     const modal =
-        document.getElementById(
-            "date-modal"
-        );
+        document.getElementById("date-modal");
 
     const openButton =
-        document.getElementById(
-            "today-date"
-        );
+        document.getElementById("today-date");
 
     const closeButton =
-        document.getElementById(
-            "date-modal-close"
-        );
+        document.getElementById("date-modal-close");
 
     const cancelButton =
-        document.getElementById(
-            "date-modal-cancel"
-        );
+        document.getElementById("date-modal-cancel");
 
     const applyButton =
-        document.getElementById(
-            "date-modal-apply"
-        );
+        document.getElementById("date-modal-apply");
 
     const previousButton =
-        document.getElementById(
-            "previous-date-btn"
-        );
+        document.getElementById("previous-date-btn");
 
     const todayButton =
-        document.getElementById(
-            "today-date-btn"
-        );
+        document.getElementById("today-date-btn");
 
     const nextButton =
-        document.getElementById(
-            "next-date-btn"
-        );
+        document.getElementById("next-date-btn");
 
     const yearSelect =
-        document.getElementById(
-            "date-year"
-        );
+        document.getElementById("date-year");
 
     const monthSelect =
-        document.getElementById(
-            "date-month"
-        );
+        document.getElementById("date-month");
 
     if (
         !modal ||
@@ -729,179 +474,112 @@ function setupDateModal() {
     populateYearOptions();
     populateMonthOptions();
 
-    let temporaryDate =
-        selectedMealDate;
+    let temporaryDate = selectedMealDate;
 
     function openModal() {
+        temporaryDate = selectedMealDate;
 
-        temporaryDate =
-            selectedMealDate;
+        setDateSelectValues(temporaryDate);
+        updateDateNavigationButtons(temporaryDate);
 
-        setDateSelectValues(
-            temporaryDate
-        );
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
 
-        updateDateNavigationButtons(
-            temporaryDate
-        );
-
-        modal.classList.add(
-            "active"
-        );
-
-        modal.setAttribute(
-            "aria-hidden",
-            "false"
-        );
-
-        document.documentElement.classList.add(
-            "modal-open"
-        );
+        document.documentElement.classList.add("modal-open");
 
         closeButton.focus();
-
     }
 
     function closeModal() {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
 
-        modal.classList.remove(
-            "active"
-        );
-
-        modal.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-
-        document.documentElement.classList.remove(
-            "modal-open"
-        );
-
+        document.documentElement.classList.remove("modal-open");
     }
 
     function updateTemporaryDateFromSelects() {
-
-        const newDate =
-            getDateFromSelects();
+        const newDate = getDateFromSelects();
 
         if (
             !newDate ||
-            !isValidMealDate(
-                newDate
-            )
+            !isValidMealDate(newDate)
         ) {
             return;
         }
 
-        temporaryDate =
-            newDate;
+        temporaryDate = newDate;
 
         updateDateNavigationButtons(
             temporaryDate
         );
-
     }
 
     yearSelect.addEventListener(
         "change",
         () => {
-
             const daySelect =
-                document.getElementById(
-                    "date-day"
-                );
+                document.getElementById("date-day");
 
             const currentDay =
-                Number(
-                    daySelect?.value
-                ) || 1;
+                Number(daySelect?.value) || 1;
 
             updateDateDayOptions(
-                Number(
-                    yearSelect.value
-                ),
-                Number(
-                    monthSelect.value
-                ),
+                Number(yearSelect.value),
+                Number(monthSelect.value),
                 currentDay
             );
 
             updateTemporaryDateFromSelects();
-
         }
     );
 
     monthSelect.addEventListener(
         "change",
         () => {
-
             const daySelect =
-                document.getElementById(
-                    "date-day"
-                );
+                document.getElementById("date-day");
 
             const currentDay =
-                Number(
-                    daySelect?.value
-                ) || 1;
+                Number(daySelect?.value) || 1;
 
             updateDateDayOptions(
-                Number(
-                    yearSelect.value
-                ),
-                Number(
-                    monthSelect.value
-                ),
+                Number(yearSelect.value),
+                Number(monthSelect.value),
                 currentDay
             );
 
             updateTemporaryDateFromSelects();
-
         }
     );
 
     const daySelect =
-        document.getElementById(
-            "date-day"
-        );
+        document.getElementById("date-day");
 
     if (daySelect) {
-
         daySelect.addEventListener(
             "change",
             updateTemporaryDateFromSelects
         );
-
     }
 
     previousButton.addEventListener(
         "click",
         () => {
-
             const currentDate =
-                dateStringToDate(
-                    temporaryDate
-                );
+                dateStringToDate(temporaryDate);
 
             currentDate.setDate(
                 currentDate.getDate() - 1
             );
 
             const previousDate =
-                dateToString(
-                    currentDate
-                );
+                dateToString(currentDate);
 
-            if (
-                !isValidMealDate(
-                    previousDate
-                )
-            ) {
+            if (!isValidMealDate(previousDate)) {
                 return;
             }
 
-            temporaryDate =
-                previousDate;
+            temporaryDate = previousDate;
 
             setDateSelectValues(
                 temporaryDate
@@ -910,16 +588,13 @@ function setupDateModal() {
             updateDateNavigationButtons(
                 temporaryDate
             );
-
         }
     );
 
     todayButton.addEventListener(
         "click",
         () => {
-
-            temporaryDate =
-                getToday();
+            temporaryDate = getToday();
 
             setDateSelectValues(
                 temporaryDate
@@ -928,38 +603,27 @@ function setupDateModal() {
             updateDateNavigationButtons(
                 temporaryDate
             );
-
         }
     );
 
     nextButton.addEventListener(
         "click",
         () => {
-
             const currentDate =
-                dateStringToDate(
-                    temporaryDate
-                );
+                dateStringToDate(temporaryDate);
 
             currentDate.setDate(
                 currentDate.getDate() + 1
             );
 
             const nextDate =
-                dateToString(
-                    currentDate
-                );
+                dateToString(currentDate);
 
-            if (
-                !isValidMealDate(
-                    nextDate
-                )
-            ) {
+            if (!isValidMealDate(nextDate)) {
                 return;
             }
 
-            temporaryDate =
-                nextDate;
+            temporaryDate = nextDate;
 
             setDateSelectValues(
                 temporaryDate
@@ -968,37 +632,30 @@ function setupDateModal() {
             updateDateNavigationButtons(
                 temporaryDate
             );
-
         }
     );
 
     applyButton.addEventListener(
         "click",
         () => {
-
             const newDate =
                 getDateFromSelects();
 
             if (
                 !newDate ||
-                !isValidMealDate(
-                    newDate
-                )
+                !isValidMealDate(newDate)
             ) {
                 return;
             }
 
-            selectedMealDate =
-                newDate;
+            selectedMealDate = newDate;
 
             displaySelectedDate();
 
             closeModal();
 
             loadMeal();
-
             loadTimetableBySource();
-
         }
     );
 
@@ -1015,29 +672,21 @@ function setupDateModal() {
     modal.addEventListener(
         "click",
         event => {
-
-            if (
-                event.target === modal
-            ) {
+            if (event.target === modal) {
                 closeModal();
             }
-
         }
     );
 
     document.addEventListener(
         "keydown",
         event => {
-
             if (
                 event.key === "Escape" &&
-                modal.classList.contains(
-                    "active"
-                )
+                modal.classList.contains("active")
             ) {
                 closeModal();
             }
-
         }
     );
 
@@ -1045,7 +694,6 @@ function setupDateModal() {
         "click",
         openModal
     );
-
 }
 
 
@@ -1054,29 +702,20 @@ function setupDateModal() {
 // =========================
 
 async function loadMeal() {
-
     const mealList =
-        document.getElementById(
-            "meal-list"
-        );
+        document.getElementById("meal-list");
 
     const reloadButton =
-        document.getElementById(
-            "reload-meal-btn"
-        );
+        document.getElementById("reload-meal-btn");
 
     if (!mealList) {
         return;
     }
 
     if (reloadButton) {
-
-        reloadButton.disabled =
-            true;
-
+        reloadButton.disabled = true;
         reloadButton.textContent =
             "🔄 불러오는 중...";
-
     }
 
     mealList.innerHTML = `
@@ -1099,37 +738,29 @@ async function loadMeal() {
         `&MLSV_YMD=${selectedDate}`;
 
     try {
-
         const response =
-            await fetch(
-                apiUrl
-            );
+            await fetch(apiUrl);
 
         if (!response.ok) {
-
             throw new Error(
                 "NEIS API 요청에 실패했습니다."
             );
-
         }
 
         const data =
             await response.json();
 
         if (data.RESULT) {
-
             throw new Error(
                 data.RESULT.MESSAGE ||
                 "NEIS API 오류"
             );
-
         }
 
         if (
             !data.mealServiceDietInfo ||
             data.mealServiceDietInfo.length < 2
         ) {
-
             mealList.innerHTML = `
                 <li class="meal-error">
                     선택한 날짜에는 급식 정보가 없습니다.
@@ -1146,7 +777,6 @@ async function loadMeal() {
             !mealData ||
             mealData.length === 0
         ) {
-
             mealList.innerHTML = `
                 <li class="meal-error">
                     선택한 날짜에는 급식 정보가 없습니다.
@@ -1156,26 +786,18 @@ async function loadMeal() {
             return;
         }
 
-        const meal =
-            mealData[0];
+        const meal = mealData[0];
 
         const menuText =
             meal.DDISH_NM || "";
 
         const menus =
             menuText
-                .split(
-                    /<br\s*\/?>/gi
-                )
-                .map(
-                    menu => menu.trim()
-                )
-                .filter(
-                    menu => menu !== ""
-                );
+                .split(/<br\s*\/?>/gi)
+                .map(menu => menu.trim())
+                .filter(menu => menu !== "");
 
         if (menus.length === 0) {
-
             mealList.innerHTML = `
                 <li class="meal-error">
                     선택한 날짜의 급식 메뉴가 없습니다.
@@ -1186,67 +808,50 @@ async function loadMeal() {
         }
 
         mealList.innerHTML =
-            menus
-                .map(
-                    menu => {
+            menus.map(menu => {
+                const parsedMenu =
+                    parseMealMenu(menu);
 
-                        const parsedMenu =
-                            parseMealMenu(
-                                menu
-                            );
+                const safeMenuName =
+                    escapeHtml(parsedMenu.name);
 
-                        const safeMenuName =
-                            escapeHtml(
-                                parsedMenu.name
-                            );
+                if (
+                    parsedMenu.allergy.length === 0
+                ) {
+                    return `
+                        <li>
+                            <span class="meal-name">
+                                ${safeMenuName}
+                            </span>
+                        </li>
+                    `;
+                }
 
-                        if (
-                            parsedMenu.allergy.length === 0
-                        ) {
+                const allergyText =
+                    parsedMenu.allergy.join(".");
 
-                            return `
-                                <li>
-                                    <span class="meal-name">
-                                        ${safeMenuName}
-                                    </span>
-                                </li>
-                            `;
+                return `
+                    <li>
+                        <span class="meal-name">
+                            ${safeMenuName}
+                        </span>
 
-                        }
-
-                        const allergyText =
-                            parsedMenu.allergy.join(
-                                "."
-                            );
-
-                        return `
-                            <li>
-                                <span class="meal-name">
-                                    ${safeMenuName}
-                                </span>
-
-                                <span class="meal-allergy">
-
-                                    <button
-                                        type="button"
-                                        class="meal-allergy-btn"
-                                        data-meal-name="${safeMenuName}"
-                                        data-allergy-numbers="${allergyText}"
-                                        aria-label="${safeMenuName} 알레르기 정보 확인"
-                                    >
-                                        ${allergyText}
-                                    </button>
-
-                                </span>
-                            </li>
-                        `;
-
-                    }
-                )
-                .join("");
+                        <span class="meal-allergy">
+                            <button
+                                type="button"
+                                class="meal-allergy-btn"
+                                data-meal-name="${safeMenuName}"
+                                data-allergy-numbers="${allergyText}"
+                                aria-label="${safeMenuName} 알레르기 정보 확인"
+                            >
+                                ${allergyText}
+                            </button>
+                        </span>
+                    </li>
+                `;
+            }).join("");
 
     } catch (error) {
-
         console.error(
             "급식 정보를 불러오는 중 오류가 발생했습니다:",
             error
@@ -1263,19 +868,13 @@ async function loadMeal() {
         `;
 
     } finally {
-
         if (reloadButton) {
-
-            reloadButton.disabled =
-                false;
+            reloadButton.disabled = false;
 
             reloadButton.textContent =
                 "🔄 급식 다시 불러오기";
-
         }
-
     }
-
 }
 
 
@@ -1284,26 +883,17 @@ async function loadMeal() {
 // =========================
 
 async function loadNeisTimetableClasses() {
-
     const gradeSelect =
-        document.getElementById(
-            "timetable-grade"
-        );
+        document.getElementById("timetable-grade");
 
     const classSelect =
-        document.getElementById(
-            "timetable-class"
-        );
+        document.getElementById("timetable-class");
 
-    if (
-        !gradeSelect ||
-        !classSelect
-    ) {
+    if (!gradeSelect || !classSelect) {
         return;
     }
 
     try {
-
         const year =
             String(
                 dateStringToDate(
@@ -1322,82 +912,62 @@ async function loadNeisTimetableClasses() {
             `&AY=${year}`;
 
         const response =
-            await fetch(
-                apiUrl
-            );
+            await fetch(apiUrl);
 
         if (!response.ok) {
-
             throw new Error(
                 "학급 정보 요청에 실패했습니다."
             );
-
         }
 
         const data =
             await response.json();
 
         if (data.RESULT) {
-
             throw new Error(
                 data.RESULT.MESSAGE ||
                 "학급 정보 API 오류"
             );
-
         }
 
         timetableClassData =
-            data.classInfo?.[1]?.row ||
-            [];
+            data.classInfo?.[1]?.row || [];
 
         if (
             timetableClassData.length === 0
         ) {
-
             throw new Error(
                 "학급 정보가 없습니다."
             );
-
         }
 
-        const grades =
-            [
-                ...new Set(
-                    timetableClassData
-                        .map(
-                            row =>
-                                String(
-                                    row.GRADE || ""
-                                ).trim()
-                        )
-                        .filter(
-                            Boolean
-                        )
-                )
-            ].sort(
-                (a, b) =>
-                    Number(a) -
-                    Number(b)
-            );
+        const grades = [
+            ...new Set(
+                timetableClassData
+                    .map(row =>
+                        String(
+                            row.GRADE || ""
+                        ).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ].sort(
+            (a, b) => Number(a) - Number(b)
+        );
 
         if (
             !grades.includes(
                 selectedTimetableGrade
             )
         ) {
-
             selectedTimetableGrade =
                 grades[0];
-
         }
 
         gradeSelect.innerHTML =
-            grades
-                .map(
-                    grade =>
-                        `<option value="${escapeHtml(grade)}">${escapeHtml(grade)}학년</option>`
-                )
-                .join("");
+            grades.map(grade =>
+                `<option value="${escapeHtml(grade)}">${escapeHtml(grade)}학년</option>`
+            ).join("");
 
         gradeSelect.value =
             selectedTimetableGrade;
@@ -1407,17 +977,22 @@ async function loadNeisTimetableClasses() {
         await loadNeisTimetable();
 
     } catch (error) {
-
         console.error(
             "나이스 시간표 학급 정보를 불러오는 중 오류가 발생했습니다:",
             error
         );
 
-        gradeSelect.innerHTML =
-            `<option value="">불러오기 실패</option>`;
+        gradeSelect.innerHTML = `
+            <option value="">
+                불러오기 실패
+            </option>
+        `;
 
-        classSelect.innerHTML =
-            `<option value="">불러오기 실패</option>`;
+        classSelect.innerHTML = `
+            <option value="">
+                불러오기 실패
+            </option>
+        `;
 
         const timetableList =
             document.getElementById(
@@ -1425,18 +1000,14 @@ async function loadNeisTimetableClasses() {
             );
 
         if (timetableList) {
-
             timetableList.innerHTML = `
                 <div class="timetable-error">
                     시간표 정보를 불러오지 못했습니다.<br>
                     잠시 후 다시 확인해주세요.
                 </div>
             `;
-
         }
-
     }
-
 }
 
 
@@ -1445,76 +1016,56 @@ async function loadNeisTimetableClasses() {
 // =========================
 
 function populateTimetableClassOptions() {
-
     const gradeSelect =
-        document.getElementById(
-            "timetable-grade"
-        );
+        document.getElementById("timetable-grade");
 
     const classSelect =
-        document.getElementById(
-            "timetable-class"
-        );
+        document.getElementById("timetable-class");
 
-    if (
-        !gradeSelect ||
-        !classSelect
-    ) {
+    if (!gradeSelect || !classSelect) {
         return;
     }
 
     const grade =
         gradeSelect.value;
 
-    const classes =
-        [
-            ...new Set(
-                timetableClassData
-                    .filter(
-                        row =>
-                            String(
-                                row.GRADE || ""
-                            ).trim() ===
-                            grade
-                    )
-                    .map(
-                        row =>
-                            String(
-                                row.CLASS_NM || ""
-                            ).trim()
-                    )
-                    .filter(
-                        Boolean
-                    )
-            )
-        ].sort(
-            (a, b) =>
-                Number(a) -
-                Number(b)
-        );
+    const classes = [
+        ...new Set(
+            timetableClassData
+                .filter(
+                    row =>
+                        String(
+                            row.GRADE || ""
+                        ).trim() === grade
+                )
+                .map(
+                    row =>
+                        String(
+                            row.CLASS_NM || ""
+                        ).trim()
+                )
+                .filter(Boolean)
+        )
+    ].sort(
+        (a, b) => Number(a) - Number(b)
+    );
 
     if (
         !classes.includes(
             selectedTimetableClass
         )
     ) {
-
         selectedTimetableClass =
             classes[0] || "";
-
     }
 
     classSelect.innerHTML =
-        classes
-            .map(
-                className =>
-                    `<option value="${escapeHtml(className)}">${escapeHtml(className)}반</option>`
-            )
-            .join("");
+        classes.map(className =>
+            `<option value="${escapeHtml(className)}">${escapeHtml(className)}반</option>`
+        ).join("");
 
     classSelect.value =
         selectedTimetableClass;
-
 }
 
 
@@ -1522,10 +1073,7 @@ function populateTimetableClassOptions() {
 // 시간표 학기 구하기
 // =========================
 
-function getTimetableSemester(
-    dateString
-) {
-
+function getTimetableSemester(dateString) {
     const month =
         dateStringToDate(
             dateString
@@ -1534,7 +1082,6 @@ function getTimetableSemester(
     return month >= 8
         ? "2"
         : "1";
-
 }
 
 
@@ -1543,7 +1090,6 @@ function getTimetableSemester(
 // =========================
 
 async function loadNeisTimetable() {
-
     const timetableList =
         document.getElementById(
             "timetable-list"
@@ -1575,10 +1121,7 @@ async function loadNeisTimetable() {
         classSelect.value ||
         selectedTimetableClass;
 
-    if (
-        !grade ||
-        !className
-    ) {
+    if (!grade || !className) {
         return;
     }
 
@@ -1608,10 +1151,7 @@ async function loadNeisTimetable() {
         selectedMealDate;
 
     const year =
-        selectedDate.slice(
-            0,
-            4
-        );
+        selectedDate.slice(0, 4);
 
     const semester =
         getTimetableSemester(
@@ -1633,41 +1173,31 @@ async function loadNeisTimetable() {
         `&CLASS_NM=${encodeURIComponent(className)}`;
 
     try {
-
         const response =
-            await fetch(
-                apiUrl
-            );
+            await fetch(apiUrl);
 
         if (!response.ok) {
-
             throw new Error(
                 "시간표 API 요청에 실패했습니다."
             );
-
         }
 
         const data =
             await response.json();
 
         if (data.RESULT) {
-
             throw new Error(
                 data.RESULT.MESSAGE ||
                 "시간표 API 오류"
             );
-
         }
 
         const timetableData =
-            data
-                .misTimetable?.[1]?.row ||
-            [];
+            data.misTimetable?.[1]?.row || [];
 
         if (
             timetableData.length === 0
         ) {
-
             timetableList.innerHTML = `
                 <div class="timetable-error">
                     ${escapeHtml(`${grade}학년 ${className}반`)}의<br>
@@ -1694,7 +1224,6 @@ async function loadNeisTimetable() {
         if (
             sortedRows.length === 0
         ) {
-
             timetableList.innerHTML = `
                 <div class="timetable-error">
                     선택한 날짜의 시간표가 없습니다.
@@ -1705,32 +1234,19 @@ async function loadNeisTimetable() {
         }
 
         timetableList.innerHTML =
-            sortedRows
-                .map(
-                    row => `
-                        <div class="timetable-row">
+            sortedRows.map(row => `
+                <div class="timetable-row">
+                    <span class="timetable-period">
+                        ${escapeHtml(String(row.PERIO))}교시
+                    </span>
 
-                            <span class="timetable-period">
-                                ${escapeHtml(
-                                    String(
-                                        row.PERIO
-                                    )
-                                )}교시
-                            </span>
-
-                            <span class="timetable-subject">
-                                ${escapeHtml(
-                                    row.ITRT_CNTNT
-                                )}
-                            </span>
-
-                        </div>
-                    `
-                )
-                .join("");
+                    <span class="timetable-subject">
+                        ${escapeHtml(row.ITRT_CNTNT)}
+                    </span>
+                </div>
+            `).join("");
 
     } catch (error) {
-
         console.error(
             "나이스 시간표 정보를 불러오는 중 오류가 발생했습니다:",
             error
@@ -1742,939 +1258,271 @@ async function loadNeisTimetable() {
                 잠시 후 다시 확인해주세요.
             </div>
         `;
-
     }
-
 }
 
 
 // =========================
-// 컴시간 데이터 가져오기
+// 컴시간 EUC-KR 문자열 인코딩
 // =========================
 
-async function fetchComciganPage(
-    path = "/39737"
-) {
+function encodeComciganSchoolName() {
+    return "%bf%eb%b0%ee%c1%df%c7%d0%b1%b3";
+}
 
+
+// =========================
+// 컴시간 응답 JSON 파싱
+// =========================
+
+function parseComciganJson(text) {
+    const cleaned =
+        text.replace(/\0/g, "").trim();
+
+    const end =
+        cleaned.lastIndexOf("}");
+
+    if (end === -1) {
+        throw new Error(
+            "컴시간 JSON 응답을 찾지 못했습니다."
+        );
+    }
+
+    return JSON.parse(
+        cleaned.slice(0, end + 1)
+    );
+}
+
+
+// =========================
+// 컴시간 경로 추출
+// =========================
+
+function extractComciganMeta(html) {
+    const mainRouteMatch =
+        html.match(/\.\/(\d+)\?(\d+)l/);
+
+    const timetableRouteMatch =
+        html.match(/'(\d+)'_/);
+
+    const teacherCodeMatch =
+        html.match(/성명=자료\.자료(\d+)/);
+
+    const originalCodeMatch =
+        html.match(
+            /원자료=Q자료\(자료\.자료(\d+)/
+        );
+
+    const dayCodeMatch =
+        html.match(
+            /일일자료=Q자료\(자료\.자료(\d+)/
+        );
+
+    const subjectCodeMatch =
+        html.match(
+            /자료\.자료(\d+)\[sb\]/
+        );
+
+    if (
+        !mainRouteMatch ||
+        !timetableRouteMatch
+    ) {
+        throw new Error(
+            "컴시간 경로 정보를 찾지 못했습니다."
+        );
+    }
+
+    if (
+        !teacherCodeMatch ||
+        !originalCodeMatch ||
+        !dayCodeMatch ||
+        !subjectCodeMatch
+    ) {
+        throw new Error(
+            "컴시간 자료 코드 정보를 찾지 못했습니다."
+        );
+    }
+
+    return {
+        mainRoute:
+            mainRouteMatch[1],
+
+        searchRoute:
+            mainRouteMatch[2],
+
+        timetableRoute:
+            timetableRouteMatch[1],
+
+        teacherCode:
+            teacherCodeMatch[1],
+
+        originalCode:
+            originalCodeMatch[1],
+
+        dayCode:
+            dayCodeMatch[1],
+
+        subjectCode:
+            subjectCodeMatch[1]
+    };
+}
+
+
+// =========================
+// 컴시간 응답 가져오기
+// =========================
+
+async function fetchComciganText(path) {
     const response =
         await fetch(
-            `${COMCIGAN_PROXY_URL}${path}`
+            `${COMCIGAN_PROXY_URL}${path}`,
+            {
+                cache: "no-store"
+            }
         );
 
     if (!response.ok) {
-
         throw new Error(
             `컴시간 요청 실패 (${response.status})`
         );
-
     }
 
     const buffer =
         await response.arrayBuffer();
 
-    let text;
-
-    try {
-
-        text =
-            new TextDecoder(
-                "euc-kr"
-            ).decode(
-                buffer
-            );
-
-    } catch (error) {
-
-        text =
-            new TextDecoder().decode(
-                buffer
-            );
-
-    }
-
-    return text;
-
+    return new TextDecoder(
+        "euc-kr"
+    ).decode(buffer);
 }
 
 
 // =========================
-// 컴시간 HTML/스크립트 정리
-// =========================
-
-function extractComciganScripts(
-    html
-) {
-
-    const scripts = [];
-
-    const scriptRegex =
-        /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-
-    let match;
-
-    while (
-        (match =
-            scriptRegex.exec(
-                html
-            )) !== null
-    ) {
-
-        scripts.push(
-            match[1]
-        );
-
-    }
-
-    return scripts;
-
-}
-
-
-// =========================
-// 컴시간 시간표 함수 추출
-// =========================
-
-function extractComciganDataFunctions(
-    scriptText
-) {
-
-    const functions = [];
-
-    const regex =
-        /function\s+([\w$가-힣]+)\s*\([^)]*\)\s*\{/g;
-
-    let match;
-
-    while (
-        (match =
-            regex.exec(
-                scriptText
-            )) !== null
-    ) {
-
-        const name =
-            match[1];
-
-        if (
-            !name.includes(
-                "자료"
-            )
-        ) {
-            continue;
-        }
-
-        const bodyStart =
-            match.index +
-            match[0].length -
-            1;
-
-        let depth = 0;
-
-        let quote = null;
-
-        let escaped = false;
-
-        for (
-            let i =
-                bodyStart;
-
-            i <
-                scriptText.length;
-
-            i++
-        ) {
-
-            const char =
-                scriptText[i];
-
-            if (quote) {
-
-                if (escaped) {
-
-                    escaped = false;
-
-                } else if (
-                    char === "\\"
-                ) {
-
-                    escaped = true;
-
-                } else if (
-                    char === quote
-                ) {
-
-                    quote =
-                        null;
-
-                }
-
-                continue;
-
-            }
-
-            if (
-                char === "'" ||
-                char === '"' ||
-                char === "`"
-            ) {
-
-                quote =
-                    char;
-
-                continue;
-
-            }
-
-            if (
-                char === "{"
-            ) {
-
-                depth++;
-
-            } else if (
-                char === "}"
-            ) {
-
-                depth--;
-
-                if (
-                    depth === 0
-                ) {
-
-                    functions.push({
-
-                        name,
-
-                        source:
-                            scriptText.slice(
-                                match.index,
-                                i + 1
-                            )
-
-                    });
-
-                    break;
-
-                }
-
-            }
-
-        }
-
-    }
-
-    return functions;
-
-}
-
-
-// =========================
-// 컴시간 수업 데이터 정규화
-// =========================
-
-function normalizeComciganLesson(
-    lesson,
-    fallbackPeriod
-) {
-
-    if (
-        !lesson ||
-        typeof lesson !==
-            "object"
-    ) {
-
-        return null;
-
-    }
-
-    const period =
-        Number(
-            lesson.classTime ??
-            lesson.class_time ??
-            lesson.period ??
-            fallbackPeriod
-        );
-
-    const subject =
-        String(
-            lesson.subject ??
-            lesson.lecture ??
-            lesson.ITRT_CNTNT ??
-            lesson.name ??
-            ""
-        ).trim();
-
-    const teacher =
-        String(
-            lesson.teacher ??
-            lesson.teacherName ??
-            ""
-        ).trim();
-
-    const changed =
-        Boolean(
-            lesson.isModify ??
-            lesson.is_modify ??
-            lesson.changed ??
-            lesson.modify ??
-            lesson.modified
-        );
-
-    return {
-
-        period:
-            Number.isFinite(
-                period
-            ) &&
-            period > 0
-                ? period
-                : fallbackPeriod,
-
-        subject:
-            subject ||
-            "-",
-
-        teacher:
-            teacher ||
-            "-",
-
-        changed
-
-    };
-
-}
-
-
-// =========================
-// 컴시간 배열 탐색
-// =========================
-
-function findLessonArrays(
-    value,
-    result = []
-) {
-
-    if (
-        Array.isArray(
-            value
-        )
-    ) {
-
-        const lessonLike =
-            value.filter(
-                item =>
-                    item &&
-                    typeof item ===
-                        "object" &&
-                    (
-                        "subject" in item ||
-                        "lecture" in item ||
-                        "teacher" in item ||
-                        "classTime" in item ||
-                        "isModify" in item ||
-                        "changed" in item
-                    )
-            );
-
-        if (
-            lessonLike.length > 0
-        ) {
-
-            result.push(
-                lessonLike
-            );
-
-        }
-
-        for (
-            const item
-                of value
-        ) {
-
-            findLessonArrays(
-                item,
-                result
-            );
-
-        }
-
-    } else if (
-        value &&
-        typeof value ===
-            "object"
-    ) {
-
-        for (
-            const item
-                of Object.values(
-                    value
-                )
-        ) {
-
-            findLessonArrays(
-                item,
-                result
-            );
-
-        }
-
-    }
-
-    return result;
-
-}
-
-
-// =========================
-// 컴시간 HTML 파싱
-// =========================
-
-function extractTextLinesFromHtml(
-    html
-) {
-
-    const parser =
-        new DOMParser();
-
-    const doc =
-        parser.parseFromString(
-            html,
-            "text/html"
-        );
-
-    const rows =
-        [
-            ...doc.querySelectorAll(
-                "tr"
-            )
-        ];
-
-    const lessons = [];
-
-    rows.forEach(
-        (
-            row,
-            rowIndex
-        ) => {
-
-            const rowCells =
-                [
-                    ...row.querySelectorAll(
-                        "td"
-                    )
-                ];
-
-            if (
-                rowCells.length === 0
-            ) {
-
-                return;
-
-            }
-
-            const periodMatch =
-                row.textContent.match(
-                    /(?:^|\s)(\d{1,2})\s*교시/
-                );
-
-            const period =
-                periodMatch
-                    ? Number(
-                        periodMatch[1]
-                    )
-                    : rowIndex + 1;
-
-            const texts =
-                rowCells
-                    .map(
-                        cell =>
-                            cell.innerText
-                                .replace(
-                                    /\s+/g,
-                                    " "
-                                )
-                                .trim()
-                    )
-                    .filter(
-                        Boolean
-                    );
-
-            if (
-                texts.length === 0
-            ) {
-
-                return;
-
-            }
-
-            const joined =
-                texts.join(
-                    " | "
-                );
-
-            const changed =
-                /변경|대체|수정|modify|change/i.test(
-                    joined
-                ) ||
-                row.innerHTML.includes(
-                    "modify"
-                ) ||
-                row.innerHTML.includes(
-                    "change"
-                );
-
-            let subject =
-                texts[0] ||
-                "-";
-
-            let teacher =
-                texts.length > 1
-                    ? texts[
-                        texts.length - 1
-                    ]
-                    : "-";
-
-            if (
-                texts.length > 2 &&
-                /^(교시|시간|\d+)$/.test(
-                    texts[0]
-                )
-            ) {
-
-                subject =
-                    texts[1] ||
-                    "-";
-
-                teacher =
-                    texts[
-                        texts.length - 1
-                    ] ||
-                    "-";
-
-            }
-
-            lessons.push({
-
-                period,
-
-                subject,
-
-                teacher,
-
-                changed
-
-            });
-
-        }
-    );
-
-    return lessons;
-
-}
-
-
-// =========================
-// 컴시간 결과 정규화
-// =========================
-
-function normalizeComciganResult(
-    result,
-    grade,
-    className,
-    weekdayIndex
-) {
-
-    if (!result) {
-
-        return [];
-
-    }
-
-    if (
-        typeof result ===
-            "string"
-    ) {
-
-        return extractTextLinesFromHtml(
-            result
-        );
-
-    }
-
-    if (
-        typeof HTMLElement !==
-            "undefined" &&
-        result instanceof HTMLElement
-    ) {
-
-        return extractTextLinesFromHtml(
-            result.outerHTML
-        );
-
-    }
-
-    const gradeValue =
-        result?.[grade] ??
-        result?.[
-            String(
-                grade
-            )
-        ];
-
-    const classValue =
-        gradeValue?.[
-            className
-        ] ??
-        gradeValue?.[
-            String(
-                className
-            )
-        ];
-
-    if (classValue) {
-
-        const dayValue =
-            classValue?.[
-                weekdayIndex
-            ] ??
-            classValue?.[
-                weekdayIndex + 1
-            ];
-
-        if (dayValue) {
-
-            const arrays =
-                findLessonArrays(
-                    dayValue
-                );
-
-            if (
-                arrays.length > 0
-            ) {
-
-                return arrays[0]
-                    .map(
-                        (
-                            lesson,
-                            index
-                        ) =>
-                            normalizeComciganLesson(
-                                lesson,
-                                index + 1
-                            )
-                    )
-                    .filter(
-                        Boolean
-                    );
-
-            }
-
-        }
-
-    }
-
-    const arrays =
-        findLessonArrays(
-            result
-        );
-
-    if (
-        arrays.length > 0
-    ) {
-
-        return arrays[0]
-            .map(
-                (
-                    lesson,
-                    index
-                ) =>
-                    normalizeComciganLesson(
-                        lesson,
-                        index + 1
-                    )
-            )
-            .filter(
-                Boolean
-            );
-
-    }
-
-    return [];
-
-}
-
-
-// =========================
-// 컴시간 초기화
+// 컴시간 메타데이터 초기화
 // =========================
 
 async function initializeComcigan() {
-
-    if (
-        comciganReady &&
-        comciganTimetableData
-    ) {
-
-        return comciganTimetableData;
-
+    if (comciganMeta) {
+        return;
     }
 
     const html =
-        await fetchComciganPage(
-            `/${COMCIGAN_SCHOOL_CODE}`
+        await fetchComciganText("/");
+
+    const meta =
+        extractComciganMeta(html);
+
+    const searchPath =
+        `/${meta.mainRoute}?${meta.searchRoute}l${encodeComciganSchoolName()}`;
+
+    const searchText =
+        await fetchComciganText(
+            searchPath
         );
 
-    const scripts =
-        extractComciganScripts(
-            html
-        );
+    const searchJson =
+        parseComciganJson(searchText);
 
-    const scriptText =
-        scripts.join(
-            "\n"
-        );
-
-    const functions =
-        extractComciganDataFunctions(
-            scriptText
-        );
+    const schools =
+        searchJson["학교검색"];
 
     if (
-        functions.length === 0
+        !Array.isArray(schools) ||
+        schools.length === 0
     ) {
-
         throw new Error(
-            "컴시간 시간표 함수를 찾지 못했습니다."
+            "컴시간에 용곡중학교가 등록되어 있지 않습니다."
         );
-
     }
 
-    let result = null;
-
-    for (
-        const candidate
-            of functions
-    ) {
-
-        try {
-
-            const runner =
-                new Function(
-                    `${scriptText}
-                    return ${candidate.name};`
-                );
-
-            const fn =
-                runner();
-
-            if (
-                typeof fn !==
-                    "function"
-            ) {
-
-                continue;
-
-            }
-
-            const attempts = [
-
-                () =>
-                    fn(
-                        null
-                    ),
-
-                () =>
-                    fn(
-                        {},
-                        1,
-                        1
-                    ),
-
-                () =>
-                    fn(
-                        1,
-                        1
-                    ),
-
-                () =>
-                    fn(
-                        1,
-                        1,
-                        null
-                    )
-
-            ];
-
-            for (
-                const attempt
-                    of attempts
-            ) {
-
-                try {
-
-                    const value =
-                        attempt();
-
-                    if (
-                        value
-                    ) {
-
-                        result =
-                            value;
-
-                        break;
-
-                    }
-
-                } catch (error) {
-
-                    // 다른 호출 형식을 계속 시도합니다.
-
-                }
-
-            }
-
-            if (
-                result
-            ) {
-
-                break;
-
-            }
-
-        } catch (error) {
-
-            // 다른 후보 함수를 계속 시도합니다.
-
-        }
-
-    }
-
-    if (!result) {
-
-        throw new Error(
-            "컴시간 시간표 데이터를 해석하지 못했습니다."
-        );
-
-    }
-
-    comciganTimetableData =
-        result;
-
-    comciganReady =
-        true;
-
-    return result;
-
-}
-
-
-// =========================
-// 컴시간 학급 목록 추출
-// =========================
-
-function getComciganGradesAndClasses(
-    data
-) {
-
-    const source =
-        data?.timetable ||
-        data?.result ||
-        data;
-
-    const grades = [];
-
-    if (
-        !source ||
-        typeof source !==
-            "object"
-    ) {
-
-        return grades;
-
-    }
-
-    for (
-        const [
-            grade,
-            classData
-        ]
-            of Object.entries(
-                source
-            )
-    ) {
-
-        if (
-            !/^\d+$/.test(
+    const school =
+        schools.find(
+            item =>
                 String(
-                    grade
-                )
-            ) ||
-            !classData ||
-            typeof classData !==
-                "object"
-        ) {
+                    item?.[2] || ""
+                ).trim() ===
+                COMCIGAN_SCHOOL_NAME
+        ) || schools[0];
 
-            continue;
+    const schoolCode =
+        String(
+            school?.[3] || ""
+        ).trim();
 
-        }
-
-        const classes =
-            Object.keys(
-                classData
-            )
-                .filter(
-                    className =>
-                        /^\d+$/.test(
-                            String(
-                                className
-                            )
-                        )
-                )
-                .sort(
-                    (a, b) =>
-                        Number(a) -
-                        Number(b)
-                );
-
-        if (
-            classes.length > 0
-        ) {
-
-            grades.push({
-
-                grade:
-                    String(
-                        grade
-                    ),
-
-                classes
-
-            });
-
-        }
-
+    if (!schoolCode) {
+        throw new Error(
+            "컴시간 학교 코드를 가져오지 못했습니다."
+        );
     }
 
-    return grades.sort(
-        (a, b) =>
-            Number(
-                a.grade
-            ) -
-            Number(
-                b.grade
-            )
-    );
+    const encoded =
+        btoa(
+            `${meta.timetableRoute}_${schoolCode}_0_1`
+        );
 
+    const timetableText =
+        await fetchComciganText(
+            `/${meta.mainRoute}?${encoded}`
+        );
+
+    const timetableJson =
+        parseComciganJson(
+            timetableText
+        );
+
+    comciganMeta = {
+        ...meta,
+
+        schoolCode,
+
+        teacherData:
+            timetableJson[
+                `자료${meta.teacherCode}`
+            ],
+
+        subjectData:
+            timetableJson[
+                `자료${meta.subjectCode}`
+            ],
+
+        originalData:
+            timetableJson[
+                `자료${meta.originalCode}`
+            ],
+
+        dayData:
+            timetableJson[
+                `자료${meta.dayCode}`
+            ],
+
+        classCount:
+            timetableJson["학급수"] || [],
+
+        dayCount:
+            timetableJson["요일별시수"] || []
+    };
+
+    if (
+        !Array.isArray(
+            comciganMeta.teacherData
+        ) ||
+        !Array.isArray(
+            comciganMeta.subjectData
+        ) ||
+        !comciganMeta.originalData ||
+        !comciganMeta.dayData
+    ) {
+        throw new Error(
+            "컴시간 시간표 데이터 구조를 해석하지 못했습니다."
+        );
+    }
 }
 
 
 // =========================
-// 컴시간 학급 목록 불러오기
+// 컴시간 학년/반 선택지 생성
 // =========================
 
-async function loadComciganClasses() {
-
+function populateComciganClassOptions() {
     const gradeSelect =
         document.getElementById(
             "timetable-grade"
@@ -2687,144 +1535,302 @@ async function loadComciganClasses() {
 
     if (
         !gradeSelect ||
-        !classSelect
+        !classSelect ||
+        !comciganMeta
     ) {
-
         return;
-
     }
 
-    try {
+    const counts =
+        comciganMeta.classCount;
 
-        const data =
-            await initializeComcigan();
+    const grades = [];
 
-        const gradeData =
-            getComciganGradesAndClasses(
-                data
-            );
-
-        if (
-            gradeData.length === 0
+    if (Array.isArray(counts)) {
+        for (
+            let grade = 1;
+            grade < counts.length;
+            grade++
         ) {
-
-            throw new Error(
-                "컴시간 학급 정보를 찾지 못했습니다."
-            );
-
+            if (
+                Number(counts[grade]) > 0
+            ) {
+                grades.push(
+                    String(grade)
+                );
+            }
         }
 
-        const grades =
-            gradeData.map(
-                item =>
-                    item.grade
+    } else if (
+        counts &&
+        typeof counts === "object"
+    ) {
+        Object.entries(counts)
+            .forEach(
+                ([grade, count]) => {
+                    if (
+                        Number(grade) > 0 &&
+                        Number(count) > 0
+                    ) {
+                        grades.push(
+                            String(grade)
+                        );
+                    }
+                }
             );
 
-        if (
-            !grades.includes(
-                selectedTimetableGrade
-            )
-        ) {
+        grades.sort(
+            (a, b) =>
+                Number(a) - Number(b)
+        );
+    }
 
-            selectedTimetableGrade =
-                grades[0];
+    if (
+        !grades.includes(
+            selectedTimetableGrade
+        )
+    ) {
+        selectedTimetableGrade =
+            grades[0] || "";
+    }
 
-        }
+    gradeSelect.innerHTML =
+        grades.map(grade =>
+            `<option value="${escapeHtml(grade)}">${escapeHtml(grade)}학년</option>`
+        ).join("");
 
-        gradeSelect.innerHTML =
-            grades
-                .map(
-                    grade =>
-                        `<option value="${escapeHtml(grade)}">${escapeHtml(grade)}학년</option>`
-                )
-                .join("");
+    gradeSelect.value =
+        selectedTimetableGrade;
 
-        gradeSelect.value =
-            selectedTimetableGrade;
-
-        const selectedGradeData =
-            gradeData.find(
-                item =>
-                    item.grade ===
+    const count =
+        Array.isArray(counts)
+            ? Number(
+                counts[
+                    Number(
+                        selectedTimetableGrade
+                    )
+                ]
+            ) || 0
+            : Number(
+                counts?.[
                     selectedTimetableGrade
-            );
+                ]
+            ) || 0;
 
-        const classes =
-            selectedGradeData?.classes ||
-            [];
-
-        if (
-            !classes.includes(
-                selectedTimetableClass
-            )
-        ) {
-
-            selectedTimetableClass =
-                classes[0] ||
-                "";
-
-        }
-
-        classSelect.innerHTML =
-            classes
-                .map(
-                    className =>
-                        `<option value="${escapeHtml(className)}">${escapeHtml(className)}반</option>`
-                )
-                .join("");
-
-        classSelect.value =
-            selectedTimetableClass;
-
-        await loadComciganTimetable(
-            data
+    const classes =
+        Array.from(
+            { length: count },
+            (_, index) =>
+                String(index + 1)
         );
 
-    } catch (error) {
-
-        console.error(
-            "컴시간 학급 정보를 불러오는 중 오류가 발생했습니다:",
-            error
-        );
-
-        gradeSelect.innerHTML =
-            `<option value="">불러오기 실패</option>`;
-
-        classSelect.innerHTML =
-            `<option value="">불러오기 실패</option>`;
-
-        const timetableList =
-            document.getElementById(
-                "timetable-list"
-            );
-
-        if (
-            timetableList
-        ) {
-
-            timetableList.innerHTML = `
-                <div class="timetable-error">
-                    컴시간 시간표를 불러오지 못했습니다.<br>
-                    실험적인 기능이므로 잠시 후 다시 확인해주세요.
-                </div>
-            `;
-
-        }
-
+    if (
+        !classes.includes(
+            selectedTimetableClass
+        )
+    ) {
+        selectedTimetableClass =
+            classes[0] || "";
     }
 
+    classSelect.innerHTML =
+        classes.map(className =>
+            `<option value="${className}">${className}반</option>`
+        ).join("");
+
+    classSelect.value =
+        selectedTimetableClass;
 }
 
 
 // =========================
-// 컴시간 시간표 출력
+// 컴시간 교시 코드 해석
 // =========================
 
-async function loadComciganTimetable(
-    data =
-        comciganTimetableData
-) {
+function decodeComciganLessonCode(code) {
+    const teachers =
+        comciganMeta.teacherData;
 
+    const subjects =
+        comciganMeta.subjectData;
+
+    const numericCode =
+        Number(code);
+
+    const teacherCount =
+        Math.max(
+            teachers.length - 1,
+            1
+        );
+
+    const teacherDigits =
+        String(
+            teacherCount
+        ).length;
+
+    const base =
+        10 ** teacherDigits;
+
+    const teacherIndex =
+        numericCode % base;
+
+    const subjectIndex =
+        Math.floor(
+            numericCode /
+            (base * 10)
+        );
+
+    return {
+        teacher:
+            String(
+                teachers[
+                    teacherIndex
+                ] || "-"
+            ).trim() || "-",
+
+        subject:
+            String(
+                subjects[
+                    subjectIndex
+                ] || "-"
+            )
+            .replace(/_/g, "")
+            .trim() || "-"
+    };
+}
+
+
+// =========================
+// 컴시간 특정 날짜 시간표 생성
+// =========================
+
+function getComciganLessons(
+    grade,
+    className,
+    weekday
+) {
+    const original =
+        comciganMeta.originalData;
+
+    const daily =
+        comciganMeta.dayData;
+
+    const weekdayIndex =
+        weekday + 1;
+
+    const gradeOriginal =
+        original?.[
+            Number(grade)
+        ];
+
+    const classOriginal =
+        gradeOriginal?.[
+            Number(className)
+        ];
+
+    const gradeDaily =
+        daily?.[
+            Number(grade)
+        ];
+
+    const classDaily =
+        gradeDaily?.[
+            Number(className)
+        ];
+
+    const originalDay =
+        classOriginal?.[
+            weekdayIndex
+        ];
+
+    const dailyDay =
+        classDaily?.[
+            weekdayIndex
+        ];
+
+    if (
+        !originalDay &&
+        !dailyDay
+    ) {
+        return [];
+    }
+
+    const periodCount =
+        Number(
+            comciganMeta.dayCount?.[
+                Number(grade)
+            ]?.[weekdayIndex]
+        ) ||
+
+        Number(
+            comciganMeta.dayCount?.[
+                Number(grade)
+            ]?.[weekday]
+        ) ||
+
+        Math.max(
+            (originalDay?.length || 1) - 1,
+            (dailyDay?.length || 1) - 1
+        );
+
+    const lessons = [];
+
+    for (
+        let period = 1;
+        period <= periodCount;
+        period++
+    ) {
+        const originalCode =
+            originalDay?.[period];
+
+        const dailyCode =
+            dailyDay?.[period];
+
+        const code =
+            dailyCode ??
+            originalCode;
+
+        if (
+            code === null ||
+            code === undefined ||
+            code === "" ||
+            Number(code) === 0
+        ) {
+            continue;
+        }
+
+        const decoded =
+            decodeComciganLessonCode(
+                code
+            );
+
+        const changed =
+            originalCode !== null &&
+            originalCode !== undefined &&
+            dailyCode !== null &&
+            dailyCode !== undefined &&
+            String(originalCode) !==
+                String(dailyCode);
+
+        lessons.push({
+            period,
+            subject:
+                decoded.subject,
+            teacher:
+                decoded.teacher,
+            changed
+        });
+    }
+
+    return lessons;
+}
+
+
+// =========================
+// 컴시간 시간표 가져오기
+// =========================
+
+async function loadComciganTimetable() {
     const timetableList =
         document.getElementById(
             "timetable-list"
@@ -2845,43 +1851,8 @@ async function loadComciganTimetable(
         !gradeSelect ||
         !classSelect
     ) {
-
         return;
-
     }
-
-    const grade =
-        gradeSelect.value ||
-        selectedTimetableGrade;
-
-    const className =
-        classSelect.value ||
-        selectedTimetableClass;
-
-    if (
-        !grade ||
-        !className
-    ) {
-
-        return;
-
-    }
-
-    selectedTimetableGrade =
-        grade;
-
-    selectedTimetableClass =
-        className;
-
-    localStorage.setItem(
-        "ygmhelper-timetable-grade",
-        grade
-    );
-
-    localStorage.setItem(
-        "ygmhelper-timetable-class",
-        className
-    );
 
     timetableList.innerHTML = `
         <div class="timetable-loading">
@@ -2890,20 +1861,52 @@ async function loadComciganTimetable(
     `;
 
     try {
+        await initializeComcigan();
 
-        const date =
-            dateStringToDate(
-                selectedMealDate
+        populateComciganClassOptions();
+
+        const grade =
+            gradeSelect.value ||
+            selectedTimetableGrade;
+
+        const className =
+            classSelect.value ||
+            selectedTimetableClass;
+
+        if (
+            !grade ||
+            !className
+        ) {
+            throw new Error(
+                "학년 또는 반을 선택할 수 없습니다."
             );
+        }
+
+        selectedTimetableGrade =
+            grade;
+
+        selectedTimetableClass =
+            className;
+
+        localStorage.setItem(
+            "ygmhelper-timetable-grade",
+            grade
+        );
+
+        localStorage.setItem(
+            "ygmhelper-timetable-class",
+            className
+        );
 
         const day =
-            date.getDay();
+            dateStringToDate(
+                selectedMealDate
+            ).getDay();
 
         if (
             day === 0 ||
             day === 6
         ) {
-
             timetableList.innerHTML = `
                 <div class="timetable-error">
                     선택한 날짜는 주말입니다.<br>
@@ -2912,148 +1915,72 @@ async function loadComciganTimetable(
             `;
 
             return;
-
         }
 
-        const weekdayIndex =
-            day - 1;
-
-        let lessons =
-            normalizeComciganResult(
-                data,
+        const lessons =
+            getComciganLessons(
                 grade,
                 className,
-                weekdayIndex
+                day - 1
             );
-
-        lessons =
-            lessons
-                .filter(
-                    lesson =>
-                        lesson.subject &&
-                        lesson.subject !== "-"
-                )
-                .sort(
-                    (a, b) =>
-                        a.period -
-                        b.period
-                );
 
         if (
             lessons.length === 0
         ) {
-
             timetableList.innerHTML = `
                 <div class="timetable-error">
-                    ${escapeHtml(
-                        `${grade}학년 ${className}반`
-                    )}의<br>
+                    ${escapeHtml(`${grade}학년 ${className}반`)}의<br>
                     선택한 날짜 컴시간 시간표가 없습니다.
                 </div>
             `;
 
             return;
-
         }
 
-        timetableList.innerHTML = `
+        timetableList.innerHTML =
+            lessons.map(
+                lesson => `
+                    <div class="timetable-row comcigan-row">
 
-            <div class="timetable-comcigan-table-wrap">
+                        <span class="timetable-period">
+                            ${escapeHtml(String(lesson.period))}교시
+                        </span>
 
-                <table class="timetable-comcigan-table">
+                        <span class="timetable-subject-area">
 
-                    <thead>
+                            <span class="timetable-subject">
+                                ${escapeHtml(lesson.subject)}
+                            </span>
 
-                        <tr>
+                            <span class="timetable-teacher">
+                                ${escapeHtml(lesson.teacher)}
+                            </span>
 
-                            <th>
-                                교시
-                            </th>
+                            <span
+                                class="timetable-change${lesson.changed ? " changed" : ""}"
+                            >
+                                ${lesson.changed ? "변경됨" : ""}
+                            </span>
 
-                            <th>
-                                과목
-                            </th>
+                        </span>
 
-                            <th>
-                                교사
-                            </th>
-
-                            <th>
-                                변경 여부
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        ${
-                            lessons
-                                .map(
-                                    lesson => `
-
-                                        <tr>
-
-                                            <td>
-                                                ${escapeHtml(
-                                                    String(
-                                                        lesson.period
-                                                    )
-                                                )}교시
-                                            </td>
-
-                                            <td>
-                                                ${escapeHtml(
-                                                    lesson.subject
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                ${escapeHtml(
-                                                    lesson.teacher
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                ${
-                                                    lesson.changed
-                                                        ? "변경됨"
-                                                        : "-"
-                                                }
-                                            </td>
-
-                                        </tr>
-
-                                    `
-                                )
-                                .join("")
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        `;
+                    </div>
+                `
+            ).join("");
 
     } catch (error) {
-
         console.error(
-            "컴시간 시간표를 표시하는 중 오류가 발생했습니다:",
+            "컴시간 시간표 정보를 불러오는 중 오류가 발생했습니다:",
             error
         );
 
         timetableList.innerHTML = `
             <div class="timetable-error">
                 컴시간 시간표를 불러오지 못했습니다.<br>
-                실험적인 기능이므로 잠시 후 다시 확인해주세요.
+                실험적인 기능이므로 나이스 시간표를 이용해주세요.
             </div>
         `;
-
     }
-
 }
 
 
@@ -3062,10 +1989,9 @@ async function loadComciganTimetable(
 // =========================
 
 async function loadTimetableBySource() {
-
-    const sourceSelect =
-        document.getElementById(
-            "timetable-source"
+    const sourceButtons =
+        document.querySelectorAll(
+            ".timetable-source-btn"
         );
 
     const sourceNote =
@@ -3073,115 +1999,99 @@ async function loadTimetableBySource() {
             "timetable-source-note"
         );
 
-    if (!sourceSelect) {
-
-        return;
-
+    if (
+        selectedTimetableSource !== "neis" &&
+        selectedTimetableSource !== "comcigan"
+    ) {
+        selectedTimetableSource =
+            "neis";
     }
-
-    selectedTimetableSource =
-        sourceSelect.value ||
-        "neis";
 
     localStorage.setItem(
         "ygmhelper-timetable-source",
         selectedTimetableSource
     );
 
-    if (
-        sourceNote
-    ) {
+    sourceButtons.forEach(
+        button => {
+            button.classList.toggle(
+                "active",
+                button.dataset
+                    .timetableSource ===
+                    selectedTimetableSource
+            );
+        }
+    );
 
+    if (sourceNote) {
         sourceNote.hidden =
             selectedTimetableSource !==
             "comcigan";
-
     }
 
     if (
         selectedTimetableSource ===
         "comcigan"
     ) {
-
-        await loadComciganClasses();
-
+        await loadComciganTimetable();
     } else {
-
         await loadNeisTimetableClasses();
-
     }
-
 }
 
 
 // =========================
-// 시간표 출처 선택 설정
+// 시간표 출처 버튼 설정
 // =========================
 
-function setupTimetableSource() {
-
-    const sourceSelect =
-        document.getElementById(
-            "timetable-source"
+function setupTimetableSourceButtons() {
+    const sourceButtons =
+        document.querySelectorAll(
+            ".timetable-source-btn"
         );
 
-    const sourceNote =
-        document.getElementById(
-            "timetable-source-note"
-        );
+    sourceButtons.forEach(
+        button => {
+            button.addEventListener(
+                "click",
+                async () => {
+                    const source =
+                        button.dataset
+                            .timetableSource;
 
-    if (!sourceSelect) {
+                    if (
+                        !source ||
+                        source ===
+                            selectedTimetableSource
+                    ) {
+                        return;
+                    }
 
-        return;
+                    sourceButtons.forEach(
+                        item => {
+                            item.disabled =
+                                true;
+                        }
+                    );
 
-    }
+                    try {
+                        selectedTimetableSource =
+                            source;
 
-    if (
-        selectedTimetableSource !==
-            "comcigan" &&
-        selectedTimetableSource !==
-            "neis"
-    ) {
+                        await loadTimetableBySource();
 
-        selectedTimetableSource =
-            "neis";
-
-    }
-
-    sourceSelect.value =
-        selectedTimetableSource;
-
-    if (
-        sourceNote
-    ) {
-
-        sourceNote.hidden =
-            selectedTimetableSource !==
-            "comcigan";
-
-    }
-
-    sourceSelect.addEventListener(
-        "change",
-        async () => {
-
-            sourceSelect.disabled =
-                true;
-
-            try {
-
-                await loadTimetableBySource();
-
-            } finally {
-
-                sourceSelect.disabled =
-                    false;
-
-            }
-
+                    } finally {
+                        sourceButtons.forEach(
+                            item => {
+                                item.disabled =
+                                    false;
+                            }
+                        );
+                    }
+                }
+            );
         }
     );
-
 }
 
 
@@ -3190,7 +2100,6 @@ function setupTimetableSource() {
 // =========================
 
 function setupTimetableControls() {
-
     const gradeSelect =
         document.getElementById(
             "timetable-grade"
@@ -3205,15 +2114,12 @@ function setupTimetableControls() {
         !gradeSelect ||
         !classSelect
     ) {
-
         return;
-
     }
 
     gradeSelect.addEventListener(
         "change",
         async () => {
-
             selectedTimetableGrade =
                 gradeSelect.value;
 
@@ -3224,67 +2130,21 @@ function setupTimetableControls() {
                 selectedTimetableSource ===
                 "comcigan"
             ) {
+                populateComciganClassOptions();
 
-                try {
-
-                    const data =
-                        await initializeComcigan();
-
-                    const gradeData =
-                        getComciganGradesAndClasses(
-                            data
-                        ).find(
-                            item =>
-                                item.grade ===
-                                selectedTimetableGrade
-                        );
-
-                    const classes =
-                        gradeData?.classes ||
-                        [];
-
-                    selectedTimetableClass =
-                        classes[0] ||
-                        "";
-
-                    classSelect.innerHTML =
-                        classes
-                            .map(
-                                className =>
-                                    `<option value="${escapeHtml(className)}">${escapeHtml(className)}반</option>`
-                            )
-                            .join("");
-
-                    classSelect.value =
-                        selectedTimetableClass;
-
-                    await loadComciganTimetable(
-                        data
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        error
-                    );
-
-                }
+                await loadComciganTimetable();
 
             } else {
-
                 populateTimetableClassOptions();
 
                 await loadNeisTimetable();
-
             }
-
         }
     );
 
     classSelect.addEventListener(
         "change",
         async () => {
-
             selectedTimetableClass =
                 classSelect.value;
 
@@ -3292,18 +2152,13 @@ function setupTimetableControls() {
                 selectedTimetableSource ===
                 "comcigan"
             ) {
-
                 await loadComciganTimetable();
 
             } else {
-
                 await loadNeisTimetable();
-
             }
-
         }
     );
-
 }
 
 
@@ -3312,7 +2167,6 @@ function setupTimetableControls() {
 // =========================
 
 function setupMealAllergyModal() {
-
     const modal =
         document.getElementById(
             "meal-allergy-modal"
@@ -3339,24 +2193,19 @@ function setupMealAllergyModal() {
         !menuName ||
         !result
     ) {
-
         return;
-
     }
 
     document.addEventListener(
         "click",
         event => {
-
             const button =
                 event.target.closest(
                     ".meal-allergy-btn"
                 );
 
             if (!button) {
-
                 return;
-
             }
 
             const mealName =
@@ -3379,37 +2228,29 @@ function setupMealAllergyModal() {
                 mealName;
 
             result.innerHTML =
-                numbers
-                    .map(
-                        number => {
+                numbers.map(
+                    number => {
+                        const allergyName =
+                            allergyNames[
+                                number
+                            ] ||
+                            "알 수 없음";
 
-                            const allergyName =
-                                allergyNames[
-                                    number
-                                ] ||
-                                "알 수 없음";
+                        return `
+                            <div class="meal-allergy-result-item">
 
-                            return `
+                                <span class="meal-allergy-result-number">
+                                    ${escapeHtml(number)}
+                                </span>
 
-                                <div class="meal-allergy-result-item">
+                                ${escapeHtml(
+                                    allergyName
+                                )}
 
-                                    <span class="meal-allergy-result-number">
-                                        ${escapeHtml(
-                                            number
-                                        )}
-                                    </span>
-
-                                    ${escapeHtml(
-                                        allergyName
-                                    )}
-
-                                </div>
-
-                            `;
-
-                        }
-                    )
-                    .join("");
+                            </div>
+                        `;
+                    }
+                ).join("");
 
             modal.classList.add(
                 "active"
@@ -3420,17 +2261,16 @@ function setupMealAllergyModal() {
                 "false"
             );
 
-            document.documentElement.classList.add(
-                "modal-open"
-            );
+            document.documentElement
+                .classList.add(
+                    "modal-open"
+                );
 
             closeButton.focus();
-
         }
     );
 
     function closeModal() {
-
         modal.classList.remove(
             "active"
         );
@@ -3440,10 +2280,10 @@ function setupMealAllergyModal() {
             "true"
         );
 
-        document.documentElement.classList.remove(
-            "modal-open"
-        );
-
+        document.documentElement
+            .classList.remove(
+                "modal-open"
+            );
     }
 
     closeButton.addEventListener(
@@ -3454,37 +2294,27 @@ function setupMealAllergyModal() {
     modal.addEventListener(
         "click",
         event => {
-
             if (
-                event.target ===
-                modal
+                event.target === modal
             ) {
-
                 closeModal();
-
             }
-
         }
     );
 
     document.addEventListener(
         "keydown",
         event => {
-
             if (
                 event.key === "Escape" &&
                 modal.classList.contains(
                     "active"
                 )
             ) {
-
                 closeModal();
-
             }
-
         }
     );
-
 }
 
 
@@ -3493,7 +2323,6 @@ function setupMealAllergyModal() {
 // =========================
 
 function setupAllergyModal() {
-
     const modal =
         document.getElementById(
             "allergy-modal"
@@ -3514,13 +2343,10 @@ function setupAllergyModal() {
         !openButton ||
         !closeButton
     ) {
-
         return;
-
     }
 
     function openModal() {
-
         modal.classList.add(
             "active"
         );
@@ -3530,16 +2356,15 @@ function setupAllergyModal() {
             "false"
         );
 
-        document.documentElement.classList.add(
-            "modal-open"
-        );
+        document.documentElement
+            .classList.add(
+                "modal-open"
+            );
 
         closeButton.focus();
-
     }
 
     function closeModal() {
-
         modal.classList.remove(
             "active"
         );
@@ -3549,10 +2374,10 @@ function setupAllergyModal() {
             "true"
         );
 
-        document.documentElement.classList.remove(
-            "modal-open"
-        );
-
+        document.documentElement
+            .classList.remove(
+                "modal-open"
+            );
     }
 
     openButton.addEventListener(
@@ -3568,37 +2393,27 @@ function setupAllergyModal() {
     modal.addEventListener(
         "click",
         event => {
-
             if (
-                event.target ===
-                modal
+                event.target === modal
             ) {
-
                 closeModal();
-
             }
-
         }
     );
 
     document.addEventListener(
         "keydown",
         event => {
-
             if (
                 event.key === "Escape" &&
                 modal.classList.contains(
                     "active"
                 )
             ) {
-
                 closeModal();
-
             }
-
         }
     );
-
 }
 
 
@@ -3607,27 +2422,21 @@ function setupAllergyModal() {
 // =========================
 
 function setupReloadButton() {
-
     const reloadButton =
         document.getElementById(
             "reload-meal-btn"
         );
 
     if (!reloadButton) {
-
         return;
-
     }
 
     reloadButton.addEventListener(
         "click",
         () => {
-
             loadMeal();
-
         }
     );
-
 }
 
 
@@ -3636,11 +2445,8 @@ function setupReloadButton() {
 // =========================
 
 function setupNavigationHighlight() {
-
     const nav =
-        document.querySelector(
-            ".nav"
-        );
+        document.querySelector(".nav");
 
     const navLinks =
         document.querySelectorAll(
@@ -3651,18 +2457,14 @@ function setupNavigationHighlight() {
         !nav ||
         navLinks.length === 0
     ) {
-
         return;
-
     }
 
     navLinks.forEach(
         link => {
-
             link.addEventListener(
                 "click",
                 event => {
-
                     const targetId =
                         link.getAttribute(
                             "href"
@@ -3674,9 +2476,7 @@ function setupNavigationHighlight() {
                             "#"
                         )
                     ) {
-
                         return;
-
                     }
 
                     const target =
@@ -3684,12 +2484,8 @@ function setupNavigationHighlight() {
                             targetId
                         );
 
-                    if (
-                        !target
-                    ) {
-
+                    if (!target) {
                         return;
-
                     }
 
                     if (
@@ -3697,11 +2493,8 @@ function setupNavigationHighlight() {
                             "nav-locked"
                         )
                     ) {
-
                         event.preventDefault();
-
                         return;
-
                     }
 
                     event.preventDefault();
@@ -3711,13 +2504,10 @@ function setupNavigationHighlight() {
                     );
 
                     target.scrollIntoView({
-
                         behavior:
                             "smooth",
-
                         block:
                             "start"
-
                     });
 
                     target.classList.remove(
@@ -3732,7 +2522,6 @@ function setupNavigationHighlight() {
 
                     setTimeout(
                         () => {
-
                             target.classList.remove(
                                 "nav-highlight"
                             );
@@ -3740,17 +2529,13 @@ function setupNavigationHighlight() {
                             nav.classList.remove(
                                 "nav-locked"
                             );
-
                         },
                         1600
                     );
-
                 }
             );
-
         }
     );
-
 }
 
 
@@ -3759,16 +2544,11 @@ function setupNavigationHighlight() {
 // =========================
 
 function setupThemeToggle() {
-
     const nav =
-        document.querySelector(
-            ".nav"
-        );
+        document.querySelector(".nav");
 
     if (!nav) {
-
         return;
-
     }
 
     const themeButton =
@@ -3788,41 +2568,36 @@ function setupThemeToggle() {
         );
 
     if (
-        savedTheme ===
-            "dark" ||
-        savedTheme ===
-            "light"
+        savedTheme === "dark" ||
+        savedTheme === "light"
     ) {
-
-        document.documentElement.classList.toggle(
-            "dark-mode",
-            savedTheme ===
-                "dark"
-        );
+        document.documentElement
+            .classList.toggle(
+                "dark-mode",
+                savedTheme === "dark"
+            );
 
     } else {
-
         const prefersDark =
             window.matchMedia(
                 "(prefers-color-scheme: dark)"
             ).matches;
 
-        document.documentElement.classList.toggle(
-            "dark-mode",
-            prefersDark
-        );
-
+        document.documentElement
+            .classList.toggle(
+                "dark-mode",
+                prefersDark
+            );
     }
 
     function updateThemeButton() {
-
         const isDark =
-            document.documentElement.classList.contains(
-                "dark-mode"
-            );
+            document.documentElement
+                .classList.contains(
+                    "dark-mode"
+                );
 
         if (isDark) {
-
             themeButton.textContent =
                 "☀️";
 
@@ -3837,7 +2612,6 @@ function setupThemeToggle() {
             );
 
         } else {
-
             themeButton.textContent =
                 "🌙";
 
@@ -3850,9 +2624,7 @@ function setupThemeToggle() {
                 "title",
                 "다크모드"
             );
-
         }
-
     }
 
     updateThemeButton();
@@ -3864,11 +2636,11 @@ function setupThemeToggle() {
     themeButton.addEventListener(
         "click",
         () => {
-
             const isDark =
-                document.documentElement.classList.toggle(
-                    "dark-mode"
-                );
+                document.documentElement
+                    .classList.toggle(
+                        "dark-mode"
+                    );
 
             localStorage.setItem(
                 "ygmhelper-theme",
@@ -3878,10 +2650,8 @@ function setupThemeToggle() {
             );
 
             updateThemeButton();
-
         }
     );
-
 }
 
 
@@ -3905,7 +2675,7 @@ setupNavigationHighlight();
 
 setupThemeToggle();
 
-setupTimetableSource();
+setupTimetableSourceButtons();
 
 setupTimetableControls();
 

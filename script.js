@@ -3,17 +3,13 @@
 // =========================
 
 
-
 // =========================
 // NEIS Open API 설정
 // =========================
 
 const NEIS_API_KEY = "0e63108664b64083ad86d34278cdcebe";
-
 const OFFICE_CODE = "B10";
-
 const SCHOOL_CODE = "7134139";
-
 
 
 // =========================
@@ -23,7 +19,6 @@ const SCHOOL_CODE = "7134139";
 const MIN_MEAL_DATE = "20210101";
 
 
-
 // =========================
 // 현재 선택된 급식 날짜
 // =========================
@@ -31,53 +26,40 @@ const MIN_MEAL_DATE = "20210101";
 let selectedMealDate = getToday();
 
 
+// =========================
+// 시간표 상태
+// =========================
+
+let timetableClassData = [];
+let selectedTimetableGrade = localStorage.getItem("ygmhelper-timetable-grade") || "";
+let selectedTimetableClass = localStorage.getItem("ygmhelper-timetable-class") || "";
+
 
 // =========================
 // 알레르기 번호 → 이름
 // =========================
 
 const allergyNames = {
-
     "1": "난류",
-
     "2": "우유",
-
     "3": "메밀",
-
     "4": "땅콩",
-
     "5": "대두",
-
     "6": "밀",
-
     "7": "고등어",
-
     "8": "게",
-
     "9": "새우",
-
     "10": "돼지고기",
-
     "11": "복숭아",
-
     "12": "토마토",
-
     "13": "아황산류",
-
     "14": "호두",
-
     "15": "닭고기",
-
     "16": "쇠고기",
-
     "17": "오징어",
-
     "18": "조개류",
-
     "19": "잣"
-
 };
-
 
 
 // =========================
@@ -85,19 +67,12 @@ const allergyNames = {
 // =========================
 
 function getToday() {
-
     const today = new Date();
-
     const year = today.getFullYear();
-
     const month = String(today.getMonth() + 1).padStart(2, "0");
-
     const day = String(today.getDate()).padStart(2, "0");
-
     return `${year}${month}${day}`;
-
 }
-
 
 
 // =========================
@@ -105,24 +80,11 @@ function getToday() {
 // =========================
 
 function dateStringToDate(dateString) {
-
-    const year =
-        Number(dateString.slice(0, 4));
-
-    const month =
-        Number(dateString.slice(4, 6));
-
-    const day =
-        Number(dateString.slice(6, 8));
-
-    return new Date(
-        year,
-        month - 1,
-        day
-    );
-
+    const year = Number(dateString.slice(0, 4));
+    const month = Number(dateString.slice(4, 6));
+    const day = Number(dateString.slice(6, 8));
+    return new Date(year, month - 1, day);
 }
-
 
 
 // =========================
@@ -130,20 +92,11 @@ function dateStringToDate(dateString) {
 // =========================
 
 function dateToString(date) {
-
-    const year =
-        date.getFullYear();
-
-    const month =
-        String(date.getMonth() + 1).padStart(2, "0");
-
-    const day =
-        String(date.getDate()).padStart(2, "0");
-
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}${month}${day}`;
-
 }
-
 
 
 // =========================
@@ -151,14 +104,9 @@ function dateToString(date) {
 // =========================
 
 function formatDate(dateString) {
-
-    const date =
-        dateStringToDate(dateString);
-
+    const date = dateStringToDate(dateString);
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-
 }
-
 
 
 // =========================
@@ -166,70 +114,30 @@ function formatDate(dateString) {
 // =========================
 
 function isSameDate(dateA, dateB) {
-
     return dateA === dateB;
-
 }
-
 
 
 // =========================
 // 날짜 선택 가능한 최대 날짜
-//
-// 매월 28일부터 다음 달 말일까지
-// 그 전에는 현재 달 마지막 날까지
 // =========================
 
 function getMaxMealDate() {
-
-    const today =
-        dateStringToDate(getToday());
-
-    const currentYear =
-        today.getFullYear();
-
-    const currentMonth =
-        today.getMonth();
-
-    const currentDay =
-        today.getDate();
-
-
+    const today = dateStringToDate(getToday());
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
 
     let maxDate;
 
-
-
     if (currentDay >= 28) {
-
-        // 다음 달의 마지막 날
-
-        maxDate =
-            new Date(
-                currentYear,
-                currentMonth + 2,
-                0
-            );
-
+        maxDate = new Date(currentYear, currentMonth + 2, 0);
     } else {
-
-        // 현재 달의 마지막 날
-
-        maxDate =
-            new Date(
-                currentYear,
-                currentMonth + 1,
-                0
-            );
-
+        maxDate = new Date(currentYear, currentMonth + 1, 0);
     }
 
-
-
     return dateToString(maxDate);
-
 }
-
 
 
 // =========================
@@ -237,17 +145,8 @@ function getMaxMealDate() {
 // =========================
 
 function isValidMealDate(dateString) {
-
-    return (
-
-        dateString >= MIN_MEAL_DATE &&
-
-        dateString <= getMaxMealDate()
-
-    );
-
+    return dateString >= MIN_MEAL_DATE && dateString <= getMaxMealDate();
 }
-
 
 
 // =========================
@@ -255,42 +154,21 @@ function isValidMealDate(dateString) {
 // =========================
 
 function displaySelectedDate() {
-
-    const dateElement =
-        document.getElementById("today-date");
-
-
+    const dateElement = document.getElementById("today-date");
 
     if (!dateElement) {
-
         return;
-
     }
 
-
-
-    const today =
-        getToday();
-
-
-
-    let text =
-        formatDate(selectedMealDate);
-
-
+    const today = getToday();
+    let text = formatDate(selectedMealDate);
 
     if (isSameDate(selectedMealDate, today)) {
-
         text += " · 오늘";
-
     }
 
-
-
     dateElement.textContent = text;
-
 }
-
 
 
 // =========================
@@ -298,21 +176,13 @@ function displaySelectedDate() {
 // =========================
 
 function escapeHtml(text) {
-
-    return text
-
+    return String(text)
         .replace(/&/g, "&amp;")
-
         .replace(/</g, "&lt;")
-
         .replace(/>/g, "&gt;")
-
         .replace(/"/g, "&quot;")
-
         .replace(/'/g, "&#039;");
-
 }
-
 
 
 // =========================
@@ -320,63 +190,29 @@ function escapeHtml(text) {
 // =========================
 
 function parseMealMenu(menu) {
-
-    const cleanedMenu =
-        menu
-            .replace(/&amp;/g, "&")
-            .trim();
-
-
-
-    const allergyMatch =
-        cleanedMenu.match(
-            /\s\(*([\d.]+)\)\s*$/
-        );
-
-
+    const cleanedMenu = menu.replace(/&amp;/g, "&").trim();
+    const allergyMatch = cleanedMenu.match(/\s\(*([\d.]+)\)\s*$/);
 
     if (!allergyMatch) {
-
         return {
-
             name: cleanedMenu,
-
             allergy: []
-
         };
-
     }
 
+    const allergyNumbers = allergyMatch[1]
+        .split(".")
+        .filter(number => number !== "");
 
-
-    const allergyNumbers =
-        allergyMatch[1]
-
-            .split(".")
-
-            .filter(number => number !== "");
-
-
-
-    const name =
-        cleanedMenu
-
-            .replace(allergyMatch[0], "")
-
-            .trim();
-
-
+    const name = cleanedMenu
+        .replace(allergyMatch[0], "")
+        .trim();
 
     return {
-
-        name: name,
-
+        name,
         allergy: allergyNumbers
-
     };
-
 }
-
 
 
 // =========================
@@ -384,59 +220,24 @@ function parseMealMenu(menu) {
 // =========================
 
 function setDateSelectValues(dateString) {
+    const date = dateStringToDate(dateString);
+    const yearSelect = document.getElementById("date-year");
+    const monthSelect = document.getElementById("date-month");
+    const daySelect = document.getElementById("date-day");
 
-    const date =
-        dateStringToDate(dateString);
-
-
-
-    const yearSelect =
-        document.getElementById("date-year");
-
-    const monthSelect =
-        document.getElementById("date-month");
-
-    const daySelect =
-        document.getElementById("date-day");
-
-
-
-    if (
-
-        !yearSelect ||
-
-        !monthSelect ||
-
-        !daySelect
-
-    ) {
-
+    if (!yearSelect || !monthSelect || !daySelect) {
         return;
-
     }
 
-
-
-    yearSelect.value =
-        String(date.getFullYear());
-
-    monthSelect.value =
-        String(date.getMonth() + 1);
-
-
+    yearSelect.value = String(date.getFullYear());
+    monthSelect.value = String(date.getMonth() + 1);
 
     updateDateDayOptions(
-
         date.getFullYear(),
-
         date.getMonth() + 1,
-
         date.getDate()
-
     );
-
 }
-
 
 
 // =========================
@@ -444,54 +245,22 @@ function setDateSelectValues(dateString) {
 // =========================
 
 function populateYearOptions() {
-
-    const yearSelect =
-        document.getElementById("date-year");
-
-
+    const yearSelect = document.getElementById("date-year");
 
     if (!yearSelect) {
-
         return;
-
     }
-
-
 
     yearSelect.innerHTML = "";
+    const currentYear = new Date().getFullYear();
 
-
-
-    const currentYear =
-        new Date().getFullYear();
-
-
-
-    // 2021년부터 현재 연도까지만
-
-    for (
-
-        let year = 2021;
-
-        year <= currentYear;
-
-        year++
-
-    ) {
-
-        const option =
-            document.createElement("option");
-
+    for (let year = 2021; year <= currentYear; year++) {
+        const option = document.createElement("option");
         option.value = String(year);
-
         option.textContent = `${year}년`;
-
         yearSelect.appendChild(option);
-
     }
-
 }
-
 
 
 // =========================
@@ -499,132 +268,47 @@ function populateYearOptions() {
 // =========================
 
 function populateMonthOptions() {
-
-    const monthSelect =
-        document.getElementById("date-month");
-
-
+    const monthSelect = document.getElementById("date-month");
 
     if (!monthSelect) {
-
         return;
-
     }
-
-
 
     monthSelect.innerHTML = "";
 
-
-
-    for (
-
-        let month = 1;
-
-        month <= 12;
-
-        month++
-
-    ) {
-
-        const option =
-            document.createElement("option");
-
+    for (let month = 1; month <= 12; month++) {
+        const option = document.createElement("option");
         option.value = String(month);
-
         option.textContent = `${month}월`;
-
         monthSelect.appendChild(option);
-
     }
-
 }
-
 
 
 // =========================
 // 날짜 드롭다운 일 생성
 // =========================
 
-function updateDateDayOptions(
-
-    year,
-
-    month,
-
-    selectedDay
-
-) {
-
-    const daySelect =
-        document.getElementById("date-day");
-
-
+function updateDateDayOptions(year, month, selectedDay) {
+    const daySelect = document.getElementById("date-day");
 
     if (!daySelect) {
-
         return;
-
     }
 
-
-
-    const maxDay =
-        new Date(
-
-            year,
-
-            month,
-
-            0
-
-        ).getDate();
-
-
-
+    const maxDay = new Date(year, month, 0).getDate();
     daySelect.innerHTML = "";
 
-
-
-    for (
-
-        let day = 1;
-
-        day <= maxDay;
-
-        day++
-
-    ) {
-
-        const option =
-            document.createElement("option");
-
+    for (let day = 1; day <= maxDay; day++) {
+        const option = document.createElement("option");
         option.value = String(day);
-
         option.textContent = `${day}일`;
-
         daySelect.appendChild(option);
-
     }
 
-
-
-    const validSelectedDay =
-        Math.min(
-
-            Number(selectedDay) || 1,
-
-            maxDay
-
-        );
-
-
-
-    daySelect.value =
-        String(validSelectedDay);
-
+    const validSelectedDay = Math.min(Number(selectedDay) || 1, maxDay);
+    daySelect.value = String(validSelectedDay);
 }
-
 
 
 // =========================
@@ -632,78 +316,24 @@ function updateDateDayOptions(
 // =========================
 
 function getDateFromSelects() {
+    const yearSelect = document.getElementById("date-year");
+    const monthSelect = document.getElementById("date-month");
+    const daySelect = document.getElementById("date-day");
 
-    const yearSelect =
-        document.getElementById("date-year");
-
-    const monthSelect =
-        document.getElementById("date-month");
-
-    const daySelect =
-        document.getElementById("date-day");
-
-
-
-    if (
-
-        !yearSelect ||
-
-        !monthSelect ||
-
-        !daySelect
-
-    ) {
-
+    if (!yearSelect || !monthSelect || !daySelect) {
         return null;
-
     }
 
+    const year = Number(yearSelect.value);
+    const month = Number(monthSelect.value);
+    const day = Number(daySelect.value);
 
-
-    const year =
-        Number(yearSelect.value);
-
-    const month =
-        Number(monthSelect.value);
-
-    const day =
-        Number(daySelect.value);
-
-
-
-    if (
-
-        !year ||
-
-        !month ||
-
-        !day
-
-    ) {
-
+    if (!year || !month || !day) {
         return null;
-
     }
 
-
-
-    const date =
-        new Date(
-
-            year,
-
-            month - 1,
-
-            day
-
-        );
-
-
-
-    return dateToString(date);
-
+    return dateToString(new Date(year, month - 1, day));
 }
-
 
 
 // =========================
@@ -711,84 +341,23 @@ function getDateFromSelects() {
 // =========================
 
 function updateDateNavigationButtons(dateString) {
+    const previousButton = document.getElementById("previous-date-btn");
+    const nextButton = document.getElementById("next-date-btn");
 
-    const previousButton =
-        document.getElementById(
-            "previous-date-btn"
-        );
-
-    const nextButton =
-        document.getElementById(
-            "next-date-btn"
-        );
-
-
-
-    if (
-
-        !previousButton ||
-
-        !nextButton
-
-    ) {
-
+    if (!previousButton || !nextButton) {
         return;
-
     }
 
+    const currentDate = dateStringToDate(dateString);
+    const previousDate = new Date(currentDate);
+    const nextDate = new Date(currentDate);
 
+    previousDate.setDate(previousDate.getDate() - 1);
+    nextDate.setDate(nextDate.getDate() + 1);
 
-    const currentDate =
-        dateStringToDate(dateString);
-
-
-
-    const previousDate =
-        new Date(currentDate);
-
-    previousDate.setDate(
-
-        previousDate.getDate() - 1
-
-    );
-
-
-
-    const nextDate =
-        new Date(currentDate);
-
-    nextDate.setDate(
-
-        nextDate.getDate() + 1
-
-    );
-
-
-
-    const previousDateString =
-        dateToString(previousDate);
-
-    const nextDateString =
-        dateToString(nextDate);
-
-
-
-    previousButton.disabled =
-        !isValidMealDate(
-
-            previousDateString
-
-        );
-
-    nextButton.disabled =
-        !isValidMealDate(
-
-            nextDateString
-
-        );
-
+    previousButton.disabled = !isValidMealDate(dateToString(previousDate));
+    nextButton.disabled = !isValidMealDate(dateToString(nextDate));
 }
-
 
 
 // =========================
@@ -796,659 +365,139 @@ function updateDateNavigationButtons(dateString) {
 // =========================
 
 function setupDateModal() {
+    const modal = document.getElementById("date-modal");
+    const openButton = document.getElementById("today-date");
+    const closeButton = document.getElementById("date-modal-close");
+    const cancelButton = document.getElementById("date-modal-cancel");
+    const applyButton = document.getElementById("date-modal-apply");
+    const previousButton = document.getElementById("previous-date-btn");
+    const todayButton = document.getElementById("today-date-btn");
+    const nextButton = document.getElementById("next-date-btn");
+    const yearSelect = document.getElementById("date-year");
+    const monthSelect = document.getElementById("date-month");
 
-    const modal =
-        document.getElementById(
-            "date-modal"
-        );
-
-    const openButton =
-        document.getElementById(
-            "today-date"
-        );
-
-    const closeButton =
-        document.getElementById(
-            "date-modal-close"
-        );
-
-    const cancelButton =
-        document.getElementById(
-            "date-modal-cancel"
-        );
-
-    const applyButton =
-        document.getElementById(
-            "date-modal-apply"
-        );
-
-    const previousButton =
-        document.getElementById(
-            "previous-date-btn"
-        );
-
-    const todayButton =
-        document.getElementById(
-            "today-date-btn"
-        );
-
-    const nextButton =
-        document.getElementById(
-            "next-date-btn"
-        );
-
-    const yearSelect =
-        document.getElementById(
-            "date-year"
-        );
-
-    const monthSelect =
-        document.getElementById(
-            "date-month"
-        );
-
-
-
-    if (
-
-        !modal ||
-
-        !openButton ||
-
-        !closeButton ||
-
-        !cancelButton ||
-
-        !applyButton ||
-
-        !previousButton ||
-
-        !todayButton ||
-
-        !nextButton ||
-
-        !yearSelect ||
-
-        !monthSelect
-
-    ) {
-
+    if (!modal || !openButton || !closeButton || !cancelButton || !applyButton ||
+        !previousButton || !todayButton || !nextButton || !yearSelect || !monthSelect) {
         return;
-
     }
-
-
 
     populateYearOptions();
-
     populateMonthOptions();
 
-
-
-    // =========================
-    // 팝업 내부 임시 날짜
-    // =========================
-
-    let temporaryDate =
-        selectedMealDate;
-
-
-
-    // =========================
-    // 팝업 열기
-    // =========================
+    let temporaryDate = selectedMealDate;
 
     function openModal() {
-
-        temporaryDate =
-            selectedMealDate;
-
-
-
-        setDateSelectValues(
-
-            temporaryDate
-
-        );
-
-
-
-        updateDateNavigationButtons(
-
-            temporaryDate
-
-        );
-
-
-
+        temporaryDate = selectedMealDate;
+        setDateSelectValues(temporaryDate);
+        updateDateNavigationButtons(temporaryDate);
         modal.classList.add("active");
-
-        modal.setAttribute(
-
-            "aria-hidden",
-
-            "false"
-
-        );
-
-        document.documentElement.classList.add(
-
-            "modal-open"
-
-        );
-
-
-
+        modal.setAttribute("aria-hidden", "false");
+        document.documentElement.classList.add("modal-open");
         closeButton.focus();
-
     }
-
-
-
-    // =========================
-    // 팝업 닫기
-    // =========================
 
     function closeModal() {
-
         modal.classList.remove("active");
-
-        modal.setAttribute(
-
-            "aria-hidden",
-
-            "true"
-
-        );
-
-        document.documentElement.classList.remove(
-
-            "modal-open"
-
-        );
-
+        modal.setAttribute("aria-hidden", "true");
+        document.documentElement.classList.remove("modal-open");
     }
-
-
-
-    // =========================
-    // 드롭다운 날짜 변경
-    // =========================
 
     function updateTemporaryDateFromSelects() {
+        const newDate = getDateFromSelects();
 
-        const newDate =
-            getDateFromSelects();
-
-
-
-        if (!newDate) {
-
+        if (!newDate || !isValidMealDate(newDate)) {
             return;
-
         }
 
-
-
-        if (
-
-            !isValidMealDate(newDate)
-
-        ) {
-
-            return;
-
-        }
-
-
-
-        temporaryDate =
-            newDate;
-
-
-
-        updateDateNavigationButtons(
-
-            temporaryDate
-
-        );
-
+        temporaryDate = newDate;
+        updateDateNavigationButtons(temporaryDate);
     }
 
+    yearSelect.addEventListener("change", () => {
+        const daySelect = document.getElementById("date-day");
+        const currentDay = Number(daySelect?.value) || 1;
+        updateDateDayOptions(Number(yearSelect.value), Number(monthSelect.value), currentDay);
+        updateTemporaryDateFromSelects();
+    });
 
+    monthSelect.addEventListener("change", () => {
+        const daySelect = document.getElementById("date-day");
+        const currentDay = Number(daySelect?.value) || 1;
+        updateDateDayOptions(Number(yearSelect.value), Number(monthSelect.value), currentDay);
+        updateTemporaryDateFromSelects();
+    });
 
-    // =========================
-    // 연도 변경
-    // =========================
-
-    yearSelect.addEventListener(
-
-        "change",
-
-        () => {
-
-            const currentDay =
-                Number(
-
-                    document.getElementById(
-
-                        "date-day"
-
-                    ).value
-
-                ) || 1;
-
-
-
-            updateDateDayOptions(
-
-                Number(yearSelect.value),
-
-                Number(monthSelect.value),
-
-                currentDay
-
-            );
-
-
-
-            updateTemporaryDateFromSelects();
-
-        }
-
-    );
-
-
-
-    // =========================
-    // 월 변경
-    // =========================
-
-    monthSelect.addEventListener(
-
-        "change",
-
-        () => {
-
-            const currentDay =
-                Number(
-
-                    document.getElementById(
-
-                        "date-day"
-
-                    ).value
-
-                ) || 1;
-
-
-
-            updateDateDayOptions(
-
-                Number(yearSelect.value),
-
-                Number(monthSelect.value),
-
-                currentDay
-
-            );
-
-
-
-            updateTemporaryDateFromSelects();
-
-        }
-
-    );
-
-
-
-    // =========================
-    // 일 변경
-    // =========================
-
-    const daySelect =
-        document.getElementById(
-
-            "date-day"
-
-        );
-
-
+    const daySelect = document.getElementById("date-day");
 
     if (daySelect) {
-
-        daySelect.addEventListener(
-
-            "change",
-
-            () => {
-
-                updateTemporaryDateFromSelects();
-
-            }
-
-        );
-
+        daySelect.addEventListener("change", updateTemporaryDateFromSelects);
     }
 
+    previousButton.addEventListener("click", () => {
+        const currentDate = dateStringToDate(temporaryDate);
+        currentDate.setDate(currentDate.getDate() - 1);
+        const previousDate = dateToString(currentDate);
 
-
-    // =========================
-    // 전날
-    // =========================
-
-    previousButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            const currentDate =
-                dateStringToDate(
-
-                    temporaryDate
-
-                );
-
-
-
-            currentDate.setDate(
-
-                currentDate.getDate() - 1
-
-            );
-
-
-
-            const previousDate =
-                dateToString(currentDate);
-
-
-
-            if (
-
-                !isValidMealDate(previousDate)
-
-            ) {
-
-                return;
-
-            }
-
-
-
-            temporaryDate =
-                previousDate;
-
-
-
-            setDateSelectValues(
-
-                temporaryDate
-
-            );
-
-
-
-            updateDateNavigationButtons(
-
-                temporaryDate
-
-            );
-
+        if (!isValidMealDate(previousDate)) {
+            return;
         }
 
-    );
+        temporaryDate = previousDate;
+        setDateSelectValues(temporaryDate);
+        updateDateNavigationButtons(temporaryDate);
+    });
 
+    todayButton.addEventListener("click", () => {
+        temporaryDate = getToday();
+        setDateSelectValues(temporaryDate);
+        updateDateNavigationButtons(temporaryDate);
+    });
 
+    nextButton.addEventListener("click", () => {
+        const currentDate = dateStringToDate(temporaryDate);
+        currentDate.setDate(currentDate.getDate() + 1);
+        const nextDate = dateToString(currentDate);
 
-    // =========================
-    // 오늘
-    // =========================
-
-    todayButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            temporaryDate =
-                getToday();
-
-
-
-            setDateSelectValues(
-
-                temporaryDate
-
-            );
-
-
-
-            updateDateNavigationButtons(
-
-                temporaryDate
-
-            );
-
+        if (!isValidMealDate(nextDate)) {
+            return;
         }
 
-    );
+        temporaryDate = nextDate;
+        setDateSelectValues(temporaryDate);
+        updateDateNavigationButtons(temporaryDate);
+    });
 
+    applyButton.addEventListener("click", () => {
+        const newDate = getDateFromSelects();
 
-
-    // =========================
-    // 다음날
-    // =========================
-
-    nextButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            const currentDate =
-                dateStringToDate(
-
-                    temporaryDate
-
-                );
-
-
-
-            currentDate.setDate(
-
-                currentDate.getDate() + 1
-
-            );
-
-
-
-            const nextDate =
-                dateToString(currentDate);
-
-
-
-            if (
-
-                !isValidMealDate(nextDate)
-
-            ) {
-
-                return;
-
-            }
-
-
-
-            temporaryDate =
-                nextDate;
-
-
-
-            setDateSelectValues(
-
-                temporaryDate
-
-            );
-
-
-
-            updateDateNavigationButtons(
-
-                temporaryDate
-
-            );
-
+        if (!newDate || !isValidMealDate(newDate)) {
+            return;
         }
 
-    );
+        selectedMealDate = newDate;
+        displaySelectedDate();
+        closeModal();
+        loadMeal();
+        loadTimetable();
+    });
 
+    cancelButton.addEventListener("click", closeModal);
+    closeButton.addEventListener("click", closeModal);
 
-
-    // =========================
-    // 날짜 적용
-    // =========================
-
-    applyButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            const newDate =
-                getDateFromSelects();
-
-
-
-            if (
-
-                !newDate ||
-
-                !isValidMealDate(newDate)
-
-            ) {
-
-                return;
-
-            }
-
-
-
-            selectedMealDate =
-                newDate;
-
-
-
-            displaySelectedDate();
-
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
             closeModal();
-
-            loadMeal();
-
         }
+    });
 
-    );
-
-
-
-    // =========================
-    // 취소
-    // =========================
-
-    cancelButton.addEventListener(
-
-        "click",
-
-        closeModal
-
-    );
-
-
-
-    // =========================
-    // X 버튼
-    // =========================
-
-    closeButton.addEventListener(
-
-        "click",
-
-        closeModal
-
-    );
-
-
-
-    // =========================
-    // 팝업 바깥 클릭
-    // =========================
-
-    modal.addEventListener(
-
-        "click",
-
-        (event) => {
-
-            if (
-
-                event.target === modal
-
-            ) {
-
-                closeModal();
-
-            }
-
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modal.classList.contains("active")) {
+            closeModal();
         }
+    });
 
-    );
-
-
-
-    // =========================
-    // ESC
-    // =========================
-
-    document.addEventListener(
-
-        "keydown",
-
-        (event) => {
-
-            if (
-
-                event.key === "Escape" &&
-
-                modal.classList.contains("active")
-
-            ) {
-
-                closeModal();
-
-            }
-
-        }
-
-    );
-
-
-
-    // =========================
-    // 날짜 버튼 클릭
-    // =========================
-
-    openButton.addEventListener(
-
-        "click",
-
-        openModal
-
-    );
-
+    openButton.addEventListener("click", openModal);
 }
-
 
 
 // =========================
@@ -1456,374 +505,398 @@ function setupDateModal() {
 // =========================
 
 async function loadMeal() {
-
-    const mealList =
-        document.getElementById("meal-list");
-
-    const reloadButton =
-        document.getElementById(
-            "reload-meal-btn"
-        );
-
-
+    const mealList = document.getElementById("meal-list");
+    const reloadButton = document.getElementById("reload-meal-btn");
 
     if (!mealList) {
-
         return;
-
     }
-
-
-
-    // =========================
-    // 다시 불러오는 중 표시
-    // =========================
 
     if (reloadButton) {
-
         reloadButton.disabled = true;
-
-        reloadButton.textContent =
-            "🔄 불러오는 중...";
-
+        reloadButton.textContent = "🔄 불러오는 중...";
     }
-
-
 
     mealList.innerHTML = `
-
         <li class="meal-loading">
-
             급식 정보를 불러오는 중...
-
         </li>
-
     `;
 
-
-
-    const selectedDate =
-        selectedMealDate;
-
-
-
+    const selectedDate = selectedMealDate;
     const apiUrl =
         `https://open.neis.go.kr/hub/mealServiceDietInfo` +
-
         `?KEY=${NEIS_API_KEY}` +
-
         `&Type=json` +
-
         `&pIndex=1` +
-
         `&pSize=100` +
-
         `&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}` +
-
         `&SD_SCHUL_CODE=${SCHOOL_CODE}` +
-
         `&MLSV_YMD=${selectedDate}`;
 
-
-
     try {
-
-        const response =
-            await fetch(apiUrl);
-
-
+        const response = await fetch(apiUrl);
 
         if (!response.ok) {
-
-            throw new Error(
-
-                "NEIS API 요청에 실패했습니다."
-
-            );
-
+            throw new Error("NEIS API 요청에 실패했습니다.");
         }
 
-
-
-        const data =
-            await response.json();
-
-
-
-        // =========================
-        // API 오류 응답 확인
-        // =========================
+        const data = await response.json();
 
         if (data.RESULT) {
-
-            throw new Error(
-
-                data.RESULT.MESSAGE ||
-
-                "NEIS API 오류"
-
-            );
-
+            throw new Error(data.RESULT.MESSAGE || "NEIS API 오류");
         }
 
-
-
-        // =========================
-        // 급식 데이터가 없는 경우
-        // =========================
-
-        if (
-
-            !data.mealServiceDietInfo ||
-
-            data.mealServiceDietInfo.length < 2
-
-        ) {
-
+        if (!data.mealServiceDietInfo || data.mealServiceDietInfo.length < 2) {
             mealList.innerHTML = `
-
                 <li class="meal-error">
-
                     선택한 날짜에는 급식 정보가 없습니다.
-
                 </li>
-
             `;
-
             return;
-
         }
 
+        const mealData = data.mealServiceDietInfo[1].row;
 
-
-        const mealData =
-            data.mealServiceDietInfo[1].row;
-
-
-
-        if (
-
-            !mealData ||
-
-            mealData.length === 0
-
-        ) {
-
+        if (!mealData || mealData.length === 0) {
             mealList.innerHTML = `
-
                 <li class="meal-error">
-
                     선택한 날짜에는 급식 정보가 없습니다.
-
                 </li>
-
             `;
-
             return;
-
         }
 
+        const meal = mealData[0];
+        const menuText = meal.DDISH_NM || "";
 
-
-        // =========================
-        // 선택한 날짜 급식
-        // =========================
-
-        const meal =
-            mealData[0];
-
-
-
-        const menuText =
-            meal.DDISH_NM || "";
-
-
-
-        // NEIS의 <br/> 기준으로 메뉴 분리
-
-        const menus =
-            menuText
-
-                .split(/<br\s*\/?>/gi)
-
-                .map(menu => menu.trim())
-
-                .filter(menu => menu !== "");
-
-
+        const menus = menuText
+            .split(/<br\s*\/?>/gi)
+            .map(menu => menu.trim())
+            .filter(menu => menu !== "");
 
         if (menus.length === 0) {
-
             mealList.innerHTML = `
-
                 <li class="meal-error">
-
                     선택한 날짜의 급식 메뉴가 없습니다.
-
                 </li>
-
             `;
-
             return;
-
         }
 
+        mealList.innerHTML = menus.map(menu => {
+            const parsedMenu = parseMealMenu(menu);
+            const safeMenuName = escapeHtml(parsedMenu.name);
 
+            if (parsedMenu.allergy.length === 0) {
+                return `
+                    <li>
+                        <span class="meal-name">
+                            ${safeMenuName}
+                        </span>
+                    </li>
+                `;
+            }
 
-        // =========================
-        // 메뉴 출력
-        // =========================
+            const allergyText = parsedMenu.allergy.join(".");
 
-        mealList.innerHTML =
-
-            menus
-
-                .map(menu => {
-
-                    const parsedMenu =
-                        parseMealMenu(menu);
-
-
-
-                    const safeMenuName =
-                        escapeHtml(
-
-                            parsedMenu.name
-
-                        );
-
-
-
-                    // =========================
-                    // 알레르기 번호가 없는 메뉴
-                    // =========================
-
-                    if (
-
-                        parsedMenu.allergy.length === 0
-
-                    ) {
-
-                        return `
-
-                            <li>
-
-                                <span class="meal-name">
-
-                                    ${safeMenuName}
-
-                                </span>
-
-                            </li>
-
-                        `;
-
-                    }
-
-
-
-                    /*
-                        여러 알레르기 번호를
-                        하나의 버튼으로 묶는다.
-                        예:
-                        (5.6.9)
-                        → [5.6.9]
-                    */
-
-                    const allergyText =
-                        parsedMenu.allergy.join(".");
-
-
-
-                    return `
-
-                        <li>
-
-                            <span class="meal-name">
-
-                                ${safeMenuName}
-
-                            </span>
-
-                            <span class="meal-allergy">
-
-                                <button
-
-                                    type="button"
-
-                                    class="meal-allergy-btn"
-
-                                    data-meal-name="${safeMenuName}"
-
-                                    data-allergy-numbers="${allergyText}"
-
-                                    aria-label="${safeMenuName} 알레르기 정보 확인"
-
-                                >
-
-                                    ${allergyText}
-
-                                </button>
-
-                            </span>
-
-                        </li>
-
-                    `;
-
-                })
-
-                .join("");
-
-
-
+            return `
+                <li>
+                    <span class="meal-name">
+                        ${safeMenuName}
+                    </span>
+                    <span class="meal-allergy">
+                        <button
+                            type="button"
+                            class="meal-allergy-btn"
+                            data-meal-name="${safeMenuName}"
+                            data-allergy-numbers="${allergyText}"
+                            aria-label="${safeMenuName} 알레르기 정보 확인"
+                        >
+                            ${allergyText}
+                        </button>
+                    </span>
+                </li>
+            `;
+        }).join("");
     } catch (error) {
-
-        console.error(
-
-            "급식 정보를 불러오는 중 오류가 발생했습니다:",
-
-            error
-
-        );
-
-
+        console.error("급식 정보를 불러오는 중 오류가 발생했습니다:", error);
 
         mealList.innerHTML = `
-
             <li class="meal-error">
-
                 급식 정보를 불러오지 못했습니다.
-
             </li>
-
             <li class="meal-error">
-
                 잠시 후 다시 확인해주세요.
-
             </li>
-
         `;
-
     } finally {
-
-        // =========================
-        // 다시 불러오기 버튼 복구
-        // =========================
-
         if (reloadButton) {
-
             reloadButton.disabled = false;
-
-            reloadButton.textContent =
-                "🔄 급식 다시 불러오기";
-
+            reloadButton.textContent = "🔄 급식 다시 불러오기";
         }
-
     }
-
 }
 
+
+// =========================
+// 중학교 시간표 - 학급 정보
+// =========================
+
+async function loadTimetableClasses() {
+    const gradeSelect = document.getElementById("timetable-grade");
+    const classSelect = document.getElementById("timetable-class");
+
+    if (!gradeSelect || !classSelect) {
+        return;
+    }
+
+    try {
+        const year = String(dateStringToDate(selectedMealDate).getFullYear());
+        const apiUrl =
+            `https://open.neis.go.kr/hub/classInfo` +
+            `?KEY=${NEIS_API_KEY}` +
+            `&Type=json` +
+            `&pIndex=1` +
+            `&pSize=100` +
+            `&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}` +
+            `&SD_SCHUL_CODE=${SCHOOL_CODE}` +
+            `&AY=${year}`;
+
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error("학급 정보 요청에 실패했습니다.");
+        }
+
+        const data = await response.json();
+
+        if (data.RESULT) {
+            throw new Error(data.RESULT.MESSAGE || "학급 정보 API 오류");
+        }
+
+        timetableClassData = data.classInfo?.[1]?.row || [];
+
+        if (timetableClassData.length === 0) {
+            throw new Error("학급 정보가 없습니다.");
+        }
+
+        const grades = [...new Set(
+            timetableClassData
+                .map(row => String(row.GRADE || "").trim())
+                .filter(Boolean)
+        )].sort((a, b) => Number(a) - Number(b));
+
+        if (!grades.includes(selectedTimetableGrade)) {
+            selectedTimetableGrade = grades[0];
+        }
+
+        gradeSelect.innerHTML = grades.map(grade =>
+            `<option value="${escapeHtml(grade)}">${escapeHtml(grade)}학년</option>`
+        ).join("");
+
+        gradeSelect.value = selectedTimetableGrade;
+
+        populateTimetableClassOptions();
+        await loadTimetable();
+    } catch (error) {
+        console.error("시간표 학급 정보를 불러오는 중 오류가 발생했습니다:", error);
+
+        gradeSelect.innerHTML = `<option value="">불러오기 실패</option>`;
+        classSelect.innerHTML = `<option value="">불러오기 실패</option>`;
+
+        const timetableList = document.getElementById("timetable-list");
+
+        if (timetableList) {
+            timetableList.innerHTML = `
+                <div class="timetable-error">
+                    시간표 정보를 불러오지 못했습니다.<br>
+                    잠시 후 다시 확인해주세요.
+                </div>
+            `;
+        }
+    }
+}
+
+
+// =========================
+// 시간표 반 목록 생성
+// =========================
+
+function populateTimetableClassOptions() {
+    const gradeSelect = document.getElementById("timetable-grade");
+    const classSelect = document.getElementById("timetable-class");
+
+    if (!gradeSelect || !classSelect) {
+        return;
+    }
+
+    const grade = gradeSelect.value;
+
+    const classes = [...new Set(
+        timetableClassData
+            .filter(row => String(row.GRADE || "").trim() === grade)
+            .map(row => String(row.CLASS_NM || "").trim())
+            .filter(Boolean)
+    )].sort((a, b) => Number(a) - Number(b));
+
+    if (!classes.includes(selectedTimetableClass)) {
+        selectedTimetableClass = classes[0] || "";
+    }
+
+    classSelect.innerHTML = classes.map(className =>
+        `<option value="${escapeHtml(className)}">${escapeHtml(className)}반</option>`
+    ).join("");
+
+    classSelect.value = selectedTimetableClass;
+}
+
+
+// =========================
+// 시간표 학기 구하기
+// =========================
+
+function getTimetableSemester(dateString) {
+    const month = dateStringToDate(dateString).getMonth() + 1;
+    return month >= 8 ? "2" : "1";
+}
+
+
+// =========================
+// 중학교 시간표 가져오기
+// =========================
+
+async function loadTimetable() {
+    const timetableList = document.getElementById("timetable-list");
+    const gradeSelect = document.getElementById("timetable-grade");
+    const classSelect = document.getElementById("timetable-class");
+
+    if (!timetableList || !gradeSelect || !classSelect) {
+        return;
+    }
+
+    const grade = gradeSelect.value || selectedTimetableGrade;
+    const className = classSelect.value || selectedTimetableClass;
+
+    if (!grade || !className) {
+        return;
+    }
+
+    selectedTimetableGrade = grade;
+    selectedTimetableClass = className;
+
+    localStorage.setItem("ygmhelper-timetable-grade", grade);
+    localStorage.setItem("ygmhelper-timetable-class", className);
+
+    timetableList.innerHTML = `
+        <div class="timetable-loading">
+            시간표 정보를 불러오는 중...
+        </div>
+    `;
+
+    const selectedDate = selectedMealDate;
+    const year = selectedDate.slice(0, 4);
+    const semester = getTimetableSemester(selectedDate);
+
+    const apiUrl =
+        `https://open.neis.go.kr/hub/misTimetable` +
+        `?KEY=${NEIS_API_KEY}` +
+        `&Type=json` +
+        `&pIndex=1` +
+        `&pSize=100` +
+        `&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}` +
+        `&SD_SCHUL_CODE=${SCHOOL_CODE}` +
+        `&AY=${year}` +
+        `&SEM=${semester}` +
+        `&ALL_TI_YMD=${selectedDate}` +
+        `&GRADE=${encodeURIComponent(grade)}` +
+        `&CLASS_NM=${encodeURIComponent(className)}`;
+
+    try {
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error("시간표 API 요청에 실패했습니다.");
+        }
+
+        const data = await response.json();
+
+        if (data.RESULT) {
+            throw new Error(data.RESULT.MESSAGE || "시간표 API 오류");
+        }
+
+        const timetableData = data.misTimetable?.[1]?.row || [];
+
+        if (timetableData.length === 0) {
+            timetableList.innerHTML = `
+                <div class="timetable-error">
+                    ${escapeHtml(`${grade}학년 ${className}반`)}의<br>
+                    선택한 날짜 시간표가 없습니다.
+                </div>
+            `;
+            return;
+        }
+
+        const sortedRows = timetableData
+            .filter(row => row.PERIO && row.ITRT_CNTNT)
+            .sort((a, b) => Number(a.PERIO) - Number(b.PERIO));
+
+        if (sortedRows.length === 0) {
+            timetableList.innerHTML = `
+                <div class="timetable-error">
+                    선택한 날짜의 시간표가 없습니다.
+                </div>
+            `;
+            return;
+        }
+
+        timetableList.innerHTML = sortedRows.map(row => `
+            <div class="timetable-row">
+                <span class="timetable-period">
+                    ${escapeHtml(String(row.PERIO))}교시
+                </span>
+                <span class="timetable-subject">
+                    ${escapeHtml(row.ITRT_CNTNT)}
+                </span>
+            </div>
+        `).join("");
+    } catch (error) {
+        console.error("시간표 정보를 불러오는 중 오류가 발생했습니다:", error);
+
+        timetableList.innerHTML = `
+            <div class="timetable-error">
+                시간표 정보를 불러오지 못했습니다.<br>
+                잠시 후 다시 확인해주세요.
+            </div>
+        `;
+    }
+}
+
+
+// =========================
+// 시간표 선택 변경
+// =========================
+
+function setupTimetableControls() {
+    const gradeSelect = document.getElementById("timetable-grade");
+    const classSelect = document.getElementById("timetable-class");
+
+    if (!gradeSelect || !classSelect) {
+        return;
+    }
+
+    gradeSelect.addEventListener("change", async () => {
+        selectedTimetableGrade = gradeSelect.value;
+        selectedTimetableClass = "";
+        populateTimetableClassOptions();
+        await loadTimetable();
+    });
+
+    classSelect.addEventListener("change", async () => {
+        selectedTimetableClass = classSelect.value;
+        await loadTimetable();
+    });
+}
 
 
 // =========================
@@ -1831,252 +904,70 @@ async function loadMeal() {
 // =========================
 
 function setupMealAllergyModal() {
+    const modal = document.getElementById("meal-allergy-modal");
+    const closeButton = document.getElementById("meal-allergy-modal-close");
+    const menuName = document.getElementById("meal-allergy-menu-name");
+    const result = document.getElementById("meal-allergy-result");
 
-    const modal =
-        document.getElementById(
-            "meal-allergy-modal"
-        );
-
-    const closeButton =
-        document.getElementById(
-            "meal-allergy-modal-close"
-        );
-
-    const menuName =
-        document.getElementById(
-            "meal-allergy-menu-name"
-        );
-
-    const result =
-        document.getElementById(
-            "meal-allergy-result"
-        );
-
-
-
-    if (
-
-        !modal ||
-
-        !closeButton ||
-
-        !menuName ||
-
-        !result
-
-    ) {
-
+    if (!modal || !closeButton || !menuName || !result) {
         return;
-
     }
 
-
-
-    // =========================
-    // 알레르기 버튼 클릭
-    // =========================
-
-    document.addEventListener(
-
-        "click",
-
-        (event) => {
-
-            const button =
-                event.target.closest(
-                    ".meal-allergy-btn"
-                );
-
-
-
-            if (!button) {
-
-                return;
-
-            }
-
-
-
-            const mealName =
-                button.dataset.mealName ||
-
-                "메뉴";
-
-
-
-            const allergyNumbers =
-                button.dataset.allergyNumbers ||
-
-                "";
-
-
-
-            const numbers =
-                allergyNumbers
-
-                    .split(".")
-
-                    .filter(number => number !== "");
-
-
-
-            // 메뉴 이름
-
-            menuName.textContent =
-                mealName;
-
-
-
-            // 알레르기 목록
-
-            result.innerHTML =
-                numbers
-
-                    .map(number => {
-
-                        const allergyName =
-                            allergyNames[number] ||
-
-                            "알 수 없음";
-
-
-
-                        return `
-
-                            <div class="meal-allergy-result-item">
-
-                                <span class="meal-allergy-result-number">
-
-                                    ${escapeHtml(number)}
-
-                                </span>
-
-                                ${escapeHtml(allergyName)}
-
-                            </div>
-
-                        `;
-
-                    })
-
-                    .join("");
-
-
-
-            // 팝업 열기
-
-            modal.classList.add("active");
-
-            modal.setAttribute(
-
-                "aria-hidden",
-
-                "false"
-
-            );
-
-
-
-            document.documentElement.classList.add(
-
-                "modal-open"
-
-            );
-
-
-
-            closeButton.focus();
-
+    document.addEventListener("click", event => {
+        const button = event.target.closest(".meal-allergy-btn");
+
+        if (!button) {
+            return;
         }
 
-    );
+        const mealName = button.dataset.mealName || "메뉴";
+        const allergyNumbers = button.dataset.allergyNumbers || "";
 
+        const numbers = allergyNumbers
+            .split(".")
+            .filter(number => number !== "");
 
+        menuName.textContent = mealName;
 
-    // =========================
-    // 팝업 닫기
-    // =========================
+        result.innerHTML = numbers.map(number => {
+            const allergyName = allergyNames[number] || "알 수 없음";
+
+            return `
+                <div class="meal-allergy-result-item">
+                    <span class="meal-allergy-result-number">
+                        ${escapeHtml(number)}
+                    </span>
+                    ${escapeHtml(allergyName)}
+                </div>
+            `;
+        }).join("");
+
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+        document.documentElement.classList.add("modal-open");
+        closeButton.focus();
+    });
 
     function closeModal() {
-
         modal.classList.remove("active");
-
-        modal.setAttribute(
-
-            "aria-hidden",
-
-            "true"
-
-        );
-
-        document.documentElement.classList.remove(
-
-            "modal-open"
-
-        );
-
+        modal.setAttribute("aria-hidden", "true");
+        document.documentElement.classList.remove("modal-open");
     }
 
+    closeButton.addEventListener("click", closeModal);
 
-
-    // X 버튼
-
-    closeButton.addEventListener(
-
-        "click",
-
-        closeModal
-
-    );
-
-
-
-    // 팝업 바깥 클릭
-
-    modal.addEventListener(
-
-        "click",
-
-        (event) => {
-
-            if (event.target === modal) {
-
-                closeModal();
-
-            }
-
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            closeModal();
         }
+    });
 
-    );
-
-
-
-    // ESC
-
-    document.addEventListener(
-
-        "keydown",
-
-        (event) => {
-
-            if (
-
-                event.key === "Escape" &&
-
-                modal.classList.contains("active")
-
-            ) {
-
-                closeModal();
-
-            }
-
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modal.classList.contains("active")) {
+            closeModal();
         }
-
-    );
-
+    });
 }
-
 
 
 // =========================
@@ -2084,164 +975,42 @@ function setupMealAllergyModal() {
 // =========================
 
 function setupAllergyModal() {
+    const modal = document.getElementById("allergy-modal");
+    const openButton = document.getElementById("allergy-info-btn");
+    const closeButton = document.getElementById("allergy-modal-close");
 
-    const modal =
-        document.getElementById(
-            "allergy-modal"
-        );
-
-    const openButton =
-        document.getElementById(
-            "allergy-info-btn"
-        );
-
-    const closeButton =
-        document.getElementById(
-            "allergy-modal-close"
-        );
-
-
-
-    if (
-
-        !modal ||
-
-        !openButton ||
-
-        !closeButton
-
-    ) {
-
+    if (!modal || !openButton || !closeButton) {
         return;
-
     }
-
-
-
-    // =========================
-    // 팝업 열기
-    // =========================
 
     function openModal() {
-
         modal.classList.add("active");
-
-        modal.setAttribute(
-
-            "aria-hidden",
-
-            "false"
-
-        );
-
-        document.documentElement.classList.add(
-
-            "modal-open"
-
-        );
-
+        modal.setAttribute("aria-hidden", "false");
+        document.documentElement.classList.add("modal-open");
         closeButton.focus();
-
     }
-
-
-
-    // =========================
-    // 팝업 닫기
-    // =========================
 
     function closeModal() {
-
         modal.classList.remove("active");
-
-        modal.setAttribute(
-
-            "aria-hidden",
-
-            "true"
-
-        );
-
-        document.documentElement.classList.remove(
-
-            "modal-open"
-
-        );
-
+        modal.setAttribute("aria-hidden", "true");
+        document.documentElement.classList.remove("modal-open");
     }
 
+    openButton.addEventListener("click", openModal);
+    closeButton.addEventListener("click", closeModal);
 
-
-    // 버튼으로 열기
-
-    openButton.addEventListener(
-
-        "click",
-
-        openModal
-
-    );
-
-
-
-    // X 버튼으로 닫기
-
-    closeButton.addEventListener(
-
-        "click",
-
-        closeModal
-
-    );
-
-
-
-    // 팝업 바깥을 눌러서 닫기
-
-    modal.addEventListener(
-
-        "click",
-
-        (event) => {
-
-            if (event.target === modal) {
-
-                closeModal();
-
-            }
-
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            closeModal();
         }
+    });
 
-    );
-
-
-
-    // ESC 키로 닫기
-
-    document.addEventListener(
-
-        "keydown",
-
-        (event) => {
-
-            if (
-
-                event.key === "Escape" &&
-
-                modal.classList.contains("active")
-
-            ) {
-
-                closeModal();
-
-            }
-
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modal.classList.contains("active")) {
+            closeModal();
         }
-
-    );
-
+    });
 }
-
 
 
 // =========================
@@ -2249,36 +1018,16 @@ function setupAllergyModal() {
 // =========================
 
 function setupReloadButton() {
-
-    const reloadButton =
-        document.getElementById(
-            "reload-meal-btn"
-        );
-
-
+    const reloadButton = document.getElementById("reload-meal-btn");
 
     if (!reloadButton) {
-
         return;
-
     }
 
-
-
-    reloadButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            loadMeal();
-
-        }
-
-    );
-
+    reloadButton.addEventListener("click", () => {
+        loadMeal();
+    });
 }
-
 
 
 // =========================
@@ -2286,164 +1035,51 @@ function setupReloadButton() {
 // =========================
 
 function setupNavigationHighlight() {
+    const nav = document.querySelector(".nav");
+    const navLinks = document.querySelectorAll(".nav a");
 
-    const nav =
-        document.querySelector(".nav");
-
-    const navLinks =
-        document.querySelectorAll(".nav a");
-
-
-
-    if (
-
-        !nav ||
-
-        navLinks.length === 0
-
-    ) {
-
+    if (!nav || navLinks.length === 0) {
         return;
-
     }
 
-
-
-    navLinks.forEach((link) => {
-
-        link.addEventListener(
-
-            "click",
-
-            (event) => {
-
-                const targetId =
-                    link.getAttribute("href");
-
-
-
-                if (
-
-                    !targetId ||
-
-                    !targetId.startsWith("#")
-
-                ) {
-
-                    return;
-
-                }
-
-
-
-                const target =
-                    document.querySelector(targetId);
-
-
-
-                if (!target) {
-
-                    return;
-
-                }
-
-
-
-                // 애니메이션 중이면 클릭 차단
-
-                if (
-
-                    nav.classList.contains("nav-locked")
-
-                ) {
-
-                    event.preventDefault();
-
-                    return;
-
-                }
-
-
-
-                event.preventDefault();
-
-
-
-                // 네비게이션 잠금
-
-                nav.classList.add(
-
-                    "nav-locked"
-
-                );
-
-
-
-                // 해당 카드로 부드럽게 이동
-
-                target.scrollIntoView({
-
-                    behavior: "smooth",
-
-                    block: "start"
-
-                });
-
-
-
-                // 기존 강조 애니메이션 초기화
-
-                target.classList.remove(
-
-                    "nav-highlight"
-
-                );
-
-
-
-                // 애니메이션 재실행을 위한 강제 리플로우
-
-                void target.offsetWidth;
-
-
-
-                // 강조색 + 위로 2번 통통 튀기기
-
-                target.classList.add(
-
-                    "nav-highlight"
-
-                );
-
-
-
-                // CSS:
-                // 0.8초 × 2회 = 총 1.6초
-
-                setTimeout(() => {
-
-                    target.classList.remove(
-
-                        "nav-highlight"
-
-                    );
-
-                    nav.classList.remove(
-
-                        "nav-locked"
-
-                    );
-
-                }, 1600);
-
+    navLinks.forEach(link => {
+        link.addEventListener("click", event => {
+            const targetId = link.getAttribute("href");
+
+            if (!targetId || !targetId.startsWith("#")) {
+                return;
             }
 
-        );
+            const target = document.querySelector(targetId);
 
+            if (!target) {
+                return;
+            }
+
+            if (nav.classList.contains("nav-locked")) {
+                event.preventDefault();
+                return;
+            }
+
+            event.preventDefault();
+            nav.classList.add("nav-locked");
+
+            target.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+            target.classList.remove("nav-highlight");
+            void target.offsetWidth;
+            target.classList.add("nav-highlight");
+
+            setTimeout(() => {
+                target.classList.remove("nav-highlight");
+                nav.classList.remove("nav-locked");
+            }, 1600);
+        });
     });
-
 }
-
 
 
 // =========================
@@ -2451,229 +1087,62 @@ function setupNavigationHighlight() {
 // =========================
 
 function setupThemeToggle() {
-
-    const nav =
-        document.querySelector(".nav");
-
-
+    const nav = document.querySelector(".nav");
 
     if (!nav) {
-
         return;
-
     }
 
-
-
-    // =========================
-    // 테마 버튼 생성
-    // =========================
-
-    const themeButton =
-        document.createElement("button");
-
+    const themeButton = document.createElement("button");
     themeButton.type = "button";
+    themeButton.className = "theme-toggle";
 
-    themeButton.className =
-        "theme-toggle";
+    const savedTheme = localStorage.getItem("ygmhelper-theme");
 
-
-
-    // =========================
-    // 저장된 테마 가져오기
-    // =========================
-
-    const savedTheme =
-        localStorage.getItem(
-            "ygmhelper-theme"
-        );
-
-
-
-    // =========================
-    // 초기 테마 설정
-    //
-    // 사용자가 직접 선택한 테마가
-    // 저장되어 있으면 저장값 우선
-    //
-    // 저장된 값이 없으면
-    // 시스템 설정을 따라감
-    //
-    // 주의:
-    // 시간표 iframe에는 어떤 테마
-    // 변경도 적용하지 않는다.
-    // =========================
-
-    if (
-
-        savedTheme === "dark" ||
-
-        savedTheme === "light"
-
-    ) {
-
+    if (savedTheme === "dark" || savedTheme === "light") {
         document.documentElement.classList.toggle(
-
             "dark-mode",
-
             savedTheme === "dark"
-
         );
-
     } else {
-
-        const prefersDark =
-            window.matchMedia(
-
-                "(prefers-color-scheme: dark)"
-
-            ).matches;
-
-
+        const prefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)"
+        ).matches;
 
         document.documentElement.classList.toggle(
-
             "dark-mode",
-
             prefersDark
-
         );
-
     }
-
-
-
-    // =========================
-    // 버튼 상태 변경
-    // =========================
 
     function updateThemeButton() {
-
-        const isDark =
-            document.documentElement.classList.contains(
-
-                "dark-mode"
-
-            );
-
-
+        const isDark = document.documentElement.classList.contains("dark-mode");
 
         if (isDark) {
-
             themeButton.textContent = "☀️";
-
-            themeButton.setAttribute(
-
-                "aria-label",
-
-                "라이트모드로 전환"
-
-            );
-
-            themeButton.setAttribute(
-
-                "title",
-
-                "라이트모드"
-
-            );
-
+            themeButton.setAttribute("aria-label", "라이트모드로 전환");
+            themeButton.setAttribute("title", "라이트모드");
         } else {
-
             themeButton.textContent = "🌙";
-
-            themeButton.setAttribute(
-
-                "aria-label",
-
-                "다크모드로 전환"
-
-            );
-
-            themeButton.setAttribute(
-
-                "title",
-
-                "다크모드"
-
-            );
-
+            themeButton.setAttribute("aria-label", "다크모드로 전환");
+            themeButton.setAttribute("title", "다크모드");
         }
-
     }
 
-
-
     updateThemeButton();
+    nav.appendChild(themeButton);
 
+    themeButton.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.toggle("dark-mode");
 
+        localStorage.setItem(
+            "ygmhelper-theme",
+            isDark ? "dark" : "light"
+        );
 
-    // =========================
-    // 네비게이션 오른쪽에 버튼 추가
-    // =========================
-
-    nav.appendChild(
-
-        themeButton
-
-    );
-
-
-
-    // =========================
-    // 테마 전환
-    //
-    // 사이트 자체의 document만 변경한다.
-    // 시간표 iframe은 변경하지 않는다.
-    // =========================
-
-    themeButton.addEventListener(
-
-        "click",
-
-        () => {
-
-            const isDark =
-                document.documentElement.classList.toggle(
-
-                    "dark-mode"
-
-                );
-
-
-
-            if (isDark) {
-
-                localStorage.setItem(
-
-                    "ygmhelper-theme",
-
-                    "dark"
-
-                );
-
-            } else {
-
-                localStorage.setItem(
-
-                    "ygmhelper-theme",
-
-                    "light"
-
-                );
-
-            }
-
-
-
-            updateThemeButton();
-
-        }
-
-    );
-
+        updateThemeButton();
+    });
 }
-
 
 
 // =========================
@@ -2681,17 +1150,12 @@ function setupThemeToggle() {
 // =========================
 
 displaySelectedDate();
-
 loadMeal();
-
 setupDateModal();
-
 setupReloadButton();
-
 setupAllergyModal();
-
 setupMealAllergyModal();
-
 setupNavigationHighlight();
-
 setupThemeToggle();
+setupTimetableControls();
+loadTimetableClasses();

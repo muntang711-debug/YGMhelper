@@ -43,7 +43,7 @@
                     날짜를 불러오는 중...
                 </button>
 
-                <h2>오늘의 학교생활</h2>
+                <h2>이날의 학교생활</h2>
             </div>
 
 
@@ -112,13 +112,28 @@
                     </div>
 
 
-                    <div class="timetable-webview">
-                        <iframe
-                            src="https://ygm-comci-proxy.muntang711.workers.dev/"
-                            title="용곡중학교 시간표"
-                            loading="lazy"
-                            frameborder="0"
-                        ></iframe>
+                    <div class="timetable-controls">
+
+                        <label>
+                            <span>학년</span>
+                            <select id="timetable-grade">
+                                <option value="">불러오는 중...</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>반</span>
+                            <select id="timetable-class">
+                                <option value="">불러오는 중...</option>
+                            </select>
+                        </label>
+
+                    </div>
+
+                    <div class="timetable-list" id="timetable-list">
+                        <div class="timetable-loading">
+                            시간표 정보를 불러오는 중...
+                        </div>
                     </div>
 
                 </article>

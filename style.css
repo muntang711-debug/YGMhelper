@@ -343,6 +343,87 @@ main {
     flex-direction: column;
 }
 
+/* =========================
+   시간표 선택
+========================= */
+
+.timetable-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.timetable-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.timetable-controls label span {
+    color: #777;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.timetable-controls select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 10px;
+    border: 1px solid #dedede;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #333;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+}
+
+.timetable-controls select:focus {
+    border-color: #5b45d6;
+    box-shadow: 0 0 0 3px rgba(91, 69, 214, 0.1);
+}
+
+.timetable-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.timetable-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    min-height: 52px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.timetable-row:last-child {
+    border-bottom: none;
+}
+
+.timetable-period {
+    color: #888;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.timetable-subject {
+    color: #333;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.timetable-loading,
+.timetable-error {
+    padding: 24px 8px;
+    color: #888;
+    text-align: center;
+    font-size: 14px;
+}
+
 .class-item {
     display: flex;
 
@@ -1154,6 +1235,24 @@ main {
         padding: 22px;
     }
 
+    .timetable-controls {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .timetable-controls select {
+        font-size: 13px;
+    }
+
+    .timetable-row {
+        grid-template-columns: 58px 1fr;
+        min-height: 48px;
+    }
+
+    .timetable-subject {
+        font-size: 15px;
+    }
+
     .meal-list li {
         gap: 12px;
     }
@@ -1361,6 +1460,38 @@ html.dark-mode .timetable-webview {
 html.dark-mode .timetable-webview iframe {
     background: #ffffff;
     color-scheme: only light;
+}
+
+html.dark-mode .timetable-controls label span {
+    color: #a4a4ae;
+}
+
+html.dark-mode .timetable-controls select {
+    background: #202126;
+    border-color: #3a3b43;
+    color: #e5e5e8;
+}
+
+html.dark-mode .timetable-controls select:focus {
+    border-color: #7d6bea;
+    box-shadow: 0 0 0 3px rgba(125, 107, 234, 0.18);
+}
+
+html.dark-mode .timetable-row {
+    border-bottom-color: #303139;
+}
+
+html.dark-mode .timetable-period {
+    color: #999aa5;
+}
+
+html.dark-mode .timetable-subject {
+    color: #ededf0;
+}
+
+html.dark-mode .timetable-loading,
+html.dark-mode .timetable-error {
+    color: #999aa5;
 }
 
 html.dark-mode .meal-list li {

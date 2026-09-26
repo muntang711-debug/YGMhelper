@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="시간표와 급식 정보를 한 곳에서 확인할 수 있는 YGMhelper">
+  <meta name="theme-color" content="#6c5ce7">
+  <title>YGMhelper</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem("ygmhelper.theme");
+      const theme = saved === "light" || saved === "dark"
+        ? saved
+        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="YGMhelper home">YGMhelper</a>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="#timetable" data-i18n="navTimetable">시간표</a>
+        <a href="#meal" data-i18n="navMeal">급식표</a>
+      </nav>
+      <div class="header-actions">
+        <div class="language-switcher" aria-label="Language">
+          <button type="button" class="language-button" data-language="ko">한국어</button>
+          <button type="button" class="language-button" data-language="en">English</button>
+        </div>
+        <button type="button" id="theme-toggle" class="icon-button" aria-pressed="false">☾</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="dashboard">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow" data-i18n="eyebrow">오늘</p>
+          <h1 data-i18n="pageTitle">학교 정보</h1>
+        </div>
+        <button type="button" id="refresh-button" class="outline-button">
+          <span aria-hidden="true">↻</span>
+          <span data-i18n="refresh">새로고침</span>
+        </button>
+      </div>
+
+      <div class="date-toolbar" aria-label="Date controls">
+        <button type="button" id="previous-day" class="date-button" aria-label="Previous day">‹</button>
+        <input type="date" id="date-picker" aria-label="Selected date">
+        <button type="button" id="today-button" class="date-today-button" data-i18n="today">오늘</button>
+        <button type="button" id="next-day" class="date-button" aria-label="Next day">›</button>
+      </div>
+
+      <div class="info-grid">
+        <section id="meal" class="info-card meal-card">
+          <div class="card-header">
+            <div>
+              <p class="card-kicker" data-i18n="mealKicker">Meal</p>
+              <h2 data-i18n="mealTitle">급식표</h2>
+            </div>
+            <span id="meal-date-label" class="date-label"></span>
+          </div>
+
+          <div id="meal-content" class="card-content" aria-live="polite">
+            <div class="loading-state" data-i18n="loading">불러오는 중...</div>
+          </div>
+
+          <div class="card-footer">
+            <button type="button" id="allergy-button" class="secondary-button" data-i18n="allergyGuide">알레르기 안내</button>
+          </div>
+        </section>
+
+        <section id="timetable" class="info-card timetable-card">
+          <div class="card-header">
+            <div>
+              <p class="card-kicker" data-i18n="timetableKicker">Timetable</p>
+              <h2 data-i18n="timetableTitle">시간표</h2>
+            </div>
+            <span id="timetable-date-label" class="date-label"></span>
+          </div>
+
+          <div class="selector-row">
+            <label class="selector">
+              <span data-i18n="grade">학년</span>
+              <select id="grade-select" aria-label="Grade"></select>
+            </label>
+            <label class="selector">
+              <span data-i18n="class">반</span>
+              <select id="class-select" aria-label="Class"></select>
+            </label>
+          </div>
+
+          <div id="timetable-content" class="card-content" aria-live="polite">
+            <div class="loading-state" data-i18n="loading">불러오는 중...</div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="allergy-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-modal-close></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="allergy-modal-title">
+      <div class="modal-header">
+        <h2 id="allergy-modal-title" data-i18n="allergyTitle">알레르기 안내</h2>
+        <button type="button" id="close-allergy-modal" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div id="allergy-list" class="allergy-list"></div>
+    </section>
+  </div>
+</body>
+</html>

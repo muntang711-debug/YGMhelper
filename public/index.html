@@ -53,40 +53,41 @@
   <main class="page">
     <section class="page-top">
       <div class="title-block">
-        <p class="overline">YGMhelper</p>
         <h1 data-i18n="pageTitle">오늘</h1>
-        <p id="hero-date-label" class="current-date"></p>
+        <button type="button" id="date-trigger" class="current-date" aria-haspopup="dialog" aria-expanded="false"></button>
       </div>
 
       <div class="date-toolbar" aria-label="Date navigation">
         <button type="button" id="previous-day" class="square-button" aria-label="Previous day">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-
-        <label class="date-field">
-          <span class="date-field-label" data-i18n="date">날짜</span>
-          <input type="date" id="date-picker" aria-label="Selected date">
-        </label>
-
-        <button type="button" id="today-button" class="button-secondary" data-i18n="today">오늘</button>
-
+        <button type="button" id="today-button" class="button-secondary today-button" data-i18n="today">오늘</button>
         <button type="button" id="next-day" class="square-button" aria-label="Next day">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+      </div>
+
+      <div id="date-popover" class="date-popover" hidden>
+        <div class="date-popover-header">
+          <button type="button" id="calendar-prev" class="calendar-nav" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <strong id="calendar-title"></strong>
+          <button type="button" id="calendar-next" class="calendar-nav" aria-label="Next month">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span data-day="0">일</span><span data-day="1">월</span><span data-day="2">화</span><span data-day="3">수</span><span data-day="4">목</span><span data-day="5">금</span><span data-day="6">토</span>
+        </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
       </div>
     </section>
 
     <section class="content-grid">
       <section id="meal" class="card">
         <header class="card-header">
-          <div class="card-title">
-            <span class="section-number">01</span>
-            <div>
-              <span class="eyebrow" data-i18n="mealKicker">MEAL</span>
-              <h2 data-i18n="mealTitle">급식표</h2>
-            </div>
-          </div>
-          <time id="meal-date-label" class="card-date"></time>
+          <h2 data-i18n="mealTitle">급식표</h2>
         </header>
 
         <div id="meal-content" class="card-content" aria-live="polite">
@@ -103,14 +104,7 @@
 
       <section id="timetable" class="card">
         <header class="card-header">
-          <div class="card-title">
-            <span class="section-number">02</span>
-            <div>
-              <span class="eyebrow" data-i18n="timetableKicker">TIMETABLE</span>
-              <h2 data-i18n="timetableTitle">시간표</h2>
-            </div>
-          </div>
-          <time id="timetable-date-label" class="card-date"></time>
+          <h2 data-i18n="timetableTitle">시간표</h2>
         </header>
 
         <div class="selection-bar">
@@ -139,15 +133,11 @@
     <div class="modal-backdrop" data-modal-close></div>
     <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="allergy-modal-title">
       <header class="modal-header">
-        <div>
-          <span class="modal-kicker" data-i18n="allergyKicker">GUIDE</span>
-          <h2 id="allergy-modal-title" data-i18n="allergyTitle">알레르기 안내</h2>
-        </div>
+        <h2 id="allergy-modal-title" data-i18n="allergyTitle">알레르기 안내</h2>
         <button type="button" id="close-allergy-modal" class="icon-button modal-close" aria-label="Close">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
       </header>
-      <p class="modal-note" data-i18n="allergyNote">급식 메뉴 뒤의 숫자는 알레르기 식품 번호입니다.</p>
       <div id="allergy-list" class="allergy-list"></div>
     </section>
   </div>

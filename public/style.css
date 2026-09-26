@@ -12,7 +12,7 @@
 html[data-theme=dark]{color-scheme:dark;--white:#181a1f;--bg:#101216;--text-strong:#f5f6f8;--text-primary:#e0e3e8;--text-secondary:#aeb5c0;--text-tertiary:#838c99;--text-disabled:#656d79;--line:#2d323a;--line-strong:#474e58;--blue-50:#16263b;--blue-100:#1a3555;--blue-200:#476f9f;--blue-500:#3d98ff;--blue-600:#2d89ff;--blue-700:#0f74e8;--shadow-sm:0 1px 2px rgba(0,0,0,.2);--header:rgba(16,18,22,.96);--sheet:rgba(0,0,0,.55)}
 
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:78px;scrollbar-gutter:stable}
+html{scroll-behavior:smooth;scroll-padding-top:78px;scrollbar-gutter:stable}html.modal-open{overflow:hidden}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--text-primary);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-size:17px;font-weight:400;line-height:26px;letter-spacing:0}
 button,input,select{font:inherit;font-synthesis:none}
 button{cursor:pointer}
@@ -55,7 +55,7 @@ html[data-theme=dark] .theme-icon-moon{display:none}
 .button-secondary:hover{border-color:var(--blue-200);color:var(--blue-600)}
 .date-toolbar .button-secondary{border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;height:42px;color:var(--blue-600)}
 
-.date-popover{position:absolute;right:0;top:100%;z-index:30;width:320px;margin-top:10px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--white);box-shadow:0 12px 28px rgba(20,26,36,.12)}
+.date-popover[hidden]{display:none}.date-popover{position:absolute;right:0;top:100%;z-index:30;width:320px;margin-top:10px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--white);box-shadow:0 12px 28px rgba(20,26,36,.12)}
 html[data-theme=dark] .date-popover{box-shadow:0 12px 28px rgba(0,0,0,.28)}
 .date-popover-header{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;margin-bottom:12px}
 .date-popover-header strong{text-align:center;color:var(--text-strong);font-size:16px;font-weight:700;line-height:24px}

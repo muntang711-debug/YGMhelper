@@ -1,5 +1,5 @@
 const STORAGE={theme:"ygmhelper.theme",language:"ygmhelper.language",date:"ygmhelper.date",grade:"ygmhelper.timetableGrade",classNumber:"ygmhelper.timetableClass"};
-const TEXT={ko:{navTimetable:"시간표",navMeal:"급식표",pageTitle:"오늘",today:"오늘",mealTitle:"급식표",timetableTitle:"시간표",grade:"학년",class:"반",loading:"불러오는 중...",allergyGuide:"알레르기 번호 안내",allergyTitle:"알레르기 안내",noMeal:"등록된 급식 정보가 없습니다.",noTimetable:"등록된 시간표 정보가 없습니다.",mealError:"급식 정보를 불러오지 못했습니다.",timetableError:"시간표 정보를 불러오지 못했습니다.",calories:"열량",period:"교시",previousDay:"이전 날짜",nextDay:"다음 날짜",close:"닫기",refresh:"새로고침",themeToLight:"라이트 모드로 전환",themeToDark:"다크 모드로 전환",previousMonth:"이전 달",nextMonth:"다음 달"},en:{navTimetable:"Timetable",navMeal:"Meal",pageTitle:"Today",today:"Today",mealTitle:"Meal",timetableTitle:"Timetable",grade:"Grade",class:"Class",loading:"Loading...",allergyGuide:"Allergy number guide",allergyTitle:"Allergy information",noMeal:"No meal information is available.",noTimetable:"No timetable information is available.",mealError:"Unable to load meal information.",timetableError:"Unable to load timetable information.",calories:"Calories",period:"Period",previousDay:"Previous day",nextDay:"Next day",close:"Close",refresh:"Refresh",themeToLight:"Switch to light mode",themeToDark:"Switch to dark mode",previousMonth:"Previous month",nextMonth:"Next month"}};
+const TEXT={ko:{navTimetable:"시간표",navMeal:"급식표",pageTitle:"이날의 학교생활",today:"오늘",mealTitle:"급식표",timetableTitle:"시간표",grade:"학년",class:"반",loading:"불러오는 중...",allergyGuide:"알레르기 번호 안내",allergyTitle:"알레르기 안내",noMeal:"등록된 급식 정보가 없습니다.",noTimetable:"등록된 시간표 정보가 없습니다.",mealError:"급식 정보를 불러오지 못했습니다.",timetableError:"시간표 정보를 불러오지 못했습니다.",calories:"열량",period:"교시",previousDay:"이전 날짜",nextDay:"다음 날짜",close:"닫기",refresh:"새로고침",previousMonth:"이전 달",nextMonth:"다음 달"},en:{navTimetable:"Timetable",navMeal:"Meal",pageTitle:"School information for this day",today:"Today",mealTitle:"Meal",timetableTitle:"Timetable",grade:"Grade",class:"Class",loading:"Loading...",allergyGuide:"Allergy number guide",allergyTitle:"Allergy information",noMeal:"No meal information is available.",noTimetable:"No timetable information is available.",mealError:"Unable to load meal information.",timetableError:"Unable to load timetable information.",calories:"Calories",period:"Period",previousDay:"Previous day",nextDay:"Next day",close:"Close",refresh:"Refresh",previousMonth:"Previous month",nextMonth:"Next month"}};
 const ALLERGIES={ko:["난류","우유","메밀","땅콩","대두","밀","고등어","게","새우","돼지고기","복숭아","토마토","아황산류","호두","닭고기","쇠고기","오징어","조개류 (굴, 전복, 홍합 포함)","잣"],en:["Eggs","Milk","Buckwheat","Peanuts","Soybeans","Wheat","Mackerel","Crab","Shrimp","Pork","Peach","Tomato","Sulfites","Walnuts","Chicken","Beef","Squid","Shellfish (oyster, abalone, mussel)","Pine nuts"]};
 const WEEKDAYS={ko:["일","월","화","수","목","금","토"],en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]};
 const MONTH_FORMAT={ko:new Intl.DateTimeFormat("ko-KR",{year:"numeric",month:"long"}),en:new Intl.DateTimeFormat("en-US",{year:"numeric",month:"long"})};
@@ -9,13 +9,23 @@ const state={language:localStorage.getItem(STORAGE.language)||((navigator.langua
 let calendarCursor=null;
 
 const $=s=>document.querySelector(s);
-const el={heroDate:$("#date-trigger"),prev:$("#previous-day"),next:$("#next-day"),today:$("#today-button"),refresh:$("#refresh-button"),meal:$("#meal-content"),tt:$("#timetable-content"),grade:$("#grade-select"),cls:$("#class-select"),theme:$("#theme-toggle"),langs:[...document.querySelectorAll(".language-button")],allergy:$("#allergy-button"),modal:$("#allergy-modal"),close:$("#close-allergy-modal"),allergyList:$("#allergy-list"),datePopover:$("#date-popover"),calendarTitle:$("#calendar-title"),calendarGrid:$("#calendar-grid"),calendarPrev:$("#calendar-prev"),calendarNext:$("#calendar-next")};
+const el={
+  brandTrigger:$("#brand-menu-trigger"),brandMenu:$("#brand-menu"),
+  heroDate:$("#date-trigger"),
+  prev:$("#previous-day"),next:$("#next-day"),today:$("#today-button"),
+  meal:$("#meal-content"),tt:$("#timetable-content"),
+  theme:$("#theme-toggle"),langs:[...document.querySelectorAll(".language-button")],
+  allergy:$("#allergy-button"),modal:$("#allergy-modal"),close:$("#close-allergy-modal"),allergyList:$("#allergy-list"),
+  datePopover:$("#date-popover"),calendarTitle:$("#calendar-title"),calendarGrid:$("#calendar-grid"),calendarPrev:$("#calendar-prev"),calendarNext:$("#calendar-next"),
+  gradeTrigger:$("#grade-trigger"),gradeMenu:$("#grade-menu"),gradeValue:$("#grade-value"),
+  classTrigger:$("#class-trigger"),classMenu:$("#class-menu"),classValue:$("#class-value"),
+  refresh:$("#refresh-button")
+};
 
 document.addEventListener("DOMContentLoaded",init);
 
 function init(){
-  for(let i=1;i<=3;i++)el.grade.add(new Option(i,i));
-  for(let i=1;i<=15;i++)el.cls.add(new Option(i,i));
+  renderCustomOptions();
   bind();
   applyLanguage();
   applyTheme(state.theme,false);
@@ -25,27 +35,124 @@ function init(){
 }
 
 function bind(){
-  el.heroDate.onclick=toggleDatePopover;
+  el.brandTrigger.onclick=toggleBrandMenu;
   el.prev.onclick=()=>moveDate(-1);
   el.next.onclick=()=>moveDate(1);
+  el.heroDate.onclick=toggleDatePopover;
   el.today.onclick=()=>{state.date=today();localStorage.setItem(STORAGE.date,state.date);sync();load();closeDatePopover()};
   el.calendarPrev.onclick=()=>moveCalendarMonth(-1);
   el.calendarNext.onclick=()=>moveCalendarMonth(1);
+
+  el.gradeTrigger.onclick=()=>toggleCustomSelect("grade");
+  el.classTrigger.onclick=()=>toggleCustomSelect("class");
   el.refresh.onclick=load;
-  el.grade.onchange=()=>{state.grade=+el.grade.value;localStorage.setItem(STORAGE.grade,String(state.grade));load()};
-  el.cls.onchange=()=>{state.classNumber=+el.cls.value;localStorage.setItem(STORAGE.classNumber,String(state.classNumber));load()};
-  el.langs.forEach(button=>button.onclick=()=>{state.language=button.dataset.language;localStorage.setItem(STORAGE.language,state.language);applyLanguage();sync();load()});
+
+  el.langs.forEach(button=>button.onclick=()=>{
+    state.language=button.dataset.language;
+    localStorage.setItem(STORAGE.language,state.language);
+    applyLanguage();
+    sync();
+    load();
+    closeBrandMenu();
+  });
+
   el.theme.onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";applyTheme(state.theme,true)};
   el.allergy.onclick=openModal;
   el.close.onclick=closeModal;
+
   el.modal.onclick=e=>{if(e.target.matches("[data-modal-close]"))closeModal()};
-  document.addEventListener("click",e=>{if(!el.datePopover.hidden&&!el.datePopover.contains(e.target)&&!el.heroDate.contains(e.target))closeDatePopover()});
+
+  document.querySelectorAll(".brand-nav a").forEach(link=>link.onclick=()=>closeBrandMenu());
+
+  document.addEventListener("click",e=>{
+    if(!el.datePopover.hidden&&!el.datePopover.contains(e.target)&&!el.heroDate.contains(e.target))closeDatePopover();
+    if(!el.brandMenu.hidden&&!el.brandMenu.contains(e.target)&&!el.brandTrigger.contains(e.target))closeBrandMenu();
+    if(!el.gradeMenu.hidden&&!el.gradeMenu.contains(e.target)&&!el.gradeTrigger.contains(e.target))closeCustomSelect("grade");
+    if(!el.classMenu.hidden&&!el.classMenu.contains(e.target)&&!el.classTrigger.contains(e.target))closeCustomSelect("class");
+  });
+
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape"){
       if(!el.datePopover.hidden)closeDatePopover();
-      else if(!el.modal.hidden)closeModal();
+      if(!el.brandMenu.hidden)closeBrandMenu();
+      if(!el.gradeMenu.hidden)closeCustomSelect("grade");
+      if(!el.classMenu.hidden)closeCustomSelect("class");
+      if(!el.modal.hidden)closeModal();
     }
   });
+}
+
+function renderCustomOptions(){
+  el.gradeMenu.innerHTML="";
+  for(let i=1;i<=3;i++)el.gradeMenu.append(createOption("grade",i));
+  el.classMenu.innerHTML="";
+  for(let i=1;i<=15;i++)el.classMenu.append(createOption("class",i));
+}
+
+function createOption(type,value){
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="custom-option";
+  button.dataset.value=value;
+  button.role="option";
+  button.textContent=formatClassChoice(type,value);
+  button.onclick=()=>selectClassChoice(type,value);
+  return button;
+}
+
+function formatClassChoice(type,value){
+  if(state.language==="ko")return type==="grade"?value+"학년":value+"반";
+  return (type==="grade"?"Grade ":"Class ")+value;
+}
+
+function toggleCustomSelect(type){
+  const target=type==="grade"?el.gradeMenu:el.classMenu;
+  const other=type==="grade"?el.classMenu:el.gradeMenu;
+  const trigger=type==="grade"?el.gradeTrigger:el.classTrigger;
+  const open=target.hidden;
+  other.hidden=true;
+  (type==="grade"?el.classTrigger:el.gradeTrigger).setAttribute("aria-expanded","false");
+  target.hidden=!open;
+  trigger.setAttribute("aria-expanded",String(open));
+  if(open){
+    document.querySelectorAll(".custom-option").forEach(node=>{
+      const selected=(type==="grade"?state.grade:state.classNumber)===Number(node.dataset.value);
+      node.classList.toggle("selected",selected);
+      node.setAttribute("aria-selected",String(selected));
+    });
+  }
+}
+
+function closeCustomSelect(type){
+  const menu=type==="grade"?el.gradeMenu:el.classMenu;
+  const trigger=type==="grade"?el.gradeTrigger:el.classTrigger;
+  menu.hidden=true;
+  trigger.setAttribute("aria-expanded","false");
+}
+
+function selectClassChoice(type,value){
+  if(type==="grade"){
+    state.grade=value;
+    localStorage.setItem(STORAGE.grade,String(value));
+    closeCustomSelect("grade");
+  }else{
+    state.classNumber=value;
+    localStorage.setItem(STORAGE.classNumber,String(value));
+    closeCustomSelect("class");
+  }
+  sync();
+  load();
+}
+
+function toggleBrandMenu(){
+  const open=el.brandMenu.hidden;
+  el.brandMenu.hidden=!open;
+  el.brandTrigger.setAttribute("aria-expanded",String(open));
+}
+
+function closeBrandMenu(){
+  el.brandMenu.hidden=true;
+  el.brandTrigger.setAttribute("aria-expanded","false");
 }
 
 function watchSystemTheme(){
@@ -76,7 +183,6 @@ function renderCalendar(){
   el.calendarTitle.textContent=MONTH_FORMAT[state.language].format(calendarCursor);
   el.calendarPrev.setAttribute("aria-label",t("previousMonth"));
   el.calendarNext.setAttribute("aria-label",t("nextMonth"));
-
   document.querySelectorAll(".calendar-weekdays span").forEach((node,index)=>{node.textContent=WEEKDAYS[state.language][index]});
 
   const year=calendarCursor.getFullYear();
@@ -258,8 +364,12 @@ function applyLanguage(){
     button.classList.toggle("active",active);
     button.setAttribute("aria-pressed",String(active));
   });
+  el.refresh.setAttribute("aria-label",t("refresh"));
+  el.refresh.title=t("refresh");
   renderAllergy();
+  renderCustomOptions();
   if(calendarCursor&&!el.datePopover.hidden)renderCalendar();
+  sync();
   updateThemeButton();
 }
 
@@ -277,8 +387,8 @@ function updateThemeButton(){
 }
 
 function sync(){
-  el.grade.value=String(state.grade);
-  el.cls.value=String(state.classNumber);
+  el.gradeValue.textContent=formatClassChoice("grade",state.grade);
+  el.classValue.textContent=formatClassChoice("class",state.classNumber);
   el.heroDate.textContent=formatLabel(state.date);
   el.prev.setAttribute("aria-label",t("previousDay"));
   el.next.setAttribute("aria-label",t("nextDay"));

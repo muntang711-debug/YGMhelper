@@ -1,0 +1,1 @@
+import{json}from"./_lib/neis.js";export function onRequestGet({env}){return json({ok:true,service:"YGMhelper",neisConfigured:Boolean(env?.NEIS_API_KEY)})}

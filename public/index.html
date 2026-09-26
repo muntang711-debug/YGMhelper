@@ -4,16 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="시간표와 급식 정보를 한 곳에서 확인할 수 있는 YGMhelper">
-  <meta name="theme-color" content="#5f50d7">
+  <meta name="theme-color" content="#0078ff">
   <title>YGMhelper</title>
   <script>
     (() => {
       try {
         const saved = localStorage.getItem("ygmhelper.theme");
-        const theme = saved === "light" || saved === "dark"
-          ? saved
-          : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        document.documentElement.dataset.theme = theme;
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme =
+          saved === "dark" || saved === "light" ? saved : (systemDark ? "dark" : "light");
       } catch {
         document.documentElement.dataset.theme = "light";
       }
@@ -24,7 +23,7 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="header-inner">
+    <div class="top-app-bar">
       <a class="brand" href="/" aria-label="YGMhelper home">YGMhelper</a>
 
       <nav class="main-nav" aria-label="Primary navigation">
@@ -32,65 +31,86 @@
         <a href="#timetable" data-i18n="navTimetable">시간표</a>
       </nav>
 
-      <div class="header-actions">
+      <div class="top-actions">
         <div class="language-switcher" aria-label="Language">
           <button type="button" class="language-button" data-language="ko">한국어</button>
           <button type="button" class="language-button" data-language="en">EN</button>
         </div>
+
         <button type="button" id="theme-toggle" class="icon-button" aria-label="Theme" aria-pressed="false">
-          <span aria-hidden="true">☾</span>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 2.5V5M12 19V21.5M4.58 4.58L6.35 6.35M17.65 17.65l1.77 1.77M2.5 12H5M19 12h2.5M4.58 19.42l1.77-1.77M17.65 6.35l1.77-1.77" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 15.2A8.2 8.2 0 0 1 8.8 4 8.7 8.7 0 1 0 20 15.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="page-shell">
-    <section class="page-toolbar" aria-label="Date navigation">
-      <div class="page-title">
-        <p class="page-kicker">YGMhelper</p>
+  <main class="page">
+    <section class="page-top">
+      <div class="title-block">
+        <p class="overline">YGMhelper</p>
         <h1 data-i18n="pageTitle">오늘</h1>
-        <p id="hero-date-label" class="page-date"></p>
+        <p id="hero-date-label" class="current-date"></p>
       </div>
 
-      <div class="date-control">
-        <button type="button" id="previous-day" class="date-arrow" aria-label="Previous day">‹</button>
-        <label class="date-input">
+      <div class="date-toolbar" aria-label="Date navigation">
+        <button type="button" id="previous-day" class="square-button" aria-label="Previous day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <label class="date-field">
+          <span class="date-field-label" data-i18n="date">날짜</span>
           <input type="date" id="date-picker" aria-label="Selected date">
         </label>
-        <button type="button" id="today-button" class="today-button" data-i18n="today">오늘</button>
-        <button type="button" id="next-day" class="date-arrow" aria-label="Next day">›</button>
+
+        <button type="button" id="today-button" class="button-secondary" data-i18n="today">오늘</button>
+
+        <button type="button" id="next-day" class="square-button" aria-label="Next day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </section>
 
     <section class="content-grid">
-      <section id="meal" class="panel">
-        <header class="panel-header">
-          <div>
-            <span class="panel-number">01</span>
-            <h2 data-i18n="mealTitle">급식표</h2>
+      <section id="meal" class="card">
+        <header class="card-header">
+          <div class="card-title">
+            <span class="section-number">01</span>
+            <div>
+              <span class="eyebrow" data-i18n="mealKicker">MEAL</span>
+              <h2 data-i18n="mealTitle">급식표</h2>
+            </div>
           </div>
-          <time id="meal-date-label" class="panel-date"></time>
+          <time id="meal-date-label" class="card-date"></time>
         </header>
 
-        <div id="meal-content" class="panel-body" aria-live="polite">
+        <div id="meal-content" class="card-content" aria-live="polite">
           <div class="loading-state" data-i18n="loading">불러오는 중...</div>
         </div>
 
-        <footer class="panel-footer">
-          <button type="button" id="allergy-button" class="link-button" data-i18n="allergyGuide">
+        <footer class="card-footer">
+          <button type="button" id="allergy-button" class="text-button" data-i18n="allergyGuide">
             알레르기 번호 안내
-            <span aria-hidden="true">→</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </footer>
       </section>
 
-      <section id="timetable" class="panel">
-        <header class="panel-header">
-          <div>
-            <span class="panel-number">02</span>
-            <h2 data-i18n="timetableTitle">시간표</h2>
+      <section id="timetable" class="card">
+        <header class="card-header">
+          <div class="card-title">
+            <span class="section-number">02</span>
+            <div>
+              <span class="eyebrow" data-i18n="timetableKicker">TIMETABLE</span>
+              <h2 data-i18n="timetableTitle">시간표</h2>
+            </div>
           </div>
-          <time id="timetable-date-label" class="panel-date"></time>
+          <time id="timetable-date-label" class="card-date"></time>
         </header>
 
         <div class="selection-bar">
@@ -102,13 +122,13 @@
             <span data-i18n="class">반</span>
             <select id="class-select" aria-label="Class"></select>
           </label>
-          <button type="button" id="refresh-button" class="refresh-button" aria-label="Refresh">
-            <span aria-hidden="true">↻</span>
+          <button type="button" id="refresh-button" class="button-secondary refresh-button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8.5A7.5 7.5 0 1 0 19.5 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span data-i18n="refresh">새로고침</span>
           </button>
         </div>
 
-        <div id="timetable-content" class="panel-body timetable-body" aria-live="polite">
+        <div id="timetable-content" class="card-content timetable-content" aria-live="polite">
           <div class="loading-state" data-i18n="loading">불러오는 중...</div>
         </div>
       </section>
@@ -123,7 +143,9 @@
           <span class="modal-kicker" data-i18n="allergyKicker">GUIDE</span>
           <h2 id="allergy-modal-title" data-i18n="allergyTitle">알레르기 안내</h2>
         </div>
-        <button type="button" id="close-allergy-modal" class="modal-close" aria-label="Close">×</button>
+        <button type="button" id="close-allergy-modal" class="icon-button modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
       </header>
       <p class="modal-note" data-i18n="allergyNote">급식 메뉴 뒤의 숫자는 알레르기 식품 번호입니다.</p>
       <div id="allergy-list" class="allergy-list"></div>

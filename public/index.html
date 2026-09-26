@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="시간표와 급식 정보를 한 곳에서 확인할 수 있는 YGMhelper">
-  <meta name="theme-color" content="#6754e7">
+  <meta name="theme-color" content="#5f50d7">
   <title>YGMhelper</title>
   <script>
     (() => {
@@ -37,7 +37,7 @@
           <button type="button" class="language-button" data-language="ko">한국어</button>
           <button type="button" class="language-button" data-language="en">EN</button>
         </div>
-        <button type="button" id="theme-toggle" class="icon-button" aria-pressed="false" aria-label="Theme">
+        <button type="button" id="theme-toggle" class="icon-button" aria-label="Theme" aria-pressed="false">
           <span aria-hidden="true">☾</span>
         </button>
       </div>
@@ -45,17 +45,16 @@
   </header>
 
   <main class="page-shell">
-    <section class="hero-row">
-      <div class="hero-copy">
-        <span class="hero-label" data-i18n="heroLabel">YGMhelper</span>
-        <h1 data-i18n="pageTitle">오늘의 학교 정보</h1>
-        <p id="hero-date-label" class="hero-date"></p>
+    <section class="page-toolbar" aria-label="Date navigation">
+      <div class="page-title">
+        <p class="page-kicker">YGMhelper</p>
+        <h1 data-i18n="pageTitle">오늘</h1>
+        <p id="hero-date-label" class="page-date"></p>
       </div>
 
       <div class="date-control">
         <button type="button" id="previous-day" class="date-arrow" aria-label="Previous day">‹</button>
-        <label class="date-picker-wrap">
-          <span class="date-picker-icon" aria-hidden="true">▣</span>
+        <label class="date-input">
           <input type="date" id="date-picker" aria-label="Selected date">
         </label>
         <button type="button" id="today-button" class="today-button" data-i18n="today">오늘</button>
@@ -63,43 +62,36 @@
       </div>
     </section>
 
-    <section class="dashboard-grid">
-      <section id="meal" class="dashboard-card meal-card">
-        <div class="card-topline"></div>
-        <div class="card-heading">
+    <section class="content-grid">
+      <section id="meal" class="panel">
+        <header class="panel-header">
           <div>
-            <div class="heading-meta">
-              <span class="section-index">01</span>
-              <span data-i18n="mealKicker">MEAL</span>
-            </div>
+            <span class="panel-number">01</span>
             <h2 data-i18n="mealTitle">급식표</h2>
           </div>
-          <span id="meal-date-label" class="date-badge"></span>
-        </div>
+          <time id="meal-date-label" class="panel-date"></time>
+        </header>
 
-        <div id="meal-content" class="card-body" aria-live="polite">
+        <div id="meal-content" class="panel-body" aria-live="polite">
           <div class="loading-state" data-i18n="loading">불러오는 중...</div>
         </div>
 
-        <div class="card-bottom">
-          <button type="button" id="allergy-button" class="text-button" data-i18n="allergyGuide">
+        <footer class="panel-footer">
+          <button type="button" id="allergy-button" class="link-button" data-i18n="allergyGuide">
             알레르기 번호 안내
             <span aria-hidden="true">→</span>
           </button>
-        </div>
+        </footer>
       </section>
 
-      <section id="timetable" class="dashboard-card timetable-card">
-        <div class="card-heading">
+      <section id="timetable" class="panel">
+        <header class="panel-header">
           <div>
-            <div class="heading-meta">
-              <span class="section-index">02</span>
-              <span data-i18n="timetableKicker">TIMETABLE</span>
-            </div>
+            <span class="panel-number">02</span>
             <h2 data-i18n="timetableTitle">시간표</h2>
           </div>
-          <span id="timetable-date-label" class="date-badge"></span>
-        </div>
+          <time id="timetable-date-label" class="panel-date"></time>
+        </header>
 
         <div class="selection-bar">
           <label class="select-field">
@@ -116,7 +108,7 @@
           </button>
         </div>
 
-        <div id="timetable-content" class="card-body timetable-body" aria-live="polite">
+        <div id="timetable-content" class="panel-body timetable-body" aria-live="polite">
           <div class="loading-state" data-i18n="loading">불러오는 중...</div>
         </div>
       </section>
@@ -126,16 +118,14 @@
   <div id="allergy-modal" class="modal" hidden>
     <div class="modal-backdrop" data-modal-close></div>
     <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="allergy-modal-title">
-      <div class="modal-header">
+      <header class="modal-header">
         <div>
           <span class="modal-kicker" data-i18n="allergyKicker">GUIDE</span>
           <h2 id="allergy-modal-title" data-i18n="allergyTitle">알레르기 안내</h2>
         </div>
         <button type="button" id="close-allergy-modal" class="modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="modal-note" data-i18n="allergyNote">
-        급식 메뉴 뒤의 숫자는 알레르기 식품 번호입니다.
-      </div>
+      </header>
+      <p class="modal-note" data-i18n="allergyNote">급식 메뉴 뒤의 숫자는 알레르기 식품 번호입니다.</p>
       <div id="allergy-list" class="allergy-list"></div>
     </section>
   </div>

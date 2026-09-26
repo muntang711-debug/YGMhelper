@@ -58,7 +58,7 @@ html[data-theme=dark] .theme-icon-moon{display:none}
 .title-block h1{margin:3px 0 0;color:var(--text-strong);font-size:32px;font-weight:700;line-height:42px;letter-spacing:-.035em}
 
 .date-popover[hidden]{display:none}
-.date-popover{position:absolute;right:0;top:100%;z-index:40;width:330px;margin-top:10px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--white);box-shadow:0 12px 28px rgba(20,26,36,.12)}
+.date-popover{position:absolute;left:0;right:auto;top:100%;z-index:40;width:330px;margin-top:10px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--white);box-shadow:0 12px 28px rgba(20,26,36,.12)}
 html[data-theme=dark] .date-popover{box-shadow:0 12px 28px rgba(0,0,0,.28)}
 .date-popover-header{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;margin-bottom:10px}
 .date-popover-header strong{text-align:center;color:var(--text-strong);font-size:16px;font-weight:700;line-height:24px}

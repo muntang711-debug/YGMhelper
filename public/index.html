@@ -24,19 +24,26 @@
 <body>
   <header class="site-header">
     <div class="top-app-bar">
-      <a class="brand" href="/" aria-label="YGMhelper home">YGMhelper</a>
+      <div class="brand-menu">
+        <button type="button" id="brand-menu-trigger" class="brand-trigger" aria-expanded="false" aria-haspopup="menu">
+          <span class="brand">YGMhelper</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
 
-      <nav class="main-nav" aria-label="Primary navigation">
-        <a href="#meal" data-i18n="navMeal">급식표</a>
-        <a href="#timetable" data-i18n="navTimetable">시간표</a>
-      </nav>
+        <div id="brand-menu" class="brand-menu-panel" hidden>
+          <nav class="brand-nav" aria-label="Page navigation">
+            <a href="#meal" data-i18n="navMeal">급식표</a>
+            <a href="#timetable" data-i18n="navTimetable">시간표</a>
+          </nav>
+          <div class="brand-menu-divider"></div>
+          <div class="language-switcher" aria-label="Language">
+            <button type="button" class="language-button" data-language="ko">한국어</button>
+            <button type="button" class="language-button" data-language="en">EN</button>
+          </div>
+        </div>
+      </div>
 
       <div class="top-actions">
-        <div class="language-switcher" aria-label="Language">
-          <button type="button" class="language-button" data-language="ko">한국어</button>
-          <button type="button" class="language-button" data-language="en">EN</button>
-        </div>
-
         <button type="button" id="theme-toggle" class="icon-button" aria-label="Theme" aria-pressed="false">
           <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -53,18 +60,8 @@
   <main class="page">
     <section class="page-top">
       <div class="title-block">
-        <h1 data-i18n="pageTitle">오늘</h1>
         <button type="button" id="date-trigger" class="current-date" aria-haspopup="dialog" aria-expanded="false"></button>
-      </div>
-
-      <div class="date-toolbar" aria-label="Date navigation">
-        <button type="button" id="previous-day" class="square-button" aria-label="Previous day">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button type="button" id="today-button" class="button-secondary today-button" data-i18n="today">오늘</button>
-        <button type="button" id="next-day" class="square-button" aria-label="Next day">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        <h1 data-i18n="pageTitle">이날의 학교생활</h1>
       </div>
 
       <div id="date-popover" class="date-popover" hidden>
@@ -77,8 +74,19 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
+
+        <div class="date-adjuster">
+          <button type="button" id="previous-day" class="date-adjust-button" aria-label="Previous day">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" id="today-button" class="date-today-button" data-i18n="today">오늘</button>
+          <button type="button" id="next-day" class="date-adjust-button" aria-label="Next day">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
         <div class="calendar-weekdays" aria-hidden="true">
-          <span data-day="0">일</span><span data-day="1">월</span><span data-day="2">화</span><span data-day="3">수</span><span data-day="4">목</span><span data-day="5">금</span><span data-day="6">토</span>
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
         </div>
         <div id="calendar-grid" class="calendar-grid"></div>
       </div>
@@ -103,24 +111,33 @@
       </section>
 
       <section id="timetable" class="card">
-        <header class="card-header">
-          <h2 data-i18n="timetableTitle">시간표</h2>
-        </header>
+        <header class="card-header timetable-header">
+          <div class="timetable-heading">
+            <h2 data-i18n="timetableTitle">시간표</h2>
 
-        <div class="selection-bar">
-          <label class="select-field">
-            <span data-i18n="grade">학년</span>
-            <select id="grade-select" aria-label="Grade"></select>
-          </label>
-          <label class="select-field">
-            <span data-i18n="class">반</span>
-            <select id="class-select" aria-label="Class"></select>
-          </label>
-          <button type="button" id="refresh-button" class="button-secondary refresh-button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8.5A7.5 7.5 0 1 0 19.5 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span data-i18n="refresh">새로고침</span>
-          </button>
-        </div>
+            <div class="class-controls">
+              <div class="custom-select">
+                <button type="button" id="grade-trigger" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                  <span id="grade-value"></span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div id="grade-menu" class="custom-select-menu" role="listbox" hidden></div>
+              </div>
+
+              <div class="custom-select">
+                <button type="button" id="class-trigger" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                  <span id="class-value"></span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div id="class-menu" class="custom-select-menu class-menu" role="listbox" hidden></div>
+              </div>
+
+              <button type="button" id="refresh-button" class="icon-button refresh-button" data-i18n-title="refresh" aria-label="새로고침" title="새로고침">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8.5A7.5 7.5 0 1 0 19.5 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </header>
 
         <div id="timetable-content" class="card-content timetable-content" aria-live="polite">
           <div class="loading-state" data-i18n="loading">불러오는 중...</div>

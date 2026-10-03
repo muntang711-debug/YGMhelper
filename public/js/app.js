@@ -8,7 +8,9 @@
     className: "1",
     theme: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    calendarOpen: false
+    calendarOpen: false,
+    calendarMode: "days",
+    calendarDraftDate: new Date()
   };
 
   const els = {
@@ -31,9 +33,12 @@
     }
   };
 
-  function pad(value) {
-    return String(value).padStart(2, "0");
-  }
+  const clampDay = (year, monthIndex, day) => Math.min(
+    day,
+    new Date(year, monthIndex + 1, 0).getDate()
+  );
+
+  const pad = (value) => String(value).padStart(2, "0");
 
   function formatDateParam(date) {
     return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("");
@@ -64,9 +69,8 @@
     }[char]));
   }
 
-  function setStatus(kind, message) {
+  function setStatus(kind, message, tone = "") {
     const el = els.status[kind];
-
     if (!message) {
       el.hidden = true;
       el.textContent = "";
@@ -76,7 +80,7 @@
 
     el.hidden = false;
     el.textContent = message;
-    if (message.includes("불러오지 못")) el.dataset.tone = "error";
+    if (tone) el.dataset.tone = tone;
     else delete el.dataset.tone;
   }
 
@@ -121,6 +125,7 @@
     document.querySelector(".date-picker")?.remove();
     document.querySelector(".date-trigger")?.setAttribute("aria-expanded", "false");
     state.calendarOpen = false;
+    state.calendarMode = "days";
   }
 
   function closeSelects(except = null) {
@@ -137,32 +142,53 @@
     closeSelects();
   }
 
-  function renderDateControl() {
-    els.dateControl.innerHTML = `
-      <button class="date-trigger" type="button" aria-haspopup="dialog" aria-expanded="false">
-        <span>${escapeHtml(formatDateLabel(state.date))}</span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-      </button>`;
-
-    const trigger = els.dateControl.querySelector(".date-trigger");
-
-    trigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeSelects();
-
-      if (state.calendarOpen) {
-        closeDatePicker();
-        return;
-      }
-
-      closeDatePicker();
-      trigger.setAttribute("aria-expanded", "true");
-      state.calendarOpen = true;
-      els.dateControl.appendChild(renderCalendar());
-    });
+  function syncDateControl() {
+    const label = els.dateControl.querySelector(".date-trigger span");
+    if (label) label.textContent = formatDateLabel(state.date);
   }
 
-  function calendarMarkup() {
+  function makeDraftDate() {
+    state.calendarDraftDate = new Date(
+      state.date.getFullYear(),
+      state.date.getMonth(),
+      state.date.getDate()
+    );
+    state.calendarMonth = new Date(
+      state.calendarDraftDate.getFullYear(),
+      state.calendarDraftDate.getMonth(),
+      1
+    );
+  }
+
+  function shiftCalendarMonth(delta) {
+    const current = state.calendarDraftDate;
+    const nextMonth = new Date(
+      state.calendarMonth.getFullYear(),
+      state.calendarMonth.getMonth() + delta,
+      1
+    );
+    const nextDay = clampDay(
+      nextMonth.getFullYear(),
+      nextMonth.getMonth(),
+      current.getDate()
+    );
+
+    state.calendarMonth = nextMonth;
+    state.calendarDraftDate = new Date(
+      nextMonth.getFullYear(),
+      nextMonth.getMonth(),
+      nextDay
+    );
+  }
+
+  function yearChoices() {
+    const center = new Date().getFullYear();
+    const years = [];
+    for (let year = center - 10; year <= center + 10; year += 1) years.push(year);
+    return years;
+  }
+
+  function calendarDaysMarkup() {
     const month = state.calendarMonth;
     const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
     const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
@@ -175,7 +201,7 @@
     for (let i = 0; i < totalCells; i += 1) {
       const date = new Date(month.getFullYear(), month.getMonth(), i - startIndex + 1);
       const outside = date.getMonth() !== month.getMonth();
-      const selected = isSameDate(date, state.date);
+      const selected = isSameDate(date, state.calendarDraftDate);
       const today = isSameDate(date, new Date());
 
       cells += `
@@ -191,7 +217,9 @@
         <button type="button" class="calendar-nav" data-cal-nav="-1" aria-label="이전 달">
           <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
         </button>
-        <div class="calendar-title">${month.getFullYear()}년 ${month.getMonth() + 1}월</div>
+        <button type="button" class="calendar-title-button" data-calendar-title aria-label="연도 선택">
+          ${month.getFullYear()}년 ${month.getMonth() + 1}월
+        </button>
         <button type="button" class="calendar-nav" data-cal-nav="1" aria-label="다음 달">
           <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
         </button>
@@ -202,23 +230,94 @@
       <div class="calendar-grid">${cells}</div>`;
   }
 
-  function renderCalendar() {
+  function calendarYearsMarkup() {
+    const currentYear = state.calendarMonth.getFullYear();
+
+    return `
+      <div class="calendar-head">
+        <button type="button" class="calendar-nav" data-year-back aria-label="이전 연도 묶음">
+          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <div class="calendar-title-button" aria-hidden="true">${currentYear}년</div>
+        <button type="button" class="calendar-nav" data-year-forward aria-label="다음 연도 묶음">
+          <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+      <div class="year-grid">
+        ${yearChoices().map((year) => `
+          <button class="year-option${year === currentYear ? " is-selected" : ""}" type="button" data-year="${year}">
+            ${year}년
+          </button>`).join("")}
+      </div>`;
+  }
+
+  function renderCalendar(picker) {
+    picker.innerHTML = state.calendarMode === "years"
+      ? calendarYearsMarkup()
+      : calendarDaysMarkup();
+  }
+
+  function openDatePicker() {
+    closeSelects();
+    closeDatePicker();
+
+    makeDraftDate();
+
     const picker = document.createElement("div");
     picker.className = "date-picker";
     picker.setAttribute("role", "dialog");
     picker.setAttribute("aria-label", "날짜 선택");
-    picker.innerHTML = calendarMarkup();
-
+    state.calendarOpen = true;
     picker.addEventListener("click", (event) => {
       event.stopPropagation();
 
       const nav = event.target.closest("[data-cal-nav]");
       if (nav) {
-        state.calendarMonth.setMonth(
-          state.calendarMonth.getMonth() + Number(nav.dataset.calNav)
+        shiftCalendarMonth(Number(nav.dataset.calNav));
+        renderCalendar(picker);
+        return;
+      }
+
+      if (event.target.closest("[data-calendar-title]")) {
+        state.calendarMode = "years";
+        renderCalendar(picker);
+        return;
+      }
+
+      if (event.target.closest("[data-year-back]")) {
+        const year = state.calendarMonth.getFullYear() - 21;
+        state.calendarMonth = new Date(year, state.calendarMonth.getMonth(), 1);
+        state.calendarDraftDate = new Date(
+          state.calendarMonth.getFullYear(),
+          state.calendarMonth.getMonth(),
+          clampDay(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), state.calendarDraftDate.getDate())
         );
-        const freshPicker = renderCalendar();
-        picker.replaceWith(freshPicker);
+        renderCalendar(picker);
+        return;
+      }
+
+      if (event.target.closest("[data-year-forward]")) {
+        const year = state.calendarMonth.getFullYear() + 21;
+        state.calendarMonth = new Date(year, state.calendarMonth.getMonth(), 1);
+        state.calendarDraftDate = new Date(
+          state.calendarMonth.getFullYear(),
+          state.calendarMonth.getMonth(),
+          clampDay(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), state.calendarDraftDate.getDate())
+        );
+        renderCalendar(picker);
+        return;
+      }
+
+      const yearButton = event.target.closest("[data-year]");
+      if (yearButton) {
+        const year = Number(yearButton.dataset.year);
+        const month = state.calendarMonth.getMonth();
+        const day = clampDay(year, month, state.calendarDraftDate.getDate());
+
+        state.calendarMonth = new Date(year, month, 1);
+        state.calendarDraftDate = new Date(year, month, day);
+        state.calendarMode = "days";
+        renderCalendar(picker);
         return;
       }
 
@@ -231,22 +330,26 @@
         Number(value.slice(4, 6)) - 1,
         Number(value.slice(6))
       );
-      state.calendarMonth = new Date(
-        state.date.getFullYear(),
-        state.date.getMonth(),
-        1
-      );
-
       closeDatePicker();
       syncDateControl();
       refreshData();
     });
 
-    return picker;
+    renderCalendar(picker);
+    els.dateControl.appendChild(picker);
+
+    els.dateControl.querySelector(".date-trigger").setAttribute("aria-expanded", "true");
   }
 
-  function syncDateControl() {
-    els.dateControl.querySelector(".date-trigger span").textContent = formatDateLabel(state.date);
+  function renderDateControl() {
+    syncDateControl();
+
+    const trigger = els.dateControl.querySelector(".date-trigger");
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (state.calendarOpen) closeDatePicker();
+      else openDatePicker();
+    });
   }
 
   function setupSelect(name, options, defaultValue, onChange) {
@@ -271,6 +374,7 @@
 
     trigger.addEventListener("click", (event) => {
       event.stopPropagation();
+
       closeDatePicker();
       const isOpen = root.classList.contains("is-open");
       closeSelects(root);
@@ -380,10 +484,10 @@
         <div class="empty-state">
           <div>
             <h3>급식을 불러오지 못했습니다.</h3>
-            <p>잠시 후 다시 시도해주세요.</p>
+            <p>오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
           </div>
         </div>`;
-      setStatus("meal", error.message || "급식 정보를 불러오지 못했습니다.");
+      setStatus("meal", error.message || "급식 정보를 불러오지 못했습니다.", "error");
     }
   }
 
@@ -400,19 +504,16 @@
         <div class="empty-state">
           <div>
             <h3>시간표를 불러오지 못했습니다.</h3>
-            <p>잠시 후 다시 시도해주세요.</p>
+            <p>오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
           </div>
         </div>`;
-      setStatus("timetable", error.message || "시간표 정보를 불러오지 못했습니다.");
+      setStatus("timetable", error.message || "시간표 정보를 불러오지 못했습니다.", "error");
     }
   }
 
   function refreshData() {
     loadMeal();
-
-    if (window.innerWidth > 760 || state.mobileView === "timetable") {
-      loadTimetable();
-    }
+    loadTimetable();
   }
 
   function switchMobileView(view) {
@@ -443,7 +544,7 @@
       state.grade,
       (value) => {
         state.grade = value;
-        if (window.innerWidth > 760 || state.mobileView === "timetable") loadTimetable();
+        loadTimetable();
       }
     );
 
@@ -454,7 +555,7 @@
       state.className,
       (value) => {
         state.className = value;
-        if (window.innerWidth > 760 || state.mobileView === "timetable") loadTimetable();
+        loadTimetable();
       }
     );
 
@@ -475,8 +576,10 @@
       const isDesktop = window.innerWidth > 760;
       if (isDesktop === lastIsDesktop) return;
       lastIsDesktop = isDesktop;
+
+      closeFloatingMenus();
+
       if (isDesktop) {
-        closeFloatingMenus();
         loadMeal();
         loadTimetable();
       } else {
@@ -485,7 +588,7 @@
     });
 
     loadMeal();
-    if (window.innerWidth > 760) loadTimetable();
+    loadTimetable();
   }
 
   init();

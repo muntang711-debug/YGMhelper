@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#f7f8fa">
+  <meta name="theme-color" content="#f6f7f9">
   <meta name="description" content="급식표와 시간표를 빠르게 확인할 수 있는 YGMhelper">
   <title>YGMhelper</title>
   <link rel="stylesheet" href="/css/style.css">
@@ -13,17 +13,15 @@
     <header class="topbar">
       <a class="brand" href="/" aria-label="YGMhelper 홈">YGMhelper</a>
 
-      <div class="top-actions">
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
-          <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-          </svg>
-          <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
-          </svg>
-        </button>
-      </div>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
+        </svg>
+      </button>
     </header>
 
     <main class="page-shell">
@@ -34,7 +32,12 @@
       </div>
 
       <div class="global-toolbar">
-        <div class="date-control"></div>
+        <div class="date-control">
+          <button class="date-trigger" type="button" aria-haspopup="dialog" aria-expanded="false">
+            <span></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+        </div>
       </div>
 
       <div class="content-grid">
@@ -51,7 +54,7 @@
         </section>
 
         <section id="view-timetable" class="view">
-          <div class="section-heading section-heading-stack-mobile">
+          <div class="section-heading">
             <div>
               <p class="section-kicker">TIMETABLE</p>
               <h2>시간표</h2>
@@ -69,7 +72,7 @@
               <div class="custom-select" data-select="class">
                 <button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
                   <span class="select-value">1반</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6-6 6"></path></svg>
                 </button>
                 <div class="select-menu" role="listbox"></div>
               </div>

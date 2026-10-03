@@ -477,6 +477,80 @@
       escapeHtml(message) + '</p></div></div>';
   }
 
+  const ALLERGENS = {
+    1: "난류",
+    2: "우유",
+    3: "메밀",
+    4: "땅콩",
+    5: "대두",
+    6: "밀",
+    7: "고등어",
+    8: "게",
+    9: "새우",
+    10: "돼지고기",
+    11: "복숭아",
+    12: "토마토",
+    13: "아황산류",
+    14: "호두",
+    15: "닭고기",
+    16: "쇠고기",
+    17: "오징어",
+    18: "조개류(굴·전복·홍합 포함)",
+    19: "잣"
+  };
+
+  function extractAllergenNumbers(items) {
+    const found = new Set();
+
+    for (const item of items) {
+      const matches = String(item).match(/\d{1,2}/g) || [];
+      for (const match of matches) {
+        const number = Number(match);
+        if (ALLERGENS[number]) found.add(number);
+      }
+    }
+
+    return [...found].sort((a, b) => a - b);
+  }
+
+  function closeAllergenModal() {
+    document.querySelector(".allergen-modal")?.remove();
+    document.body.classList.remove("modal-open");
+  }
+
+  function openAllergenModal(numbers) {
+    closeAllergenModal();
+
+    const modal = document.createElement("div");
+    modal.className = "allergen-modal";
+    modal.innerHTML = `
+      <div class="allergen-backdrop" data-allergen-close></div>
+      <section class="allergen-dialog" role="dialog" aria-modal="true" aria-labelledby="allergen-title">
+        <div class="allergen-header">
+          <div>
+            <p class="allergen-kicker">ALLERGY</p>
+            <h2 id="allergen-title">알레르기 번호 정보</h2>
+          </div>
+          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
+        </div>
+        <p class="allergen-description">급식 메뉴 뒤의 번호가 어떤 알레르기 유발식품을 뜻하는지 확인할 수 있습니다.</p>
+        <div class="allergen-list">
+          ${Object.entries(ALLERGENS).map(([number, name]) => `
+            <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
+              <span class="allergen-number">${number}</span>
+              <span class="allergen-name">${escapeHtml(name)}</span>
+              ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
+            </div>`).join("")}
+        </div>
+      </section>`;
+
+    modal.addEventListener("click", (event) => {
+      if (event.target.closest("[data-allergen-close]")) closeAllergenModal();
+    });
+
+    document.body.appendChild(modal);
+    document.body.classList.add("modal-open");
+  }
   function renderMeal(data) {
     if (!data?.items?.length) {
       els.cards.meal.innerHTML = `

@@ -581,7 +581,7 @@
             return `<li class="meal-item">
               <span class="meal-name">${escapeHtml(menuName)}</span>
               ${numberLabel ? `<button class="meal-allergen-button" type="button" aria-haspopup="dialog" aria-label="${escapeHtml(menuName)} 알레르기 ${escapeHtml(numberLabel)}">${escapeHtml(numberLabel)}</button>` : ""}
-            }</li>`;
+            </li>`;
           }).join("")}
         </ul>
       </div>

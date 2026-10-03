@@ -499,18 +499,23 @@
     19: "잣"
   };
 
-  function extractAllergenNumbers(items) {
+  function extractAllergenNumbers(text) {
     const found = new Set();
+    const matches = String(text).match(/\d{1,2}/g) || [];
 
-    for (const item of items) {
-      const matches = String(item).match(/\d{1,2}/g) || [];
-      for (const match of matches) {
-        const number = Number(match);
-        if (ALLERGENS[number]) found.add(number);
-      }
+    for (const match of matches) {
+      const number = Number(match);
+      if (ALLERGENS[number]) found.add(number);
     }
 
     return [...found].sort((a, b) => a - b);
+  }
+
+  function cleanMealLabel(text) {
+    return String(text)
+      .replace(/\\s*\\([^)]*\\)\\s*$/u, "")
+      .replace(/\\s*\\[[^\\]]*\\]\\s*$/u, "")
+      .trim();
   }
 
   function closeAllergenModal() {
@@ -518,7 +523,7 @@
     document.body.classList.remove("modal-open");
   }
 
-  function openAllergenModal(numbers) {
+  function openAllergenModal(numbers, menuName = "") {
     closeAllergenModal();
 
     const modal = document.createElement("div");
@@ -529,18 +534,18 @@
         <div class="allergen-header">
           <div>
             <p class="allergen-kicker">ALLERGY</p>
-            <h2 id="allergen-title">알레르기 번호 정보</h2>
+            <h2 id="allergen-title">알레르기 정보</h2>
           </div>
           <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
         </div>
-        <p class="allergen-description">급식 메뉴 뒤의 번호가 어떤 알레르기 유발식품을 뜻하는지 확인할 수 있습니다.</p>
+        ${menuName ? `<p class="allergen-menu-name">${escapeHtml(menuName)}</p>` : ""}
+        <p class="allergen-description">선택한 메뉴에 표시된 번호에 해당하는 알레르기 유발식품입니다.</p>
         <div class="allergen-list">
-          ${Object.entries(ALLERGENS).map(([number, name]) => `
-            <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
+          ${numbers.length ? numbers.map((number) => `
+            <div class="allergen-row is-used">
               <span class="allergen-number">${number}</span>
-              <span class="allergen-name">${escapeHtml(name)}</span>
-              ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
-            </div>`).join("")}
+              <span class="allergen-name">${escapeHtml(ALLERGENS[number])}</span>
+            </div>`).join("") : '<div class="allergen-empty">표시된 알레르기 번호가 없습니다.</div>'}
         </div>
       </section>`;
 
@@ -551,6 +556,7 @@
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
   }
+
   function renderMeal(data) {
     if (!data?.items?.length) {
       els.cards.meal.innerHTML = `
@@ -563,12 +569,20 @@
       return;
     }
 
-    const allergyNumbers = extractAllergenNumbers(data.items);
-
     els.cards.meal.innerHTML = `
       <div class="meal-content">
         <ul class="meal-list">
-          ${data.items.map((item) => `<li class="meal-item">${escapeHtml(item)}</li>`).join("")}
+          ${data.items.map((item) => {
+            const raw = String(item);
+            const numbers = extractAllergenNumbers(raw);
+            const menuName = cleanMealLabel(raw);
+            const numberLabel = numbers.join(".");
+
+            return `<li class="meal-item">
+              <span class="meal-name">${escapeHtml(menuName)}</span>
+              ${numberLabel ? `<button class="meal-allergen-button" type="button" aria-haspopup="dialog" aria-label="${escapeHtml(menuName)} 알레르기 ${escapeHtml(numberLabel)}">${escapeHtml(numberLabel)}</button>` : ""}
+            }</li>`;
+          }).join("")}
         </ul>
       </div>
       <div class="meal-footer">
@@ -576,13 +590,14 @@
           <span class="meal-calories-label">열량</span>
           <strong>${data.calories ? escapeHtml(data.calories) : "정보 없음"}</strong>
         </div>
-        <button class="allergy-button" type="button" aria-haspopup="dialog">
-          알레르기 번호 정보
-        </button>
       </div>`;
 
-    els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", () => {
-      openAllergenModal(allergyNumbers);
+    els.cards.meal.querySelectorAll(".meal-allergen-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const numbers = extractAllergenNumbers(button.textContent);
+        const menuName = button.parentElement?.querySelector(".meal-name")?.textContent || "";
+        openAllergenModal(numbers, menuName);
+      });
     });
   }
   function renderTimetable(data) {

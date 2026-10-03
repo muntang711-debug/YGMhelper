@@ -55,13 +55,30 @@ function cleanMealItem(value) {
 }
 
 function readNeisResult(payload, serviceKey) {
+  if (payload?.RESULT?.CODE) {
+    return payload.RESULT;
+  }
+
   const service = payload?.[serviceKey];
+
   if (!Array.isArray(service)) {
-    throw new NeisError("NEIS 응답 형식을 확인할 수 없습니다.", "INVALID_RESPONSE", 502);
+    const keys = payload && typeof payload === "object" ? Object.keys(payload) : [];
+    throw new NeisError(
+      keys.length
+        ? `NEIS 응답 형식을 확인할 수 없습니다. (${keys.join(", ")})`
+        : "NEIS에서 예상하지 못한 응답을 반환했습니다.",
+      "INVALID_RESPONSE",
+      502
+    );
   }
 
   for (const part of service) {
-    const result = part?.head?.find?.((item) => item?.RESULT)?.RESULT;
+    const head = part?.head;
+    if (!Array.isArray(head)) continue;
+
+    const resultPart = head.find((item) => item?.RESULT);
+    const result = resultPart?.RESULT;
+
     if (result?.CODE) {
       return result;
     }

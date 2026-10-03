@@ -513,8 +513,8 @@
 
   function cleanMealLabel(text) {
     return String(text)
-      .replace(/\\s*\\([^)]*\\)\\s*$/u, "")
-      .replace(/\\s*\\[[^\\]]*\\]\\s*$/u, "")
+      .replace(/\s*\([^)]*\)\s*$/u, "")
+      .replace(/\s*\[[^\]]*\]\s*$/u, "")
       .trim();
   }
 
@@ -617,13 +617,12 @@
     els.cards.timetable.innerHTML = `
       <div class="timetable-list">
         ${items.map((item) => `
-          <div class="period-row">
-            <div class="period-label">${escapeHtml(item.period)}교시</div>
-            <div class="subject">${escapeHtml(item.subject || "수업 정보 없음")}</div>
-          </div>`).join("")}
+          <article class="period-card">
+            <span class="period-card-number">${escapeHtml(item.period)}교시</span>
+            <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
+          </article>`).join("")}
       </div>`;
   }
-
   async function loadMeal() {
     const closedReason = getClosedReason(state.date);
 

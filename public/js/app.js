@@ -539,7 +539,6 @@
           <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
         </div>
         ${menuName ? `<p class="allergen-menu-name">${escapeHtml(menuName)}</p>` : ""}
-        <p class="allergen-description">선택한 메뉴에 표시된 번호에 해당하는 알레르기 유발식품입니다.</p>
         <div class="allergen-list">
           ${numbers.length ? numbers.map((number) => `
             <div class="allergen-row is-used">
@@ -557,7 +556,7 @@
     document.body.classList.add("modal-open");
   }
 
-  function openAllergenReferenceModal() {
+  function openAllergenReferenceModal(numbers = []) {
     closeAllergenModal();
 
     const modal = document.createElement("div");
@@ -572,12 +571,12 @@
           </div>
           <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
         </div>
-        <p class="allergen-description">급식 메뉴 옆에 표시된 번호가 어떤 알레르기 유발식품을 뜻하는지 확인할 수 있습니다.</p>
         <div class="allergen-list">
           ${Object.entries(ALLERGENS).map(([number, name]) => `
-            <div class="allergen-row is-used">
+            <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
               <span class="allergen-number">${number}</span>
               <span class="allergen-name">${escapeHtml(name)}</span>
+              ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
             </div>`).join("")}
         </div>
       </section>`;
@@ -601,6 +600,8 @@
         </div>`;
       return;
     }
+
+    const mealAllergenNumbers = extractAllergenNumbers(data.items.join(" "));
 
     els.cards.meal.innerHTML = `
       <div class="meal-content">
@@ -634,7 +635,9 @@
       });
     });
 
-    els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", openAllergenReferenceModal);
+    els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", () => {
+      openAllergenReferenceModal(mealAllergenNumbers);
+    });
   }
   function renderTimetable(data) {
     if (!data?.items?.length) {

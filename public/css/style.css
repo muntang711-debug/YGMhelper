@@ -534,8 +534,9 @@ a { color: inherit; }
 
 .meal-allergen-button {
   flex: 0 0 auto;
-  min-width: 30px;
-  padding: 5px 7px;
+  width: fit-content;
+  min-width: 0;
+  padding: 5px 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-muted);
@@ -697,12 +698,12 @@ body.modal-open {
 }
 
 .period-card {
-  min-height: 112px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 18px;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface-solid);
@@ -711,12 +712,13 @@ body.modal-open {
 
 .period-card-number {
   width: fit-content;
-  padding: 6px 9px;
-  border-radius: 9px;
+  padding: 7px 10px;
+  border-radius: 10px;
   background: var(--surface-muted);
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .period-card-subject {
@@ -724,8 +726,8 @@ body.modal-open {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 18px;
+  line-height: 1.2;
   font-weight: 800;
   letter-spacing: -.025em;
 }
@@ -954,12 +956,18 @@ body.modal-open {
   }
 
   .period-card {
-    min-height: 94px;
-    padding: 16px;
+    min-height: 68px;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .period-card-number {
+    padding: 6px 9px;
+    font-size: 13px;
   }
 
   .period-card-subject {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .allergen-header {

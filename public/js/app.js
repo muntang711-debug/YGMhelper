@@ -9,8 +9,34 @@
     theme: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     calendarOpen: false,
-    calendarMode: "days",
     calendarDraftDate: new Date()
+  };
+
+  const HOLIDAYS = {
+    "2026-01-01": "신정",
+    "2026-02-16": "설날 연휴",
+    "2026-02-17": "설날",
+    "2026-02-18": "설날 연휴",
+    "2026-03-01": "삼일절",
+    "2026-03-02": "삼일절 대체공휴일",
+    "2026-05-05": "어린이날",
+    "2026-05-25": "부처님오신날 대체공휴일",
+    "2026-06-03": "전국동시지방선거",
+    "2026-06-06": "현충일",
+    "2026-08-15": "광복절",
+    "2026-08-17": "광복절 대체공휴일",
+    "2026-09-24": "추석 연휴",
+    "2026-09-25": "추석",
+    "2026-09-26": "추석 연휴",
+    "2026-10-03": "개천절",
+    "2026-10-05": "개천절 대체공휴일",
+    "2026-10-09": "한글날",
+    "2026-12-25": "기독탄신일",
+    "2027-01-01": "신정",
+    "2027-02-06": "설날 연휴",
+    "2027-02-07": "설날",
+    "2027-02-08": "설날 연휴",
+    "2027-02-09": "설날 대체공휴일"
   };
 
   const els = {
@@ -125,7 +151,7 @@
     document.querySelector(".date-picker")?.remove();
     document.querySelector(".date-trigger")?.setAttribute("aria-expanded", "false");
     state.calendarOpen = false;
-    state.calendarMode = "days";
+    state.calendarDraftDate = new Date(state.date);
   }
 
   function closeSelects(except = null) {
@@ -147,6 +173,56 @@
     if (label) label.textContent = formatDateLabel(state.date);
   }
 
+  function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function startOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  function dateKey(date) {
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate())
+    ].join("-");
+  }
+
+  function mealMaxDate(now = new Date()) {
+    const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const releaseStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      endOfCurrentMonth.getDate() - 2
+    );
+
+    return startOfDay(now) >= releaseStart
+      ? new Date(now.getFullYear(), now.getMonth() + 2, 0)
+      : endOfCurrentMonth;
+  }
+
+  function isDateSelectable(date) {
+    return startOfDay(date) <= startOfDay(mealMaxDate());
+  }
+
+  function canNavigateToMonth(year, monthIndex) {
+    return startOfMonth(new Date(year, monthIndex, 1)) <= startOfMonth(mealMaxDate());
+  }
+
+  function getClosedReason(date) {
+    const day = date.getDay();
+
+    if (day === 0 || day === 6) {
+      return { type: "weekend" };
+    }
+
+    const holidayName = HOLIDAYS[dateKey(date)];
+    return holidayName
+      ? { type: "holiday", name: holidayName }
+      : null;
+  }
+
   function makeDraftDate() {
     state.calendarDraftDate = new Date(
       state.date.getFullYear(),
@@ -161,16 +237,20 @@
   }
 
   function shiftCalendarMonth(delta) {
-    const current = state.calendarDraftDate;
     const nextMonth = new Date(
       state.calendarMonth.getFullYear(),
       state.calendarMonth.getMonth() + delta,
       1
     );
+
+    if (!canNavigateToMonth(nextMonth.getFullYear(), nextMonth.getMonth())) {
+      return false;
+    }
+
     const nextDay = clampDay(
       nextMonth.getFullYear(),
       nextMonth.getMonth(),
-      current.getDate()
+      state.calendarDraftDate.getDate()
     );
 
     state.calendarMonth = nextMonth;
@@ -179,36 +259,37 @@
       nextMonth.getMonth(),
       nextDay
     );
-  }
 
-  function yearChoices() {
-    const center = new Date().getFullYear();
-    const years = [];
-    for (let year = center - 10; year <= center + 10; year += 1) years.push(year);
-    return years;
+    return true;
   }
 
   function calendarDaysMarkup() {
     const month = state.calendarMonth;
+    const maxDate = mealMaxDate();
     const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
     const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     const startIndex = firstDay.getDay();
     const totalCells = Math.ceil((startIndex + lastDay.getDate()) / 7) * 7;
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    const canNext = canNavigateToMonth(nextMonth.getFullYear(), nextMonth.getMonth());
 
     let cells = "";
 
     for (let i = 0; i < totalCells; i += 1) {
       const date = new Date(month.getFullYear(), month.getMonth(), i - startIndex + 1);
       const outside = date.getMonth() !== month.getMonth();
+      const selectable = !outside && startOfDay(date) <= startOfDay(maxDate);
       const selected = isSameDate(date, state.calendarDraftDate);
       const today = isSameDate(date, new Date());
+      const closed = getClosedReason(date);
 
       cells += `
         <button
-          class="calendar-day${outside ? " is-outside" : ""}${selected ? " is-selected" : ""}${today ? " is-today" : ""}"
+          class="calendar-day${outside ? " is-outside" : ""}${selected && selectable ? " is-selected" : ""}${today ? " is-today" : ""}${closed ? " is-closed" : ""}${!selectable ? " is-disabled" : ""}"
           type="button"
           data-date="${formatDateParam(date)}"
+          ${selectable ? "" : "disabled"}
         >${date.getDate()}</button>`;
     }
 
@@ -217,10 +298,10 @@
         <button type="button" class="calendar-nav" data-cal-nav="-1" aria-label="이전 달">
           <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
         </button>
-        <button type="button" class="calendar-title-button" data-calendar-title aria-label="연도 선택">
+        <div class="calendar-title" aria-label="현재 선택한 달">
           ${month.getFullYear()}년 ${month.getMonth() + 1}월
-        </button>
-        <button type="button" class="calendar-nav" data-cal-nav="1" aria-label="다음 달">
+        </div>
+        <button type="button" class="calendar-nav" data-cal-nav="1" aria-label="다음 달"${canNext ? "" : " disabled"}>
           <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
         </button>
       </div>
@@ -230,31 +311,8 @@
       <div class="calendar-grid">${cells}</div>`;
   }
 
-  function calendarYearsMarkup() {
-    const currentYear = state.calendarMonth.getFullYear();
-
-    return `
-      <div class="calendar-head">
-        <button type="button" class="calendar-nav" data-year-back aria-label="이전 연도 묶음">
-          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
-        </button>
-        <div class="calendar-title-button" aria-hidden="true">${currentYear}년</div>
-        <button type="button" class="calendar-nav" data-year-forward aria-label="다음 연도 묶음">
-          <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
-        </button>
-      </div>
-      <div class="year-grid">
-        ${yearChoices().map((year) => `
-          <button class="year-option${year === currentYear ? " is-selected" : ""}" type="button" data-year="${year}">
-            ${year}년
-          </button>`).join("")}
-      </div>`;
-  }
-
   function renderCalendar(picker) {
-    picker.innerHTML = state.calendarMode === "years"
-      ? calendarYearsMarkup()
-      : calendarDaysMarkup();
+    picker.innerHTML = calendarDaysMarkup();
   }
 
   function openDatePicker() {
@@ -274,49 +332,6 @@
       const nav = event.target.closest("[data-cal-nav]");
       if (nav) {
         shiftCalendarMonth(Number(nav.dataset.calNav));
-        renderCalendar(picker);
-        return;
-      }
-
-      if (event.target.closest("[data-calendar-title]")) {
-        state.calendarMode = "years";
-        renderCalendar(picker);
-        return;
-      }
-
-      if (event.target.closest("[data-year-back]")) {
-        const year = state.calendarMonth.getFullYear() - 21;
-        state.calendarMonth = new Date(year, state.calendarMonth.getMonth(), 1);
-        state.calendarDraftDate = new Date(
-          state.calendarMonth.getFullYear(),
-          state.calendarMonth.getMonth(),
-          clampDay(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), state.calendarDraftDate.getDate())
-        );
-        renderCalendar(picker);
-        return;
-      }
-
-      if (event.target.closest("[data-year-forward]")) {
-        const year = state.calendarMonth.getFullYear() + 21;
-        state.calendarMonth = new Date(year, state.calendarMonth.getMonth(), 1);
-        state.calendarDraftDate = new Date(
-          state.calendarMonth.getFullYear(),
-          state.calendarMonth.getMonth(),
-          clampDay(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), state.calendarDraftDate.getDate())
-        );
-        renderCalendar(picker);
-        return;
-      }
-
-      const yearButton = event.target.closest("[data-year]");
-      if (yearButton) {
-        const year = Number(yearButton.dataset.year);
-        const month = state.calendarMonth.getMonth();
-        const day = clampDay(year, month, state.calendarDraftDate.getDate());
-
-        state.calendarMonth = new Date(year, month, 1);
-        state.calendarDraftDate = new Date(year, month, day);
-        state.calendarMode = "days";
         renderCalendar(picker);
         return;
       }
@@ -426,6 +441,17 @@
     return body;
   }
 
+  function renderClosed(kind, reason) {
+    const title = kind === "meal" ? "급식이 없습니다." : "시간표가 없습니다.";
+    const message = reason.type === "weekend"
+      ? (kind === "meal" ? "주말이라 급식이 없습니다." : "주말이라 수업이 없습니다.")
+      : (kind === "meal" ? reason.name + "이라 급식이 없습니다." : reason.name + "이라 수업이 없습니다.");
+
+    els.cards[kind].innerHTML =
+      '<div class="empty-state"><div><h3>' + escapeHtml(title) + '</h3><p>' +
+      escapeHtml(message) + '</p></div></div>';
+  }
+
   function renderMeal(data) {
     if (!data?.items?.length) {
       els.cards.meal.innerHTML = `
@@ -474,6 +500,14 @@
   }
 
   async function loadMeal() {
+    const closedReason = getClosedReason(state.date);
+
+    if (closedReason) {
+      setStatus("meal", "");
+      renderClosed("meal", closedReason);
+      return;
+    }
+
     setLoading("meal");
     setStatus("meal", "");
 
@@ -492,6 +526,14 @@
   }
 
   async function loadTimetable() {
+    const closedReason = getClosedReason(state.date);
+
+    if (closedReason) {
+      setStatus("timetable", "");
+      renderClosed("timetable", closedReason);
+      return;
+    }
+
     setLoading("timetable");
     setStatus("timetable", "");
 

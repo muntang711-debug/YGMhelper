@@ -563,17 +563,28 @@
       return;
     }
 
+    const allergyNumbers = extractAllergenNumbers(data.items);
+
     els.cards.meal.innerHTML = `
-      <div class="meal-date-label">${escapeHtml(formatDateLabel(state.date))}</div>
       <div class="meal-content">
-        <h3 class="meal-title">중식</h3>
         <ul class="meal-list">
           ${data.items.map((item) => `<li class="meal-item">${escapeHtml(item)}</li>`).join("")}
         </ul>
       </div>
-      ${data.calories ? `<div class="meal-meta">열량 ${escapeHtml(data.calories)}</div>` : ""}`;
-  }
+      <div class="meal-footer">
+        <div class="meal-calories">
+          <span class="meal-calories-label">열량</span>
+          <strong>${data.calories ? escapeHtml(data.calories) : "정보 없음"}</strong>
+        </div>
+        <button class="allergy-button" type="button" aria-haspopup="dialog">
+          알레르기 번호 정보
+        </button>
+      </div>`;
 
+    els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", () => {
+      openAllergenModal(allergyNumbers);
+    });
+  }
   function renderTimetable(data) {
     if (!data?.items?.length) {
       els.cards.timetable.innerHTML = `
@@ -685,6 +696,7 @@
       state.grade,
       (value) => {
         state.grade = value;
+        localStorage.setItem("ygmhelper-grade", value);
         loadTimetable();
       }
     );
@@ -696,6 +708,7 @@
       state.className,
       (value) => {
         state.className = value;
+        localStorage.setItem("ygmhelper-class", value);
         loadTimetable();
       }
     );
@@ -710,6 +723,10 @@
     document.addEventListener("click", (event) => {
       if (!event.target.closest(".date-control")) closeDatePicker();
       if (!event.target.closest(".custom-select")) closeSelects();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeAllergenModal();
     });
 
     let lastIsDesktop = window.innerWidth > 760;

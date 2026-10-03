@@ -444,8 +444,8 @@
   function renderClosed(kind, reason) {
     const title = kind === "meal" ? "급식 없음" : "시간표 없음";
     const message = reason.type === "weekend"
-      ? (kind === "meal" ? "주말인데 급식을 왜찾음?" : "주말에도 학교를 가고싶으신가요?")
-      : (kind === "meal" ? reason.name + "이라 급식이 없습니다." : reason.name + "이라 수업이 없습니다.");
+      ? (kind === "meal" ? "주말인데 급식을 왜찾음?" : "주말에도 학교를 가고 싶으신가요?")
+      : (kind === "meal" ? reason.name + "인데 급식을 왜찾음?" : reason.name + "인데도 학교를 가고 싶으신가요?");
 
     els.cards[kind].innerHTML =
       '<div class="empty-state"><div><h3>' + escapeHtml(title) + '</h3><p>' +

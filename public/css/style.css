@@ -259,6 +259,7 @@ a { color: inherit; }
   cursor: default;
   font-size: 15px;
   font-weight: 800;
+  text-align: center;
 }
 .calendar-nav {
   width: 34px;
@@ -309,7 +310,14 @@ a { color: inherit; }
 }
 .calendar-day:hover:not(:disabled) { background: var(--surface-muted); }
 .calendar-day.is-outside { color: color-mix(in srgb, var(--text-soft) 45%, transparent); }
-.calendar-day.is-today { box-shadow: inset 0 0 0 1px var(--line); }
+.calendar-day.is-today { 
+  box-shadow: inset 0 0 0 1.5px var(--text);
+  font-weight: 800;
+}
+.calendar-day.is-selected.is-today {
+  box-shadow: inset 0 0 0 2px var(--text);
+  color: var(--accent-contrast);
+}
 .calendar-day.is-disabled {
   color: color-mix(in srgb, var(--text-soft) 34%, transparent);
   cursor: not-allowed;
@@ -448,10 +456,171 @@ a { color: inherit; }
   font-weight: 500;
 }
 
-.meal-meta {
-  margin-top: 28px;
+.meal-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.meal-calories {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.meal-calories-label {
   color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meal-calories strong {
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.allergy-button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-solid);
+  color: var(--text);
+  cursor: pointer;
   font-size: 12px;
+  font-weight: 700;
+  transition: background .18s ease, transform .18s ease;
+}
+
+.allergy-button:hover {
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.allergen-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.allergen-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 10, 14, .52);
+  backdrop-filter: blur(5px);
+}
+
+.allergen-dialog {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(700px, calc(100vh - 44px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface-solid);
+  box-shadow: 0 28px 90px rgba(0,0,0,.28);
+}
+
+.allergen-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.allergen-kicker {
+  margin: 0 0 6px;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.allergen-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.allergen-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.allergen-description {
+  margin: 15px 0 18px;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.allergen-list {
+  display: grid;
+  gap: 6px;
+}
+
+.allergen-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.allergen-row.is-used {
+  background: var(--surface-muted);
+}
+
+.allergen-number {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.allergen-row.is-used .allergen-number {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.allergen-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.allergen-used {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .timetable-card {
@@ -667,6 +836,34 @@ a { color: inherit; }
   }
 
   .meal-item { font-size: 16px; }
+
+  .meal-footer {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .meal-calories {
+    gap: 7px;
+  }
+
+  .meal-calories strong {
+    font-size: 17px;
+  }
+
+  .allergy-button {
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
+  .allergen-dialog {
+    padding: 21px 18px;
+    border-radius: 19px;
+  }
+
+  .allergen-row {
+    grid-template-columns: 34px 1fr auto;
+    gap: 8px;
+  }
 
   .empty-state {
     min-height: 360px;

@@ -5,6 +5,15 @@ const SCHOOL = {
 
 const NEIS_BASE = "https://open.neis.go.kr/hub";
 
+class NeisError extends Error {
+  constructor(message, code = "UPSTREAM_ERROR", status = 502) {
+    super(message);
+    this.name = "NeisError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -40,10 +49,25 @@ function cleanMealItem(value) {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/<[^>]*>/g, "")
-    .replace(/\([^)]*\)/g, (text) => text)
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function readNeisResult(payload, serviceKey) {
+  const service = payload?.[serviceKey];
+  if (!Array.isArray(service)) {
+    throw new NeisError("NEIS 응답 형식을 확인할 수 없습니다.", "INVALID_RESPONSE", 502);
+  }
+
+  for (const part of service) {
+    const result = part?.head?.find?.((item) => item?.RESULT)?.RESULT;
+    if (result?.CODE) {
+      return result;
+    }
+  }
+
+  return null;
 }
 
 async function neisRequest(path, params, apiKey) {
@@ -52,31 +76,77 @@ async function neisRequest(path, params, apiKey) {
   url.searchParams.set("Type", "json");
   url.searchParams.set("pIndex", "1");
   url.searchParams.set("pSize", "100");
+
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, String(value));
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
   }
 
-  const response = await fetch(url.toString(), {
-    cf: {
-      cacheTtl: 300,
-      cacheEverything: true
-    }
-  });
+  let response;
+  try {
+    response = await fetch(url.toString(), {
+      cf: {
+        cacheTtl: 300,
+        cacheEverything: true
+      }
+    });
+  } catch (error) {
+    throw new NeisError("NEIS 서버에 연결하지 못했습니다.", "NETWORK_ERROR", 502);
+  }
 
-  if (!response.ok) throw new Error(`NEIS 응답 오류 (${response.status})`);
-  return response.json();
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new NeisError(
+      `NEIS 서버 응답 오류 (${response.status})`,
+      "HTTP_ERROR",
+      502
+    );
+  }
+
+  const result = readNeisResult(payload, path);
+
+  if (result?.CODE === "ERROR-290") {
+    throw new NeisError("NEIS 인증키가 유효하지 않습니다.", "INVALID_KEY", 502);
+  }
+
+  if (result?.CODE === "ERROR-300") {
+    throw new NeisError("NEIS 요청값이 누락되었습니다.", "BAD_REQUEST", 400);
+  }
+
+  if (result?.CODE === "ERROR-337") {
+    throw new NeisError("NEIS 일일 호출 한도를 초과했습니다.", "RATE_LIMIT", 429);
+  }
+
+  if (result?.CODE && result.CODE.startsWith("ERROR-")) {
+    throw new NeisError(
+      result.MESSAGE || "NEIS에서 요청을 처리하지 못했습니다.",
+      result.CODE,
+      502
+    );
+  }
+
+  return payload;
 }
 
 function extractRows(payload, serviceKey) {
   const service = payload?.[serviceKey];
   if (!Array.isArray(service)) return [];
-  const rows = service.find((part) => Array.isArray(part?.row))?.row;
-  return Array.isArray(rows) ? rows : [];
+
+  for (const part of service) {
+    if (Array.isArray(part?.row)) return part.row;
+  }
+
+  return [];
 }
 
 async function handleMeal(url, env) {
   const date = url.searchParams.get("date") || "";
-  if (!validDate(date)) return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+
+  if (!validDate(date)) {
+    return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+  }
 
   const payload = await neisRequest("mealServiceDietInfo", {
     ATPT_OFCDC_SC_CODE: SCHOOL.officeCode,
@@ -88,14 +158,27 @@ async function handleMeal(url, env) {
   const rows = extractRows(payload, "mealServiceDietInfo");
   const row = rows.find((item) => item.MMEAL_SC_CODE === "2") || rows[0];
 
-  if (!row) return json({ ok: true, date, items: [], calories: "" }, 200, { "Cache-Control": "public, max-age=300" });
+  if (!row) {
+    return json({
+      ok: true,
+      date,
+      items: [],
+      calories: "",
+      available: false
+    }, 200, {
+      "Cache-Control": "public, max-age=300"
+    });
+  }
 
   return json({
     ok: true,
     date,
     items: cleanMealItem(row.DDISH_NM || ""),
-    calories: row.CAL_INFO || ""
-  }, 200, { "Cache-Control": "public, max-age=300" });
+    calories: row.CAL_INFO || "",
+    available: true
+  }, 200, {
+    "Cache-Control": "public, max-age=300"
+  });
 }
 
 async function handleTimetable(url, env) {
@@ -103,8 +186,14 @@ async function handleTimetable(url, env) {
   const grade = url.searchParams.get("grade") || "";
   const className = url.searchParams.get("class") || "";
 
-  if (!validDate(date)) return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
-  if (!/^[1-3]$/.test(grade)) return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
+  if (!validDate(date)) {
+    return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+  }
+
+  if (!/^[1-3]$/.test(grade)) {
+    return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
+  }
+
   if (!/^\d{1,2}$/.test(className) || Number(className) < 1 || Number(className) > 15) {
     return json({ ok: false, error: "반 값이 올바르지 않습니다." }, 400);
   }
@@ -123,7 +212,7 @@ async function handleTimetable(url, env) {
   const items = rows
     .map((row) => ({
       period: row.PERIO || row.PERIOD || "",
-      subject: row.ITRT_CNTNT || row.ITRT_CNTNT_NM || ""
+      subject: row.ITRT_CNTNT || row.ITRT_CNTNT_NM || row.ITRT_CNTNT_NM2 || ""
     }))
     .filter((item) => item.period || item.subject);
 
@@ -132,8 +221,38 @@ async function handleTimetable(url, env) {
     date,
     grade,
     class: className,
-    items
-  }, 200, { "Cache-Control": "public, max-age=300" });
+    items,
+    available: items.length > 0
+  }, 200, {
+    "Cache-Control": "public, max-age=300"
+  });
+}
+
+async function handleApi(handler, env) {
+  if (!env.NEIS_API_KEY) {
+    return json({
+      ok: false,
+      error: "NEIS API Secret이 설정되지 않았습니다."
+    }, 500);
+  }
+
+  try {
+    return await handler();
+  } catch (error) {
+    console.error("neis", {
+      name: error?.name,
+      code: error?.code,
+      message: error?.message
+    });
+
+    const status = Number.isInteger(error?.status) ? error.status : 502;
+    const message = error?.message || "NEIS 정보를 불러오지 못했습니다.";
+
+    return json({
+      ok: false,
+      error: message
+    }, status);
+  }
 }
 
 export default {
@@ -141,27 +260,16 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/meal") {
-      if (!env.NEIS_API_KEY) return json({ ok: false, error: "API 설정이 완료되지 않았습니다." }, 500);
-      try {
-        return await handleMeal(url, env);
-      } catch (error) {
-        console.error("meal", error);
-        return json({ ok: false, error: "급식 정보를 불러오지 못했습니다." }, 502);
-      }
+      return handleApi(() => handleMeal(url, env), env);
     }
 
     if (url.pathname === "/api/timetable") {
-      if (!env.NEIS_API_KEY) return json({ ok: false, error: "API 설정이 완료되지 않았습니다." }, 500);
-      try {
-        return await handleTimetable(url, env);
-      } catch (error) {
-        console.error("timetable", error);
-        return json({ ok: false, error: "시간표 정보를 불러오지 못했습니다." }, 502);
-      }
+      return handleApi(() => handleTimetable(url, env), env);
     }
 
     const assetResponse = await env.ASSETS.fetch(request);
     if (assetResponse.status !== 404) return assetResponse;
+
     return env.ASSETS.fetch(new Request(new URL("/", request.url), request));
   }
 };

@@ -557,6 +557,39 @@
     document.body.classList.add("modal-open");
   }
 
+  function openAllergenReferenceModal() {
+    closeAllergenModal();
+
+    const modal = document.createElement("div");
+    modal.className = "allergen-modal";
+    modal.innerHTML = `
+      <div class="allergen-backdrop" data-allergen-close></div>
+      <section class="allergen-dialog" role="dialog" aria-modal="true" aria-labelledby="allergen-title">
+        <div class="allergen-header">
+          <div>
+            <p class="allergen-kicker">ALLERGY</p>
+            <h2 id="allergen-title">알레르기 번호 정보</h2>
+          </div>
+          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
+        </div>
+        <p class="allergen-description">급식 메뉴 옆에 표시된 번호가 어떤 알레르기 유발식품을 뜻하는지 확인할 수 있습니다.</p>
+        <div class="allergen-list">
+          ${Object.entries(ALLERGENS).map(([number, name]) => `
+            <div class="allergen-row is-used">
+              <span class="allergen-number">${number}</span>
+              <span class="allergen-name">${escapeHtml(name)}</span>
+            </div>`).join("")}
+        </div>
+      </section>`;
+
+    modal.addEventListener("click", (event) => {
+      if (event.target.closest("[data-allergen-close]")) closeAllergenModal();
+    });
+
+    document.body.appendChild(modal);
+    document.body.classList.add("modal-open");
+  }
+
   function renderMeal(data) {
     if (!data?.items?.length) {
       els.cards.meal.innerHTML = `
@@ -590,6 +623,7 @@
           <span class="meal-calories-label">열량</span>
           <strong>${data.calories ? escapeHtml(data.calories) : "정보 없음"}</strong>
         </div>
+        <button class="allergy-button" type="button" aria-haspopup="dialog">알레르기 번호 정보</button>
       </div>`;
 
     els.cards.meal.querySelectorAll(".meal-allergen-button").forEach((button) => {
@@ -599,6 +633,8 @@
         openAllergenModal(numbers, menuName);
       });
     });
+
+    els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", openAllergenReferenceModal);
   }
   function renderTimetable(data) {
     if (!data?.items?.length) {

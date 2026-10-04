@@ -539,12 +539,15 @@
           <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
         </div>
         ${menuName ? `<p class="allergen-menu-name">${escapeHtml(menuName)}</p>` : ""}
-        <div class="allergen-list">
-          ${numbers.length ? numbers.map((number) => `
-            <div class="allergen-row is-used">
-              <span class="allergen-number">${number}</span>
-              <span class="allergen-name">${escapeHtml(ALLERGENS[number])}</span>
-            </div>`).join("") : '<div class="allergen-empty">표시된 알레르기 번호가 없습니다.</div>'}
+        <div class="allergen-scroll">
+          <div class="allergen-list">
+            ${numbers.length ? numbers.map((number) => `
+              <div class="allergen-row is-used">
+                <span class="allergen-number">${number}</span>
+                <span class="allergen-name">${escapeHtml(ALLERGENS[number])}</span>
+              </div>`).join("") : '<div class="allergen-empty">표시된 알레르기 번호가 없습니다.</div>'}
+          </div>
+
         </div>
       </section>`;
 
@@ -571,13 +574,16 @@
           </div>
           <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
         </div>
-        <div class="allergen-list">
-          ${Object.entries(ALLERGENS).map(([number, name]) => `
-            <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
-              <span class="allergen-number">${number}</span>
-              <span class="allergen-name">${escapeHtml(name)}</span>
-              ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
-            </div>`).join("")}
+        <div class="allergen-scroll">
+          <div class="allergen-list">
+            ${Object.entries(ALLERGENS).map(([number, name]) => `
+              <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
+                <span class="allergen-number">${number}</span>
+                <span class="allergen-name">${escapeHtml(name)}</span>
+                ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
+              </div>`).join("")}
+          </div>
+
         </div>
       </section>`;
 

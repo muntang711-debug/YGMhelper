@@ -167,7 +167,7 @@ function extractRows(payload, serviceKey) {
 }
 
 const COMCIGAN_URL = "http://comci.net:4082";
-const COMCIGAN_CACHE_TTL = 300;
+const COMCIGAN_CACHE_TTL = 30;
 
 let comciganCodeCache = null;
 let comciganCodeCacheExpiresAt = 0;
@@ -594,45 +594,6 @@ async function handleTimetable(url, env) {
     });
   }
 
-  const debug = url.searchParams.get("debug") === "1"
-    ? {
-        raw: items.map((item) => ({
-          period: item.period,
-          daily: dayData?.[item.period] ?? null,
-          original: originalDayData?.[item.period] ?? null,
-          changed: item.changed
-        })),
-        allDiffs: (() => {
-          const diffs = [];
-          const grades = data.dailyTimetable || [];
-          for (let g = 1; g < grades.length; g += 1) {
-            const classRows = grades[g] || [];
-            for (let c = 1; c < classRows.length; c += 1) {
-              const days = classRows[c] || [];
-              const originals = data.originalTimetable?.[g]?.[c] || [];
-              for (let d = 1; d <= 5; d += 1) {
-                const changedDay = days[d] || [];
-                const originalDay = originals[d] || [];
-                const max = Math.max(
-                  asPositiveNumber(changedDay?.[0]),
-                  asPositiveNumber(originalDay?.[0]),
-                  0
-                );
-                for (let p = 1; p <= max; p += 1) {
-                  const dv = changedDay?.[p] ?? 0;
-                  const ov = originalDay?.[p] ?? 0;
-                  if (String(dv) !== String(ov)) {
-                    diffs.push({ grade: g, class: c, day: d, period: p, daily: dv, original: ov });
-                  }
-                }
-              }
-            }
-          }
-          return diffs.slice(0, 100);
-        })()
-      }
-    : null;
-
   return json({
     ok: true,
     date,
@@ -643,8 +604,7 @@ async function handleTimetable(url, env) {
     items,
     source: "comcigan",
     available: items.length > 0,
-    updatedAt: data.response[`자료${data.codes.updateCode}`] || "",
-    ...(debug ? { debug } : {})
+    updatedAt: data.response[`자료${data.codes.updateCode}`] || ""
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });

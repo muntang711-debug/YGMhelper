@@ -823,6 +823,12 @@ body.modal-open {
   white-space: nowrap;
 }
 
+.period-card-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
 .period-card-subject {
   min-width: 0;
   overflow: hidden;
@@ -832,6 +838,30 @@ body.modal-open {
   line-height: 1.2;
   font-weight: 800;
   letter-spacing: -.025em;
+}
+
+.period-card-teacher {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.period-card-location {
+  color: #356acb;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.period-card.is-changed {
+  background: #fff3bf;
+  border-color: #f0d66f;
+}
+
+[data-theme="dark"] .period-card.is-changed {
+  background: #4a421f;
+  border-color: #8f7f2c;
 }
 
 .status-message {

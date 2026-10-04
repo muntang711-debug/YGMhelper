@@ -622,6 +622,22 @@ async function handleTimetable(url, env) {
       )
     : undefined;
 
+  const locationHits = url.searchParams.get("debug") === "1" ? (() => {
+    const hits = [];
+    const walk = (node, path = []) => {
+      if (hits.length >= 20) return;
+      if (Array.isArray(node)) {
+        node.forEach((child, index) => walk(child, [...path, index]));
+        return;
+      }
+      if (typeof node === "string" && node.includes("_") && /^\d+_\S+/.test(node)) {
+        hits.push({ path, value: node });
+      }
+    };
+    walk(data.locationMatrix);
+    return hits;
+  })() : undefined;
+
   return json({
     ok: true,
     date,
@@ -633,7 +649,7 @@ async function handleTimetable(url, env) {
     source: "comcigan",
     available: items.length > 0,
     updatedAt: data.response[`자료${data.codes.updateCode}`] || "",
-    ...(debug ? { debug } : {})
+    ...(debug ? { debug, locationHits } : {})
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });

@@ -95,6 +95,11 @@
     return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("");
   }
 
+  function schoolYear(date) {
+    const year = date.getFullYear();
+    return date.getMonth() >= 2 ? year : year - 1;
+  }
+
   function formatDateLabel(date) {
     return new Intl.DateTimeFormat("ko-KR", {
       year: "numeric",

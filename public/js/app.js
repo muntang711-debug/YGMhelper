@@ -5,7 +5,7 @@
     mobileView: "meal",
     date: new Date(),
     grade: /^[1-3]$/.test(localStorage.getItem("ygmhelper-grade") || "") ? localStorage.getItem("ygmhelper-grade") : "1",
-    className: /^\\d{1,2}$/.test(localStorage.getItem("ygmhelper-class") || "") ? localStorage.getItem("ygmhelper-class") : "1",
+    className: /^\d{1,2}$/.test(localStorage.getItem("ygmhelper-class") || "") ? localStorage.getItem("ygmhelper-class") : "1",
     theme: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     calendarOpen: false,

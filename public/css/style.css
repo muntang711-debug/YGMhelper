@@ -393,19 +393,6 @@ a { color: inherit; }
   color: #fff !important;
 }
 .custom-select { position: relative; }
-
-.custom-select[data-select="class"] .select-menu {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  min-width: 196px;
-  padding: 6px;
-}
-
-.custom-select[data-select="class"] .select-option {
-  padding: 10px 8px;
-  text-align: center;
-}
-
 .custom-select .select-trigger {
   min-width: 104px;
 }

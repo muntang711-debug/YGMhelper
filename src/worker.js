@@ -198,6 +198,47 @@ async function handleMeal(url, env) {
   });
 }
 
+async function handleClasses(url, env) {
+  const date = url.searchParams.get("date") || "";
+  const grade = url.searchParams.get("grade") || "";
+
+  if (!validDate(date)) {
+    return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+  }
+
+  if (!/^[1-3]$/.test(grade)) {
+    return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
+  }
+
+  const payload = await neisRequest("classInfo", {
+    ATPT_OFCDC_SC_CODE: SCHOOL.officeCode,
+    SD_SCHUL_CODE: SCHOOL.schoolCode,
+    AY: schoolYear(date),
+    GRADE: grade
+  }, env.NEIS_API_KEY);
+
+  const rows = extractRows(payload, "classInfo");
+  const classes = [...new Set(
+    rows
+      .filter((row) => String(row.GRADE || "") === grade)
+      .map((row) => String(row.CLASS_NM || "").trim())
+      .filter((value) => /^\\d{1,2}$/.test(value))
+      .map(Number)
+      .filter((value) => value >= 1 && value <= 99)
+  )].sort((a, b) => a - b);
+
+  return json({
+    ok: true,
+    date,
+    year: schoolYear(date),
+    grade,
+    classes,
+    available: classes.length > 0
+  }, 200, {
+    "Cache-Control": "public, max-age=300"
+  });
+}
+
 async function handleTimetable(url, env) {
   const date = url.searchParams.get("date") || "";
   const grade = url.searchParams.get("grade") || "";
@@ -282,6 +323,10 @@ export default {
 
     if (url.pathname === "/api/timetable") {
       return handleApi(() => handleTimetable(url, env), env);
+    }
+
+    if (url.pathname === "/api/classes") {
+      return handleApi(() => handleClasses(url, env), env);
     }
 
     const assetResponse = await env.ASSETS.fetch(request);

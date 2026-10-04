@@ -840,10 +840,17 @@
       (value) => {
         state.grade = value;
         localStorage.setItem("ygmhelper-grade", value);
-        state.className = "1";
-        localStorage.setItem("ygmhelper-class", "1");
+        const savedClass = localStorage.getItem("ygmhelper-class") || "1";
+        state.className = /^\d{1,2}$/.test(savedClass) ? savedClass : "1";
+        localStorage.setItem("ygmhelper-class", state.className);
         classOptionsKey = "";
-        classSelect.setOptions([{ value: "1", label: "1반" }], "1");
+        classSelect.setOptions(
+          Array.from({ length: 8 }, (_, index) => ({
+            value: String(index + 1),
+            label: `${index + 1}반`
+          })),
+          state.className
+        );
         classSelect.setDisabled(false);
         loadClassOptions(true);
       }
@@ -851,8 +858,11 @@
 
     classSelect = setupSelect(
       "class",
-      [{ value: "1", label: "1반" }],
-      "1",
+      Array.from({ length: 8 }, (_, index) => ({
+        value: String(index + 1),
+        label: `${index + 1}반`
+      })),
+      state.className,
       (value) => {
         if (!value) return;
         state.className = value;

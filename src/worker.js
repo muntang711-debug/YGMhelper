@@ -578,6 +578,34 @@ async function handleTimetable(url, env) {
     });
   }
 
+  const debug = url.searchParams.get("debug") === "1"
+    ? Object.fromEntries(
+        Object.entries(data.response)
+          .filter(([key]) => key.startsWith("자료"))
+          .map(([key, value]) => {
+            const flattened = [];
+            const walk = (node, depth = 0) => {
+              if (flattened.length >= 20 || depth > 6) return;
+              if (Array.isArray(node)) {
+                for (const child of node) {
+                  walk(child, depth + 1);
+                  if (flattened.length >= 20) break;
+                }
+                return;
+              }
+              if (typeof node === "string" || typeof node === "number") {
+                flattened.push(node);
+              }
+            };
+            walk(value);
+            return [key, {
+              type: Array.isArray(value) ? "array" : typeof value,
+              sample: flattened
+            }];
+          })
+      )
+    : undefined;
+
   return json({
     ok: true,
     date,
@@ -588,7 +616,8 @@ async function handleTimetable(url, env) {
     items,
     source: "comcigan",
     available: items.length > 0,
-    updatedAt: data.response[`자료${data.codes.updateCode}`] || ""
+    updatedAt: data.response[`자료${data.codes.updateCode}`] || "",
+    ...(debug ? { debug } : {})
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });

@@ -354,7 +354,7 @@ a { color: inherit; }
 .calendar-day.is-selected {
   border-radius: 10px;
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: #fff !important;
 }
 .calendar-day.is-selected::after {
   background: currentColor;
@@ -365,7 +365,7 @@ a { color: inherit; }
   border-radius: 10px;
   box-shadow: none;
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: #fff !important;
 }
 .calendar-day.is-selected.is-today::after {
   background: currentColor;
@@ -380,7 +380,7 @@ a { color: inherit; }
 }
 .calendar-day.is-selected {
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: #fff !important;
 }
 .custom-select { position: relative; }
 

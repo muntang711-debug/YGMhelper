@@ -711,10 +711,103 @@
           </article>`).join("")}
       </div>`;
   }
-  async function loadMeal() {
+  let classSelect = null;
+  let classOptionsKey = "";
+  let mealRequestId = 0;
+  let timetableRequestId = 0;
+
+  function classOptionsCacheKey(date = state.date, grade = state.grade) {
+    return `${schoolYear(formatDateParam(date))}-${grade}`;
+  }
+
+  function classOptionsFromValues(values) {
+    return [...new Set(
+      (Array.isArray(values) ? values : [])
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value >= 1 && value <= 99)
+    )]
+      .sort((a, b) => a - b)
+      .map((classNumber) => ({
+        value: String(classNumber),
+        label: `${classNumber}반`
+      }));
+  }
+
+  function readCachedClassOptions() {
+    try {
+      const raw = localStorage.getItem(`ygmhelper-classes-${classOptionsCacheKey()}`);
+      const values = JSON.parse(raw || "null");
+      return Array.isArray(values) ? values : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function applyClassOptions(values, persist = true) {
+    const options = classOptionsFromValues(values);
+    if (!options.length) return false;
+
+    const previous = state.className;
+    const preferred = options.some((option) => option.value === previous)
+      ? previous
+      : options[0].value;
+
+    state.className = preferred;
+    localStorage.setItem("ygmhelper-class", preferred);
+
+    if (classSelect) {
+      classSelect.setOptions(options, preferred);
+      classSelect.setDisabled(false);
+    }
+
+    classOptionsKey = classOptionsCacheKey();
+
+    if (persist) {
+      localStorage.setItem(
+        `ygmhelper-classes-${classOptionsKey}`,
+        JSON.stringify(options.map((option) => Number(option.value)))
+      );
+    }
+
+    return preferred !== previous;
+  }
+
+  async function loadClassOptions(force = false) {
+    const key = classOptionsCacheKey();
+
+    if (!force && classOptionsKey === key && classSelect?.get()) {
+      return true;
+    }
+
+    const cached = readCachedClassOptions();
+    if (cached.length) {
+      applyClassOptions(cached, false);
+      if (!force) return true;
+    }
+
+    try {
+      const values = await fetchClassOptions();
+      if (!values.length) {
+        throw new Error("해당 학년의 반 정보를 찾을 수 없습니다.");
+      }
+
+      applyClassOptions(values, true);
+      return true;
+    } catch (error) {
+      if (!cached.length) {
+        classOptionsKey = "";
+        classSelect?.setDisabled(false);
+        setStatus("timetable", error.message || "반 정보를 불러오지 못했습니다.", "error");
+      }
+      return false;
+    }
+  }
+
+  async function loadMeal(requestId = ++mealRequestId) {
     const closedReason = getClosedReason(state.date);
 
     if (closedReason) {
+      if (requestId !== mealRequestId) return;
       setStatus("meal", "");
       renderClosed("meal", closedReason);
       return;
@@ -724,8 +817,11 @@
     setStatus("meal", "");
 
     try {
-      renderMeal(await fetchJson(`/api/meal?date=${formatDateParam(state.date)}`));
+      const data = await fetchJson(`/api/meal?date=${formatDateParam(state.date)}`);
+      if (requestId !== mealRequestId) return;
+      renderMeal(data);
     } catch (error) {
+      if (requestId !== mealRequestId) return;
       els.cards.meal.innerHTML = `
         <div class="empty-state">
           <div>
@@ -737,12 +833,14 @@
     }
   }
 
-  async function loadTimetable() {
+  async function loadTimetable(requestId = ++timetableRequestId) {
     const closedReason = getClosedReason(state.date);
 
     if (closedReason) {
+      if (requestId !== timetableRequestId) return;
       setStatus("timetable", "");
       renderClosed("timetable", closedReason);
+      await loadClassOptions(false);
       return;
     }
 
@@ -750,10 +848,27 @@
     setStatus("timetable", "");
 
     try {
-      renderTimetable(await fetchJson(
+      const data = await fetchJson(
         `/api/timetable?date=${formatDateParam(state.date)}&grade=${encodeURIComponent(state.grade)}&class=${encodeURIComponent(state.className)}`
-      ));
+      );
+
+      if (requestId !== timetableRequestId) return;
+
+      const previousClass = state.className;
+
+      if (Array.isArray(data.classes) && data.classes.length) {
+        applyClassOptions(data.classes, true);
+      }
+
+      if (data.invalidClass || state.className !== previousClass) {
+        const retryId = ++timetableRequestId;
+        await loadTimetable(retryId);
+        return;
+      }
+
+      renderTimetable(data);
     } catch (error) {
+      if (requestId !== timetableRequestId) return;
       els.cards.timetable.innerHTML = `
         <div class="empty-state">
           <div>
@@ -766,8 +881,8 @@
   }
 
   function refreshData() {
-    loadMeal();
-    loadClassOptions();
+    loadMeal(++mealRequestId);
+    loadTimetable(++timetableRequestId);
   }
 
   function switchMobileView(view) {
@@ -783,49 +898,8 @@
     closeFloatingMenus();
 
     if (window.innerWidth <= 760) {
-      if (view === "meal") loadMeal();
-      else loadTimetable();
-    }
-  }
-
-  let classSelect = null;
-  let classOptionsKey = "";
-
-  async function loadClassOptions(force = false) {
-    const key = `${schoolYear(formatDateParam(state.date))}-${state.grade}`;
-
-    if (!force && classOptionsKey === key && classSelect?.get()) {
-      await loadTimetable();
-      return;
-    }
-
-    try {
-      const values = await fetchClassOptions();
-      const options = values.map((classNumber) => ({
-        value: classNumber,
-        label: `${classNumber}반`
-      }));
-
-      if (!options.length) {
-        throw new Error("해당 학년의 반 정보를 찾을 수 없습니다.");
-      }
-
-      const savedClass = localStorage.getItem("ygmhelper-class") || "";
-      const preferred = options.some((option) => option.value === savedClass)
-        ? savedClass
-        : options[0].value;
-
-      state.className = preferred;
-      localStorage.setItem("ygmhelper-class", preferred);
-      classOptionsKey = key;
-
-      classSelect.setOptions(options, preferred);
-      classSelect.setDisabled(false);
-      await loadTimetable();
-    } catch (error) {
-      classOptionsKey = "";
-      classSelect.setDisabled(false);
-      setStatus("timetable", error.message || "반 정보를 불러오지 못했습니다.", "error");
+      if (view === "meal") loadMeal(++mealRequestId);
+      else loadTimetable(++timetableRequestId);
     }
   }
 
@@ -840,34 +914,36 @@
       (value) => {
         state.grade = value;
         localStorage.setItem("ygmhelper-grade", value);
-        const savedClass = localStorage.getItem("ygmhelper-class") || "1";
-        state.className = /^\d{1,2}$/.test(savedClass) ? savedClass : "1";
-        localStorage.setItem("ygmhelper-class", state.className);
         classOptionsKey = "";
-        classSelect.setOptions(
-          Array.from({ length: 8 }, (_, index) => ({
-            value: String(index + 1),
-            label: `${index + 1}반`
-          })),
-          state.className
-        );
-        classSelect.setDisabled(false);
-        loadClassOptions(true);
+
+        const cached = readCachedClassOptions();
+        if (cached.length) {
+          applyClassOptions(cached, false);
+        } else {
+          classSelect?.setOptions(
+            [{ value: state.className, label: `${state.className}반` }],
+            state.className
+          );
+          classSelect?.setDisabled(false);
+        }
+
+        loadTimetable(++timetableRequestId);
       }
     );
 
+    const cachedInitialClasses = readCachedClassOptions();
+
     classSelect = setupSelect(
       "class",
-      Array.from({ length: 8 }, (_, index) => ({
-        value: String(index + 1),
-        label: `${index + 1}반`
-      })),
+      cachedInitialClasses.length
+        ? classOptionsFromValues(cachedInitialClasses)
+        : [{ value: state.className, label: `${state.className}반` }],
       state.className,
       (value) => {
         if (!value) return;
         state.className = value;
         localStorage.setItem("ygmhelper-class", value);
-        loadTimetable();
+        loadTimetable(++timetableRequestId);
       }
     );
 
@@ -896,15 +972,15 @@
       closeFloatingMenus();
 
       if (isDesktop) {
-        loadMeal();
-        loadTimetable();
+        loadMeal(++mealRequestId);
+        loadTimetable(++timetableRequestId);
       } else {
         switchMobileView(state.mobileView);
       }
     });
 
-    loadMeal();
-    loadClassOptions(true);
+    loadMeal(++mealRequestId);
+    loadTimetable(++timetableRequestId);
   }
 
   init();

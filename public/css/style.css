@@ -394,6 +394,18 @@ a { color: inherit; }
 }
 .custom-select { position: relative; }
 
+.custom-select[data-select="class"] .select-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 196px;
+  padding: 6px;
+}
+
+.custom-select[data-select="class"] .select-option {
+  padding: 10px 8px;
+  text-align: center;
+}
+
 .custom-select .select-trigger {
   min-width: 104px;
 }
@@ -608,16 +620,23 @@ a { color: inherit; }
 
 .allergen-modal {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
   z-index: 500;
   display: grid;
   place-items: center;
   padding: 22px;
+  overflow: hidden;
 }
 
 .allergen-backdrop {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
   background: rgba(8, 10, 14, .52);
   backdrop-filter: blur(5px);
 }

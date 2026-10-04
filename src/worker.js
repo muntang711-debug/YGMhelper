@@ -475,13 +475,10 @@ async function handleClasses(url, env) {
     return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
   }
 
-  const data = await fetchComciganWeek(0);
-  let classes = classNumbersFromComcigan(data, grade);
-
-  if (!classes.length) {
-    const nextWeek = await fetchComciganWeek(1);
-    classes = classNumbersFromComcigan(nextWeek, grade);
-  }
+  const requestedWeek = comciganWeekForDate(date);
+  const weekNum = requestedWeek === null ? 0 : requestedWeek;
+  const data = await fetchComciganWeek(weekNum);
+  const classes = classNumbersFromComcigan(data, grade);
 
   return json({
     ok: true,
@@ -489,7 +486,8 @@ async function handleClasses(url, env) {
     grade,
     classes,
     source: "comcigan",
-    available: classes.length > 0
+    available: classes.length > 0,
+    week: weekNum
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });
@@ -519,6 +517,7 @@ async function handleTimetable(url, env) {
       date,
       grade,
       class: className,
+      classes: [],
       items: [],
       source: "comcigan",
       available: false,
@@ -527,9 +526,30 @@ async function handleTimetable(url, env) {
   }
 
   const data = await fetchComciganWeek(weekNum);
+  const classes = classNumbersFromComcigan(data, grade);
   const dayIndex = getComciganDayIndex(date);
   const gradeNumber = Number(grade);
   const classNumber = Number(className);
+
+  if (!classes.includes(classNumber)) {
+    return json({
+      ok: true,
+      date,
+      grade,
+      class: className,
+      school: data.school.name,
+      classes,
+      items: [],
+      source: "comcigan",
+      available: false,
+      invalidClass: true,
+      message: "선택한 반의 시간표가 없습니다.",
+      updatedAt: data.response[`자료${data.codes.updateCode}`] || ""
+    }, 200, {
+      "Cache-Control": "public, max-age=300"
+    });
+  }
+
   const dayData = data.dailyTimetable?.[gradeNumber]?.[classNumber]?.[dayIndex];
   const originalDayData = data.originalTimetable?.[gradeNumber]?.[classNumber]?.[dayIndex];
 
@@ -564,6 +584,7 @@ async function handleTimetable(url, env) {
     grade,
     class: className,
     school: data.school.name,
+    classes,
     items,
     source: "comcigan",
     available: items.length > 0,

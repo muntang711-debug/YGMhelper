@@ -393,6 +393,16 @@ function decodeComciganLesson(value, subjects, teachers) {
   };
 }
 
+function decodeComciganLocation(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw || raw === "0") return "";
+
+  const separator = raw.indexOf("_");
+  const location = separator >= 0 ? raw.slice(separator + 1).trim() : raw;
+
+  return location.replace(/^\d+$/, "").trim();
+}
+
 async function fetchComciganWeek(weekNum) {
   const cached = comciganWeekCache.get(weekNum);
   if (cached && cached.expiresAt > Date.now()) {
@@ -424,6 +434,7 @@ async function fetchComciganWeek(weekNum) {
     : [];
   const dailyTimetable = response[`자료${codes.changedCode}`];
   const originalTimetable = response[`자료${codes.originalCode}`];
+  const locationMatrix = response.자료245;
 
   if (!Array.isArray(teachers) || !Array.isArray(subjects) || !Array.isArray(dailyTimetable) || !Array.isArray(originalTimetable)) {
     throw new Error("컴시간 시간표 데이터가 예상한 형식이 아닙니다.");
@@ -436,6 +447,7 @@ async function fetchComciganWeek(weekNum) {
     subjects,
     dailyTimetable,
     originalTimetable,
+    locationMatrix,
     codes
   };
 
@@ -569,10 +581,14 @@ async function handleTimetable(url, env) {
 
     if (!lesson.subject && !originalLesson.subject) continue;
 
+    const locationValue = data.locationMatrix?.[gradeNumber]?.[classNumber]?.[dayIndex]?.[period];
+    const location = decodeComciganLocation(locationValue);
+
     items.push({
       period,
       subject: lesson.subject || originalLesson.subject || "",
       teacher: lesson.teacher || originalLesson.teacher || "",
+      location,
       changed: Boolean(lesson.changed || dailyValue !== originalValue),
       originalSubject: originalLesson.subject || ""
     });

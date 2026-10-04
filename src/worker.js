@@ -475,16 +475,29 @@ async function handleClasses(url, env) {
     return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
   }
 
-  const weekNum = comciganWeekForDate(date) ?? 0;
-  const data = await fetchComciganWeek(weekNum);
-  const classes = classNumbersFromComcigan(data, grade);
+  const payload = await neisRequest("classInfo", {
+    ATPT_OFCDC_SC_CODE: SCHOOL.officeCode,
+    SD_SCHUL_CODE: SCHOOL.schoolCode,
+    AY: schoolYear(date),
+    GRADE: grade
+  }, env.NEIS_API_KEY);
+
+  const rows = extractRows(payload, "classInfo");
+  const classes = [...new Set(
+    rows
+      .filter((row) => String(row.GRADE || "") === grade)
+      .map((row) => String(row.CLASS_NM || "").trim())
+      .filter((value) => /^\d{1,2}$/.test(value))
+      .map(Number)
+      .filter((value) => value >= 1 && value <= 99)
+  )].sort((a, b) => a - b);
 
   return json({
     ok: true,
     date,
     grade,
     classes,
-    source: "comcigan",
+    source: "neis-class-info",
     available: classes.length > 0
   }, 200, {
     "Cache-Control": "public, max-age=300"
@@ -649,7 +662,7 @@ export default {
     }
 
     if (url.pathname === "/api/classes") {
-      return handleApi(() => handleClasses(url, env), env);
+      return handleApi(() => handleClasses(url, env), env, { requireNeisKey: true });
     }
 
     const assetResponse = await env.ASSETS.fetch(request);

@@ -725,6 +725,7 @@
   }
   let classSelect = null;
   let classOptionsKey = "";
+  let classOptionsLoadedKey = "";
   let mealRequestId = 0;
   let timetableRequestId = 0;
 
@@ -773,6 +774,7 @@
     }
 
     classOptionsKey = classOptionsCacheKey();
+    if (persist) classOptionsLoadedKey = classOptionsKey;
 
     if (persist) {
       localStorage.setItem(
@@ -787,14 +789,13 @@
   async function loadClassOptions(force = false) {
     const key = classOptionsCacheKey();
 
-    if (!force && classOptionsKey === key && classSelect?.get()) {
+    if (!force && classOptionsLoadedKey === key) {
       return true;
     }
 
     const cached = readCachedClassOptions();
     if (cached.length) {
       applyClassOptions(cached, false);
-      if (!force) return true;
     }
 
     try {
@@ -927,6 +928,7 @@
         state.grade = value;
         localStorage.setItem("ygmhelper-grade", value);
         classOptionsKey = "";
+        classOptionsLoadedKey = "";
 
         const cached = readCachedClassOptions();
         if (cached.length) {

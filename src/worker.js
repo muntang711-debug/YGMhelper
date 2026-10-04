@@ -558,7 +558,7 @@ async function handleTimetable(url, env) {
       message: "선택한 반의 시간표가 없습니다.",
       updatedAt: data.response[`자료${data.codes.updateCode}`] || ""
     }, 200, {
-      "Cache-Control": "public, max-age=300"
+      "Cache-Control": "no-store"
     });
   }
 
@@ -606,7 +606,7 @@ async function handleTimetable(url, env) {
     available: items.length > 0,
     updatedAt: data.response[`자료${data.codes.updateCode}`] || ""
   }, 200, {
-    "Cache-Control": "public, max-age=300"
+    "Cache-Control": "no-store"
   });
 }
 

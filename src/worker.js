@@ -594,50 +594,6 @@ async function handleTimetable(url, env) {
     });
   }
 
-  const debug = url.searchParams.get("debug") === "1"
-    ? Object.fromEntries(
-        Object.entries(data.response)
-          .filter(([key]) => key.startsWith("자료"))
-          .map(([key, value]) => {
-            const flattened = [];
-            const walk = (node, depth = 0) => {
-              if (flattened.length >= 20 || depth > 6) return;
-              if (Array.isArray(node)) {
-                for (const child of node) {
-                  walk(child, depth + 1);
-                  if (flattened.length >= 20) break;
-                }
-                return;
-              }
-              if (typeof node === "string" || typeof node === "number") {
-                flattened.push(node);
-              }
-            };
-            walk(value);
-            return [key, {
-              type: Array.isArray(value) ? "array" : typeof value,
-              sample: flattened
-            }];
-          })
-      )
-    : undefined;
-
-  const locationHits = url.searchParams.get("debug") === "1" ? (() => {
-    const hits = [];
-    const walk = (node, path = []) => {
-      if (hits.length >= 20) return;
-      if (Array.isArray(node)) {
-        node.forEach((child, index) => walk(child, [...path, index]));
-        return;
-      }
-      if (typeof node === "string" && node.includes("_") && /^\d+_\S+/.test(node)) {
-        hits.push({ path, value: node });
-      }
-    };
-    walk(data.locationMatrix);
-    return hits;
-  })() : undefined;
-
   return json({
     ok: true,
     date,
@@ -649,7 +605,6 @@ async function handleTimetable(url, env) {
     source: "comcigan",
     available: items.length > 0,
     updatedAt: data.response[`자료${data.codes.updateCode}`] || "",
-    ...(debug ? { debug, locationHits } : {})
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });

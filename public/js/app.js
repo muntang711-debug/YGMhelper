@@ -700,6 +700,12 @@
       openAllergenReferenceModal(mealAllergenNumbers);
     });
   }
+  function normalizeTeacherName(value) {
+    const raw = String(value || "").replace(/\*/g, "").trim();
+    if (!raw) return "";
+    return `${raw.slice(0, 2)}*`;
+  }
+
   function renderTimetable(data) {
     if (!data?.items?.length) {
       els.cards.timetable.innerHTML = `
@@ -716,13 +722,23 @@
 
     els.cards.timetable.innerHTML = `
       <div class="timetable-list">
-        ${items.map((item) => `
-          <article class="period-card">
-            <span class="period-card-number">${escapeHtml(item.period)}교시</span>
-            <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
-          </article>`).join("")}
+        ${items.map((item) => {
+          const teacher = normalizeTeacherName(item.teacher);
+          const location = String(item.location || "").trim();
+
+          return `
+            <article class="period-card${item.changed ? " is-changed" : ""}">
+              <span class="period-card-number">${escapeHtml(item.period)}교시</span>
+              <div class="period-card-main">
+                <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
+                ${teacher ? `<span class="period-card-teacher">${escapeHtml(teacher)}</span>` : ""}
+                ${location ? `<span class="period-card-location">${escapeHtml(location)}</span>` : ""}
+              </div>
+            </article>`;
+        }).join("")}
       </div>`;
   }
+
   let classSelect = null;
   let classOptionsKey = "";
   let classOptionsLoadedKey = "";

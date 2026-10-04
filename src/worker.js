@@ -222,7 +222,7 @@ async function handleClasses(url, env) {
     rows
       .filter((row) => String(row.GRADE || "") === grade)
       .map((row) => String(row.CLASS_NM || "").trim())
-      .filter((value) => /^\\d{1,2}$/.test(value))
+      .filter((value) => /^\d{1,2}$/.test(value))
       .map(Number)
       .filter((value) => value >= 1 && value <= 99)
   )].sort((a, b) => a - b);

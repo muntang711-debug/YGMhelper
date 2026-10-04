@@ -133,6 +133,7 @@
 html, body { margin: 0; min-height: 100%; }
 html {
   scrollbar-gutter: stable;
+  background: var(--bg);
 }
 
 body {
@@ -625,34 +626,43 @@ a { color: inherit; }
   position: relative;
   width: min(520px, 100%);
   max-height: min(700px, calc(100vh - 44px));
-  overflow: auto;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 24px 24px 0;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--surface-solid);
   box-shadow: 0 28px 90px rgba(0,0,0,.28);
+}
+
+.allergen-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0 24px;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
 
-.allergen-dialog::-webkit-scrollbar {
+.allergen-scroll::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
 
-.allergen-dialog::-webkit-scrollbar-button {
+.allergen-scroll::-webkit-scrollbar-button,
+.allergen-scroll::-webkit-scrollbar-button:single-button {
   display: none;
   width: 0;
   height: 0;
 }
 
-.allergen-dialog::-webkit-scrollbar-track {
-  margin: 5px 2px;
+.allergen-scroll::-webkit-scrollbar-track {
+  margin: 4px 1px;
   border-radius: 999px;
   background: transparent;
 }
 
-.allergen-dialog::-webkit-scrollbar-thumb {
+.allergen-scroll::-webkit-scrollbar-thumb {
   min-height: 40px;
   border: 2px solid transparent;
   border-radius: 999px;
@@ -660,21 +670,18 @@ a { color: inherit; }
   background-clip: padding-box;
 }
 
-.allergen-dialog::-webkit-scrollbar-thumb:hover {
+.allergen-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--text-soft);
   background-clip: padding-box;
 }
 
 .allergen-header {
-  position: sticky;
-  top: -24px;
-  z-index: 3;
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 0 12px;
-  margin-top: -24px;
+  padding: 0 0 12px;
   background: var(--surface-solid);
 }
 
@@ -1023,7 +1030,9 @@ body.modal-open {
   }
 
   .allergen-dialog {
-    padding: 21px 18px;
+    width: min(520px, calc(100vw - 28px));
+    max-height: calc(100vh - 32px);
+    padding: 21px 18px 0;
     border-radius: 19px;
   }
 

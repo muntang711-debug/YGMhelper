@@ -5,7 +5,7 @@
     mobileView: "meal",
     date: new Date(),
     grade: /^[1-3]$/.test(localStorage.getItem("ygmhelper-grade") || "") ? localStorage.getItem("ygmhelper-grade") : "1",
-    className: /^(?:[1-9]|1[0-5])$/.test(localStorage.getItem("ygmhelper-class") || "") ? localStorage.getItem("ygmhelper-class") : "1",
+    className: /^\\d{1,2}$/.test(localStorage.getItem("ygmhelper-class") || "") ? localStorage.getItem("ygmhelper-class") : "1",
     theme: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     calendarOpen: false,
@@ -392,12 +392,16 @@
     });
   }
 
-  function setupSelect(name, options, defaultValue, onChange) {
+  function setupSelect(name, initialOptions, defaultValue, onChange) {
     const root = document.querySelector(`[data-select="${name}"]`);
     const trigger = root.querySelector(".select-trigger");
     const value = root.querySelector(".select-value");
     const menu = root.querySelector(".select-menu");
-    let current = defaultValue;
+    let options = [...initialOptions];
+    let current = options.some((option) => option.value === defaultValue)
+      ? defaultValue
+      : (options[0]?.value || "");
+    let disabled = false;
 
     function renderOptions() {
       menu.innerHTML = options.map((option) => `
@@ -410,10 +414,13 @@
         >${escapeHtml(option.label)}</button>`).join("");
 
       value.textContent = options.find((option) => option.value === current)?.label ?? "";
+      trigger.disabled = disabled;
+      trigger.setAttribute("aria-disabled", String(disabled));
     }
 
     trigger.addEventListener("click", (event) => {
       event.stopPropagation();
+      if (disabled) return;
 
       closeDatePicker();
       const isOpen = root.classList.contains("is-open");
@@ -430,6 +437,8 @@
 
     menu.addEventListener("click", (event) => {
       event.stopPropagation();
+      if (disabled) return;
+
       const option = event.target.closest(".select-option");
       if (!option) return;
 
@@ -446,6 +455,22 @@
       get: () => current,
       set: (next) => {
         current = next;
+        renderOptions();
+      },
+      setOptions: (nextOptions, preferredValue = current) => {
+        options = [...nextOptions];
+        current = options.some((option) => option.value === preferredValue)
+          ? preferredValue
+          : (options[0]?.value || "");
+        renderOptions();
+      },
+      setDisabled: (next) => {
+        disabled = Boolean(next);
+        root.classList.toggle("is-disabled", disabled);
+        if (disabled) {
+          root.classList.remove("is-open");
+          trigger.setAttribute("aria-expanded", "false");
+        }
         renderOptions();
       }
     };
@@ -464,6 +489,19 @@
     }
 
     return body;
+  }
+
+  async function fetchClassOptions() {
+    const body = await fetchJson(
+      `/api/classes?date=${formatDateParam(state.date)}&grade=${encodeURIComponent(state.grade)}`
+    );
+
+    return Array.isArray(body.classes)
+      ? body.classes
+          .filter((value) => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 99)
+          .map((value) => String(value))
+          .filter((value, index, values) => values.indexOf(value) === index)
+      : [];
   }
 
   function renderClosed(kind, reason) {
@@ -724,7 +762,7 @@
 
   function refreshData() {
     loadMeal();
-    loadTimetable();
+    loadClassOptions();
   }
 
   function switchMobileView(view) {
@@ -745,6 +783,67 @@
     }
   }
 
+  let classSelect = null;
+  let classOptionsKey = "";
+
+  async function loadClassOptions(force = false) {
+    const key = `${schoolYear(formatDateParam(state.date))}-${state.grade}`;
+
+    if (!force && classOptionsKey === key && classSelect?.get()) {
+      await loadTimetable();
+      return;
+    }
+
+    classSelect?.setDisabled(true);
+    classSelect?.setOptions(
+      [{ value: "", label: "반 불러오는 중" }],
+      ""
+    );
+
+    try {
+      const values = await fetchClassOptions();
+      const options = values.map((classNumber) => ({
+        value: classNumber,
+        label: `${classNumber}반`
+      }));
+
+      if (!options.length) {
+        throw new Error("해당 학년의 반 정보를 찾을 수 없습니다.");
+      }
+
+      const savedClass = localStorage.getItem("ygmhelper-class") || "";
+      const preferred = options.some((option) => option.value === savedClass)
+        ? savedClass
+        : options[0].value;
+
+      state.className = preferred;
+      localStorage.setItem("ygmhelper-class", preferred);
+      classOptionsKey = key;
+
+      classSelect.setOptions(options, preferred);
+      classSelect.setDisabled(false);
+      await loadTimetable();
+    } catch (error) {
+      classOptionsKey = "";
+      state.className = "";
+      localStorage.removeItem("ygmhelper-class");
+      classSelect.setOptions(
+        [{ value: "", label: "반 정보 없음" }],
+        ""
+      );
+      classSelect.setDisabled(true);
+
+      els.cards.timetable.innerHTML = `
+        <div class="empty-state">
+          <div>
+            <h3>반 정보를 불러오지 못했습니다.</h3>
+            <p>잠시 후 다시 시도해주세요.</p>
+          </div>
+        </div>`;
+      setStatus("timetable", error.message || "반 정보를 불러오지 못했습니다.", "error");
+    }
+  }
+
   function init() {
     initTheme();
     renderDateControl();
@@ -756,21 +855,23 @@
       (value) => {
         state.grade = value;
         localStorage.setItem("ygmhelper-grade", value);
-        loadTimetable();
+        classOptionsKey = "";
+        loadClassOptions(true);
       }
     );
 
-    setupSelect(
+    classSelect = setupSelect(
       "class",
-      Array.from({ length: 15 }, (_, index) => index + 1)
-        .map((value) => ({ value: String(value), label: `${value}반` })),
-      state.className,
+      [{ value: "", label: "반 불러오는 중" }],
+      "",
       (value) => {
+        if (!value) return;
         state.className = value;
         localStorage.setItem("ygmhelper-class", value);
         loadTimetable();
       }
     );
+    classSelect.setDisabled(true);
 
     els.mobileSwitch.querySelectorAll(".nav-item").forEach((button) => {
       button.addEventListener("click", (event) => {
@@ -805,7 +906,7 @@
     });
 
     loadMeal();
-    loadTimetable();
+    loadClassOptions(true);
   }
 
   init();

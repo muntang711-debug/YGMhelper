@@ -178,23 +178,34 @@ const comciganWeekCache = new Map();
 async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE_TTL } = {}) {
   let response;
 
+  const fetchOptions = {
+    method: "GET",
+    headers: {
+      "Accept": "*/*",
+      "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Referer": `${COMCIGAN_URL}/st`,
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36",
+      "X-Requested-With": "XMLHttpRequest"
+    },
+    signal: AbortSignal.timeout(10000)
+  };
+
+  if (cacheTtl > 0) {
+    fetchOptions.cf = {
+      cacheTtl,
+      cacheEverything: true
+    };
+  } else {
+    fetchOptions.cf = {
+      cacheTtl: 0,
+      cacheEverything: false
+    };
+  }
+
   try {
-    response = await fetch(url, {
-      headers: {
-        "Accept": "*/*",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-        "Referer": `${COMCIGAN_URL}/st`,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      signal: AbortSignal.timeout(10000),
-      cf: {
-        cacheTtl,
-        cacheEverything: true
-      }
-    });
+    response = await fetch(url, fetchOptions);
   } catch (error) {
     throw new Error("컴시간 서버에 연결하지 못했습니다.");
   }
@@ -404,9 +415,13 @@ function decodeComciganLocation(value) {
 }
 
 async function fetchComciganWeek(weekNum) {
-  const cached = comciganWeekCache.get(weekNum);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.value;
+  // The current week's Comcigan data can change after publication.
+  // Never serve an in-process or edge-cached copy for the current week.
+  if (weekNum !== 0) {
+    const cached = comciganWeekCache.get(weekNum);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
   }
 
   const codes = await getComciganCodes();
@@ -416,7 +431,7 @@ async function fetchComciganWeek(weekNum) {
   const encoded = btoa(payload);
   const upstream = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${encoded}`,
-    { cacheTtl: COMCIGAN_CACHE_TTL }
+    { cacheTtl: weekNum === 0 ? 0 : COMCIGAN_CACHE_TTL }
   );
 
   let response;
@@ -451,10 +466,12 @@ async function fetchComciganWeek(weekNum) {
     codes
   };
 
-  comciganWeekCache.set(weekNum, {
-    value,
-    expiresAt: Date.now() + COMCIGAN_CACHE_TTL * 1000
-  });
+  if (weekNum !== 0) {
+    comciganWeekCache.set(weekNum, {
+      value,
+      expiresAt: Date.now() + COMCIGAN_CACHE_TTL * 1000
+    });
+  }
 
   return value;
 }

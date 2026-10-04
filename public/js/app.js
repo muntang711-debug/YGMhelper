@@ -799,12 +799,6 @@
       return;
     }
 
-    classSelect?.setDisabled(true);
-    classSelect?.setOptions(
-      [{ value: "", label: "반 불러오는 중" }],
-      ""
-    );
-
     try {
       const values = await fetchClassOptions();
       const options = values.map((classNumber) => ({
@@ -830,21 +824,7 @@
       await loadTimetable();
     } catch (error) {
       classOptionsKey = "";
-      state.className = "";
-      localStorage.removeItem("ygmhelper-class");
-      classSelect.setOptions(
-        [{ value: "", label: "반 정보 없음" }],
-        ""
-      );
-      classSelect.setDisabled(true);
-
-      els.cards.timetable.innerHTML = `
-        <div class="empty-state">
-          <div>
-            <h3>반 정보를 불러오지 못했습니다.</h3>
-            <p>잠시 후 다시 시도해주세요.</p>
-          </div>
-        </div>`;
+      classSelect.setDisabled(false);
       setStatus("timetable", error.message || "반 정보를 불러오지 못했습니다.", "error");
     }
   }
@@ -860,15 +840,19 @@
       (value) => {
         state.grade = value;
         localStorage.setItem("ygmhelper-grade", value);
+        state.className = "1";
+        localStorage.setItem("ygmhelper-class", "1");
         classOptionsKey = "";
+        classSelect.setOptions([{ value: "1", label: "1반" }], "1");
+        classSelect.setDisabled(false);
         loadClassOptions(true);
       }
     );
 
     classSelect = setupSelect(
       "class",
-      [{ value: "", label: "반 불러오는 중" }],
-      "",
+      [{ value: "1", label: "1반" }],
+      "1",
       (value) => {
         if (!value) return;
         state.className = value;
@@ -876,7 +860,6 @@
         loadTimetable();
       }
     );
-    classSelect.setDisabled(true);
 
     els.mobileSwitch.querySelectorAll(".nav-item").forEach((button) => {
       button.addEventListener("click", (event) => {

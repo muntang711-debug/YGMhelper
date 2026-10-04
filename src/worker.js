@@ -91,13 +91,13 @@ async function getComciganCodes() {
     cacheTtl: 300
   });
 
-  const routeMatch = html.match(/\\.\\/(\\d+)\\?(\\d+)l/);
-  const code0 = html.match(/sc_data\\('([0-9]+)_/)?.[1];
-  const teacherCode = html.match(/Q성명\\(자료\\.자료(\\d+)/)?.[1];
-  const subjectCode = html.match(/자료\\.자료(\\d+)\\[sb\\]/)?.[1];
-  const updateCode = html.match(/=H시간표\\.자료(\\d+)/)?.[1];
-  const changedCode = html.match(/일일자료=Q자료\\(자료\\.자료(\\d+)/)?.[1];
-  const originalCode = html.match(/원자료=Q자료\\(자료\\.자료(\\d+)/)?.[1];
+  const routeMatch = html.match(/\.\/(\d+)\?(\d+)l/);
+  const code0 = html.match(/sc_data\('([0-9]+)_/)?.[1];
+  const teacherCode = html.match(/Q성명\(자료\.자료(\d+)/)?.[1];
+  const subjectCode = html.match(/자료\.자료(\d+)\[sb\]/)?.[1];
+  const updateCode = html.match(/=H시간표\.자료(\d+)/)?.[1];
+  const changedCode = html.match(/일일자료=Q자료\(자료\.자료(\d+)/)?.[1];
+  const originalCode = html.match(/원자료=Q자료\(자료\.자료(\d+)/)?.[1];
 
   if (!routeMatch || !code0 || !teacherCode || !subjectCode || !updateCode || !changedCode || !originalCode) {
     throw new Error("컴시간 데이터 형식을 확인하지 못했습니다.");
@@ -129,7 +129,7 @@ async function resolveComciganSchool(codes) {
     { cacheTtl: 3600 }
   );
 
-  const cleaned = responseText.replace(/\\0/g, "").trim();
+  const cleaned = responseText.replace(/\0/g, "").trim();
 
   let payload;
   try {
@@ -221,7 +221,7 @@ function getComciganDayIndex(date) {
 
 function cleanComciganJson(rawText) {
   const line = rawText
-    .replace(/\\0/g, "")
+    .replace(/\0/g, "")
     .split("\\n")[0]
     .trim();
 
@@ -358,7 +358,7 @@ async function handleTimetable(url, env) {
     return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
   }
 
-  if (!/^\\d{1,2}$/.test(className) || Number(className) < 1 || Number(className) > 99) {
+  if (!/^\d{1,2}$/.test(className) || Number(className) < 1 || Number(className) > 99) {
     return json({ ok: false, error: "반 값이 올바르지 않습니다." }, 400);
   }
 
@@ -458,94 +458,6 @@ async function handleMeal(url, env) {
     items: cleanMealItem(row.DDISH_NM || ""),
     calories: row.CAL_INFO || "",
     available: true
-  }, 200, {
-    "Cache-Control": "public, max-age=300"
-  });
-}
-
-async function handleClasses(url, env) {
-  const date = url.searchParams.get("date") || "";
-  const grade = url.searchParams.get("grade") || "";
-
-  if (!validDate(date)) {
-    return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
-  }
-
-  if (!/^[1-3]$/.test(grade)) {
-    return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
-  }
-
-  const payload = await neisRequest("classInfo", {
-    ATPT_OFCDC_SC_CODE: SCHOOL.officeCode,
-    SD_SCHUL_CODE: SCHOOL.schoolCode,
-    AY: schoolYear(date),
-    GRADE: grade
-  }, env.NEIS_API_KEY);
-
-  const rows = extractRows(payload, "classInfo");
-  const classes = [...new Set(
-    rows
-      .filter((row) => String(row.GRADE || "") === grade)
-      .map((row) => String(row.CLASS_NM || "").trim())
-      .filter((value) => /^\d{1,2}$/.test(value))
-      .map(Number)
-      .filter((value) => value >= 1 && value <= 99)
-  )].sort((a, b) => a - b);
-
-  return json({
-    ok: true,
-    date,
-    year: schoolYear(date),
-    grade,
-    classes,
-    available: classes.length > 0
-  }, 200, {
-    "Cache-Control": "public, max-age=300"
-  });
-}
-
-async function handleTimetable(url, env) {
-  const date = url.searchParams.get("date") || "";
-  const grade = url.searchParams.get("grade") || "";
-  const className = url.searchParams.get("class") || "";
-
-  if (!validDate(date)) {
-    return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
-  }
-
-  if (!/^[1-3]$/.test(grade)) {
-    return json({ ok: false, error: "학년 값이 올바르지 않습니다." }, 400);
-  }
-
-  if (!/^\d{1,2}$/.test(className) || Number(className) < 1 || Number(className) > 15) {
-    return json({ ok: false, error: "반 값이 올바르지 않습니다." }, 400);
-  }
-
-  const payload = await neisRequest("misTimetable", {
-    ATPT_OFCDC_SC_CODE: SCHOOL.officeCode,
-    SD_SCHUL_CODE: SCHOOL.schoolCode,
-    AY: schoolYear(date),
-    SEM: semester(date),
-    ALL_TI_YMD: date,
-    GRADE: grade,
-    CLASS_NM: className
-  }, env.NEIS_API_KEY);
-
-  const rows = extractRows(payload, "misTimetable");
-  const items = rows
-    .map((row) => ({
-      period: row.PERIO || row.PERIOD || "",
-      subject: row.ITRT_CNTNT || row.ITRT_CNTNT_NM || row.ITRT_CNTNT_NM2 || ""
-    }))
-    .filter((item) => item.period || item.subject);
-
-  return json({
-    ok: true,
-    date,
-    grade,
-    class: className,
-    items,
-    available: items.length > 0
   }, 200, {
     "Cache-Control": "public, max-age=300"
   });

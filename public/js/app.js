@@ -96,8 +96,20 @@
   }
 
   function schoolYear(date) {
-    const year = date.getFullYear();
-    return date.getMonth() >= 2 ? year : year - 1;
+    if (date instanceof Date) {
+      const year = date.getFullYear();
+      return date.getMonth() >= 2 ? year : year - 1;
+    }
+
+    const value = String(date);
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(4, 6));
+
+    if (!Number.isFinite(year) || !Number.isFinite(month)) {
+      throw new Error("날짜를 학사연도로 변환할 수 없습니다.");
+    }
+
+    return month >= 3 ? year : year - 1;
   }
 
   function formatDateLabel(date) {
@@ -717,7 +729,7 @@
   let timetableRequestId = 0;
 
   function classOptionsCacheKey(date = state.date, grade = state.grade) {
-    return `${schoolYear(formatDateParam(date))}-${grade}`;
+    return `${schoolYear(date)}-${grade}`;
   }
 
   function classOptionsFromValues(values) {

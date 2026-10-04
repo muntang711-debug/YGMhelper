@@ -33,6 +33,139 @@ function validDate(value) {
   return /^\d{8}$/.test(value);
 }
 
+function schoolYear(date) {
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(4, 6));
+  return month >= 3 ? year : year - 1;
+}
+
+function semester(date) {
+  const month = Number(date.slice(4, 6));
+  return month >= 3 && month <= 8 ? "1" : "2";
+}
+
+function cleanMealItem(value) {
+  return value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/<[^>]*>/g, "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readNeisResult(payload, serviceKey) {
+  if (payload?.RESULT?.CODE) {
+    return payload.RESULT;
+  }
+
+  const service = payload?.[serviceKey];
+
+  if (!Array.isArray(service)) {
+    const keys = payload && typeof payload === "object" ? Object.keys(payload) : [];
+    throw new NeisError(
+      keys.length
+        ? `NEIS 응답 형식을 확인할 수 없습니다. (${keys.join(", ")})`
+        : "NEIS에서 예상하지 못한 응답을 반환했습니다.",
+      "INVALID_RESPONSE",
+      502
+    );
+  }
+
+  for (const part of service) {
+    const head = part?.head;
+    if (!Array.isArray(head)) continue;
+
+    const resultPart = head.find((item) => item?.RESULT);
+    const result = resultPart?.RESULT;
+
+    if (result?.CODE) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+async function neisRequest(path, params, apiKey) {
+  if (!apiKey) {
+    throw new NeisError("NEIS 인증키가 설정되지 않았습니다.", "INVALID_KEY", 500);
+  }
+
+  const url = new URL(NEIS_BASE + "/" + path);
+  url.searchParams.set("KEY", apiKey);
+  url.searchParams.set("Type", "json");
+  url.searchParams.set("pIndex", "1");
+  url.searchParams.set("pSize", "100");
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  let response;
+  try {
+    response = await fetch(url.toString(), {
+      cf: {
+        cacheTtl: 300,
+        cacheEverything: true
+      }
+    });
+  } catch (error) {
+    throw new NeisError("NEIS 서버에 연결하지 못했습니다.", "NETWORK_ERROR", 502);
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new NeisError(
+      `NEIS 서버 응답 오류 (${response.status})`,
+      "HTTP_ERROR",
+      502
+    );
+  }
+
+  const result = readNeisResult(payload, path);
+
+  if (result?.CODE === "ERROR-290") {
+    throw new NeisError("NEIS 인증키가 유효하지 않습니다.", "INVALID_KEY", 502);
+  }
+
+  if (result?.CODE === "ERROR-300") {
+    throw new NeisError("NEIS 요청값이 누락되었습니다.", "BAD_REQUEST", 400);
+  }
+
+  if (result?.CODE === "ERROR-337") {
+    throw new NeisError("NEIS 일일 호출 한도를 초과했습니다.", "RATE_LIMIT", 429);
+  }
+
+  if (result?.CODE && result.CODE.startsWith("ERROR-")) {
+    throw new NeisError(
+      result.MESSAGE || "NEIS에서 요청을 처리하지 못했습니다.",
+      result.CODE,
+      502
+    );
+  }
+
+  return payload;
+}
+
+function extractRows(payload, serviceKey) {
+  const service = payload?.[serviceKey];
+  if (!Array.isArray(service)) return [];
+
+  for (const part of service) {
+    if (Array.isArray(part?.row)) return part.row;
+  }
+
+  return [];
+}
+
 const COMCIGAN_URL = "http://comci.net:4082";
 const COMCIGAN_CACHE_TTL = 300;
 
@@ -40,6 +173,7 @@ let comciganCodeCache = null;
 let comciganCodeCacheExpiresAt = 0;
 let comciganSchoolCache = null;
 let comciganSchoolCacheExpiresAt = 0;
+const comciganWeekCache = new Map();
 
 async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE_TTL } = {}) {
   let response;
@@ -260,6 +394,11 @@ function decodeComciganLesson(value, subjects, teachers) {
 }
 
 async function fetchComciganWeek(weekNum) {
+  const cached = comciganWeekCache.get(weekNum);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
   const codes = await getComciganCodes();
   const school = await resolveComciganSchool(codes);
 
@@ -290,7 +429,7 @@ async function fetchComciganWeek(weekNum) {
     throw new Error("컴시간 시간표 데이터가 예상한 형식이 아닙니다.");
   }
 
-  return {
+  const value = {
     school,
     response,
     teachers,
@@ -299,6 +438,13 @@ async function fetchComciganWeek(weekNum) {
     originalTimetable,
     codes
   };
+
+  comciganWeekCache.set(weekNum, {
+    value,
+    expiresAt: Date.now() + COMCIGAN_CACHE_TTL * 1000
+  });
+
+  return value;
 }
 
 function classNumbersFromComcigan(data, grade) {

@@ -1070,11 +1070,6 @@ body.modal-open {
     font-size: 17px;
   }
 
-  .allergen-header {
-    top: -21px;
-    padding-top: 21px;
-  }
-
   .loading-state { padding: 30px 25px; }
 
   .footer {

@@ -730,7 +730,10 @@
             <article class="period-card${item.changed ? " is-changed" : ""}">
               <span class="period-card-number">${escapeHtml(item.period)}교시</span>
               <div class="period-card-main">
-                <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
+                <div class="period-card-subject-row">
+                  <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
+                  ${item.changed ? '<span class="period-card-changed">변동</span>' : ""}
+                </div>
                 ${teacher ? `<span class="period-card-teacher">${escapeHtml(teacher)}</span>` : ""}
                 ${location ? `<span class="period-card-location">${escapeHtml(location)}</span>` : ""}
               </div>

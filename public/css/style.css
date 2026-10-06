@@ -217,10 +217,65 @@ a { color: inherit; }
   margin-bottom: 28px;
 }
 
+.date-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .date-control { position: relative; }
 
+.date-nav-button,
+.today-button {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-solid);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.date-nav-button {
+  width: 42px;
+  padding: 0;
+}
+
+.date-nav-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.today-button {
+  min-width: 48px;
+  padding: 0 11px;
+}
+
+.date-nav-button:hover:not(:disabled),
+.today-button:hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.date-nav-button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
 .date-trigger, .select-trigger {
-  min-width: 150px;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -235,6 +290,8 @@ a { color: inherit; }
   font-weight: 700;
 }
 
+.date-nav-button:focus-visible,
+.today-button:focus-visible,
 .date-trigger:focus-visible,
 .select-trigger:focus-visible,
 .icon-button:focus-visible,
@@ -1015,9 +1072,21 @@ body.modal-open {
     margin-bottom: 24px;
   }
 
+  .date-toolbar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 42px auto minmax(0, 1fr) 42px;
+    gap: 6px;
+  }
+
   .global-toolbar .date-control,
   .global-toolbar .date-trigger {
     width: 100%;
+  }
+
+  .today-button {
+    min-width: 0;
+    padding: 0 9px;
   }
 
   .date-picker {

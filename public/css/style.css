@@ -829,6 +829,13 @@ body.modal-open {
   gap: 4px;
 }
 
+.period-card-subject-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .period-card-subject {
   min-width: 0;
   overflow: hidden;
@@ -838,6 +845,23 @@ body.modal-open {
   line-height: 1.2;
   font-weight: 800;
   letter-spacing: -.025em;
+}
+
+.period-card-changed {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 7px;
+  background: #e5b900;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+[data-theme="dark"] .period-card-changed {
+  background: #d9b52e;
+  color: #211d10;
 }
 
 .period-card-teacher {

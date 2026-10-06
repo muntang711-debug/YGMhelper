@@ -70,6 +70,8 @@
     themeToggle: document.getElementById("theme-toggle"),
     mobileSwitch: document.querySelector(".mobile-switch"),
     dateControl: document.querySelector(".global-toolbar .date-control"),
+    dateNavButtons: document.querySelectorAll("[data-date-nav]"),
+    todayButton: document.querySelector("[data-date-today]"),
     views: {
       meal: document.getElementById("view-meal"),
       timetable: document.getElementById("view-timetable")
@@ -406,6 +408,40 @@
       event.stopPropagation();
       if (state.calendarOpen) closeDatePicker();
       else openDatePicker();
+    });
+
+    function shiftDateBy(delta) {
+      const next = new Date(
+        state.date.getFullYear(),
+        state.date.getMonth(),
+        state.date.getDate() + delta
+      );
+
+      if (delta > 0 && !isDateSelectable(next)) return;
+      state.date = next;
+      closeFloatingMenus();
+      syncDateControl();
+      refreshData();
+    }
+
+    els.dateNavButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        shiftDateBy(Number(button.dataset.dateNav));
+      });
+    });
+
+    els.todayButton?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const today = startOfDay(new Date());
+      if (!isSameDate(state.date, today)) {
+        state.date = today;
+        closeFloatingMenus();
+        syncDateControl();
+        refreshData();
+      } else {
+        closeFloatingMenus();
+      }
     });
   }
 

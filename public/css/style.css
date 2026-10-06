@@ -1089,11 +1089,29 @@ body.modal-open {
     font-size: 11px;
   }
 
+  .allergen-modal {
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
   .allergen-dialog {
-    width: min(520px, calc(100vw - 28px));
-    max-height: calc(100vh - 32px);
+    width: min(520px, 100%);
+    max-height: calc(100dvh - 32px);
+    min-height: 0;
+    margin: auto;
     padding: 21px 18px 0;
     border-radius: 19px;
+  }
+
+  .allergen-scroll {
+    min-height: 0;
+    max-height: none;
   }
 
   .allergen-row {

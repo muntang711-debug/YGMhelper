@@ -1155,3 +1155,19 @@ body.modal-open {
     padding-bottom: 32px;
   }
 }
+
+
+/* Allergy modal typography hierarchy */
+.allergen-menu-name {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}

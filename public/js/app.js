@@ -624,14 +624,19 @@
     const dialogRect = dialog.getBoundingClientRect();
 
     if (sourceRect && dialogRect.width && dialogRect.height) {
-      const originX = ((sourceRect.left + sourceRect.width / 2 - dialogRect.left) / dialogRect.width) * 100;
-      const originY = ((sourceRect.top + sourceRect.height / 2 - dialogRect.top) / dialogRect.height) * 100;
-      dialog.style.setProperty("--modal-origin-x", Math.max(0, Math.min(100, originX)) + "%");
-      dialog.style.setProperty("--modal-origin-y", Math.max(0, Math.min(100, originY)) + "%");
+      const sourceCenterX = sourceRect.left + sourceRect.width / 2;
+      const sourceCenterY = sourceRect.top + sourceRect.height / 2;
+      const dialogCenterX = dialogRect.left + dialogRect.width / 2;
+      const dialogCenterY = dialogRect.top + dialogRect.height / 2;
+
+      dialog.style.setProperty("--modal-shift-x", `${sourceCenterX - dialogCenterX}px`);
+      dialog.style.setProperty("--modal-shift-y", `${sourceCenterY - dialogCenterY}px`);
+      dialog.style.setProperty("--modal-scale-x", String(sourceRect.width / dialogRect.width));
+      dialog.style.setProperty("--modal-scale-y", String(sourceRect.height / dialogRect.height));
     }
   }
 
-  function openAllergenReferenceModal(numbers = []) {
+  function openAllergenReferenceModal(numbers = [], originElement = null) {
     closeAllergenModal();
 
     const modal = document.createElement("div");
@@ -666,7 +671,7 @@
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
 
-    animateAllergenDialog(modal);
+    animateAllergenDialog(modal, originElement);
   }
 
   function renderMeal(data) {
@@ -686,13 +691,13 @@
     els.cards.meal.innerHTML = `
       <div class="meal-content">
         <ul class="meal-list">
-          ${data.items.map((item) => {
+          ${data.items.map((item, index) => {
             const raw = String(item);
             const numbers = extractAllergenNumbers(raw);
             const menuName = cleanMealLabel(raw);
             const numberLabel = numbers.join(".");
 
-            return `<li class="meal-item">
+            return `<li class="meal-item" style="--meal-index:${index}">
               <span class="meal-name">${escapeHtml(menuName)}</span>
               ${numberLabel ? `<button class="meal-allergen-button" type="button" aria-haspopup="dialog" aria-label="${escapeHtml(menuName)} 알레르기 ${escapeHtml(numberLabel)}">${escapeHtml(numberLabel)}</button>` : ""}
             </li>`;
@@ -716,7 +721,7 @@
     });
 
     els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", () => {
-      openAllergenReferenceModal(mealAllergenNumbers);
+      openAllergenReferenceModal(mealAllergenNumbers, els.cards.meal.querySelector(".allergy-button"));
     });
   }
   function normalizeTeacherName(value) {

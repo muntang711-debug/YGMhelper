@@ -1245,3 +1245,167 @@ body.modal-open {
     transform: none !important;
   }
 }
+
+
+/* Unified interaction motion */
+.date-picker {
+  animation: calendar-pop-in .28s cubic-bezier(.22, 1, .36, 1) forwards;
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+.date-picker .calendar-head,
+.date-picker .calendar-weekdays {
+  animation: calendar-content-in .30s cubic-bezier(.22, 1, .36, 1) .03s both;
+}
+
+.date-picker .calendar-grid {
+  animation: calendar-grid-in .32s cubic-bezier(.22, 1, .36, 1) .06s both;
+}
+
+.select-menu {
+  display: grid;
+  gap: 2px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-7px) scale(.975);
+  transform-origin: top right;
+  transition:
+    opacity .20s ease,
+    transform .26s cubic-bezier(.22, 1, .36, 1),
+    visibility 0s linear .20s;
+  will-change: transform, opacity;
+}
+
+.custom-select.is-open .select-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity .18s ease,
+    transform .28s cubic-bezier(.22, 1, .36, 1),
+    visibility 0s;
+}
+
+.custom-select.is-open .select-option {
+  animation: select-option-in .24s cubic-bezier(.22, 1, .36, 1) both;
+}
+.custom-select.is-open .select-option:nth-child(1) { animation-delay: .02s; }
+.custom-select.is-open .select-option:nth-child(2) { animation-delay: .045s; }
+.custom-select.is-open .select-option:nth-child(3) { animation-delay: .07s; }
+.custom-select.is-open .select-option:nth-child(4) { animation-delay: .095s; }
+.custom-select.is-open .select-option:nth-child(5) { animation-delay: .12s; }
+
+.meal-card .meal-content {
+  animation: meal-content-in .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+.meal-card .meal-item {
+  opacity: 0;
+  animation: meal-item-in .34s cubic-bezier(.22, 1, .36, 1)
+    calc(.04s + var(--meal-index, 0) * 52ms) forwards;
+}
+.meal-card .meal-footer {
+  animation: meal-footer-in .34s cubic-bezier(.22, 1, .36, 1) .20s both;
+}
+
+.allergen-backdrop {
+  opacity: 0;
+  animation: allergen-backdrop-in .24s ease forwards;
+}
+.allergen-dialog {
+  transform-origin: center center;
+  animation: allergen-dialog-expand .46s cubic-bezier(.18, .88, .24, 1.06) forwards;
+  will-change: transform, opacity, border-radius;
+}
+.allergen-dialog .allergen-header,
+.allergen-dialog .allergen-menu-name {
+  animation: allergen-content-in .30s cubic-bezier(.22, 1, .36, 1) .16s both;
+}
+.allergen-dialog .allergen-row {
+  opacity: 0;
+  animation: allergen-row-in .30s cubic-bezier(.22, 1, .36, 1)
+    calc(.20s + var(--allergen-index, 0) * 28ms) forwards;
+}
+
+@keyframes calendar-pop-in {
+  from { opacity: 0; transform: translateY(-7px) scale(.965); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes calendar-content-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes calendar-grid-in {
+  from { opacity: 0; transform: translateY(9px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes select-option-in {
+  from { opacity: 0; transform: translateX(7px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes meal-content-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes meal-item-in {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes meal-footer-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes allergen-dialog-expand {
+  from {
+    opacity: 1;
+    transform:
+      translate3d(var(--modal-shift-x, 0px), var(--modal-shift-y, 0px), 0)
+      scale(var(--modal-scale-x, 1), var(--modal-scale-y, 1));
+    border-radius: 9px;
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1.012, 1.012);
+    border-radius: 23px;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1, 1);
+    border-radius: 22px;
+  }
+}
+@keyframes allergen-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes allergen-content-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes allergen-row-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-picker,
+  .date-picker .calendar-head,
+  .date-picker .calendar-weekdays,
+  .date-picker .calendar-grid,
+  .select-option,
+  .meal-card .meal-content,
+  .meal-card .meal-item,
+  .meal-card .meal-footer,
+  .allergen-backdrop,
+  .allergen-dialog,
+  .allergen-dialog .allergen-header,
+  .allergen-dialog .allergen-menu-name,
+  .allergen-dialog .allergen-row {
+    animation: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+}

@@ -1171,3 +1171,77 @@ body.modal-open {
   letter-spacing: -.025em;
   overflow-wrap: anywhere;
 }
+
+
+/* Motion system */
+.period-card {
+  opacity: 0;
+  animation: timetable-card-in .46s cubic-bezier(.22, 1, .36, 1) calc(var(--item-index, 0) * 68ms) forwards;
+  will-change: transform, opacity;
+}
+.allergen-backdrop {
+  opacity: 0;
+  animation: allergen-backdrop-in .26s ease forwards;
+  will-change: opacity;
+}
+.allergen-dialog {
+  transform-origin: var(--modal-origin-x, 50%) var(--modal-origin-y, 50%);
+  animation: allergen-dialog-in .42s cubic-bezier(.2, .9, .25, 1.15) forwards;
+  will-change: transform, opacity;
+}
+.allergen-dialog .allergen-header,
+.allergen-dialog .allergen-menu-name {
+  animation: allergen-content-in .34s cubic-bezier(.22, 1, .36, 1) .08s both;
+}
+.allergen-dialog .allergen-row {
+  opacity: 0;
+  animation: allergen-row-in .34s cubic-bezier(.22, 1, .36, 1)
+    calc(.10s + var(--allergen-index, 0) * 32ms) forwards;
+}
+.meal-allergen-button,
+.allergy-button {
+  transition:
+    transform .24s cubic-bezier(.22, 1, .36, 1),
+    background .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    box-shadow .24s ease;
+}
+.meal-allergen-button:active,
+.allergy-button:active {
+  transform: scale(.94);
+}
+@keyframes timetable-card-in {
+  from { opacity: 0; transform: translate3d(0, 20px, 0) scale(.985); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes allergen-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes allergen-dialog-in {
+  0% { opacity: 0; transform: scale(.16) translate3d(0, 8px, 0); }
+  68% { opacity: 1; transform: scale(1.015) translate3d(0, 0, 0); }
+  100% { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
+}
+@keyframes allergen-content-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes allergen-row-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .period-card,
+  .allergen-backdrop,
+  .allergen-dialog,
+  .allergen-dialog .allergen-header,
+  .allergen-dialog .allergen-menu-name,
+  .allergen-dialog .allergen-row {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

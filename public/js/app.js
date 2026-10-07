@@ -578,7 +578,7 @@
     document.body.classList.remove("modal-open");
   }
 
-  function openAllergenModal(numbers, menuName = "") {
+  function openAllergenModal(numbers, menuName = "", originElement = null) {
     closeAllergenModal();
 
     const modal = document.createElement("div");
@@ -596,8 +596,8 @@
         ${menuName ? `<p class="allergen-menu-name">${escapeHtml(menuName)}</p>` : ""}
         <div class="allergen-scroll">
           <div class="allergen-list">
-            ${numbers.length ? numbers.map((number) => `
-              <div class="allergen-row is-used">
+            ${numbers.length ? numbers.map((number, index) => `
+              <div class="allergen-row is-used" style="--allergen-index:${index}">
                 <span class="allergen-number">${number}</span>
                 <span class="allergen-name">${escapeHtml(ALLERGENS[number])}</span>
               </div>`).join("") : '<div class="allergen-empty">표시된 알레르기 번호가 없습니다.</div>'}
@@ -612,6 +612,23 @@
 
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
+
+    animateAllergenDialog(modal, originElement);
+  }
+
+  function animateAllergenDialog(modal, originElement = null) {
+    const dialog = modal.querySelector(".allergen-dialog");
+    if (!dialog) return;
+
+    const sourceRect = originElement?.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
+
+    if (sourceRect && dialogRect.width && dialogRect.height) {
+      const originX = ((sourceRect.left + sourceRect.width / 2 - dialogRect.left) / dialogRect.width) * 100;
+      const originY = ((sourceRect.top + sourceRect.height / 2 - dialogRect.top) / dialogRect.height) * 100;
+      dialog.style.setProperty("--modal-origin-x", Math.max(0, Math.min(100, originX)) + "%");
+      dialog.style.setProperty("--modal-origin-y", Math.max(0, Math.min(100, originY)) + "%");
+    }
   }
 
   function openAllergenReferenceModal(numbers = []) {
@@ -631,8 +648,8 @@
         </div>
         <div class="allergen-scroll">
           <div class="allergen-list">
-            ${Object.entries(ALLERGENS).map(([number, name]) => `
-              <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}">
+            ${Object.entries(ALLERGENS).map(([number, name], index) => `
+              <div class="allergen-row${numbers.includes(Number(number)) ? " is-used" : ""}" style="--allergen-index:${index}">
                 <span class="allergen-number">${number}</span>
                 <span class="allergen-name">${escapeHtml(name)}</span>
                 ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
@@ -648,6 +665,8 @@
 
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
+
+    animateAllergenDialog(modal);
   }
 
   function renderMeal(data) {
@@ -692,7 +711,7 @@
       button.addEventListener("click", () => {
         const numbers = extractAllergenNumbers(button.textContent);
         const menuName = button.parentElement?.querySelector(".meal-name")?.textContent || "";
-        openAllergenModal(numbers, menuName);
+        openAllergenModal(numbers, menuName, button);
       });
     });
 
@@ -722,12 +741,12 @@
 
     els.cards.timetable.innerHTML = `
       <div class="timetable-list">
-        ${items.map((item) => {
+        ${items.map((item, index) => {
           const teacher = normalizeTeacherName(item.teacher);
           const location = String(item.location || "").trim();
 
           return `
-            <article class="period-card${item.changed ? " is-changed" : ""}">
+            <article class="period-card${item.changed ? " is-changed" : ""}" style="--item-index:${index}">
               <span class="period-card-number">${escapeHtml(item.period)}교시</span>
               <div class="period-card-main">
                 <div class="period-card-subject-row">

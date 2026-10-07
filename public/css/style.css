@@ -1345,6 +1345,10 @@ body.modal-open {
   will-change: transform, opacity;
 }
 
+.allergen-dialog.is-closing .allergen-trigger-target {
+  animation: allergen-trigger-text-out .34s cubic-bezier(.32, .08, .68, .2) forwards;
+}
+
 .allergen-dialog.is-closing .allergen-header,
 .allergen-dialog.is-closing .allergen-menu-name,
 .allergen-dialog.is-closing .allergen-row {
@@ -1428,6 +1432,19 @@ body.modal-open {
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes allergen-trigger-text-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform:
+      translate3d(var(--trigger-text-x, 0px), var(--trigger-text-y, 0px), 0)
+      scale(var(--trigger-text-scale, .8));
   }
 }
 

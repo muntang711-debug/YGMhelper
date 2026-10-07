@@ -1314,19 +1314,41 @@ body.modal-open {
   opacity: 0;
   animation: allergen-backdrop-in .24s ease forwards;
 }
+.allergen-backdrop.is-closing {
+  animation: allergen-backdrop-out .32s ease forwards;
+}
+
 .allergen-dialog {
   transform-origin: center center;
-  animation: allergen-dialog-expand .46s cubic-bezier(.18, .88, .24, 1.06) forwards;
+  animation: allergen-dialog-expand .48s cubic-bezier(.18, .88, .24, 1.04) forwards;
   will-change: transform, opacity, border-radius;
+  overflow: hidden;
 }
+.allergen-dialog.is-closing {
+  animation: allergen-dialog-contract .40s cubic-bezier(.32, .08, .68, .2) forwards;
+}
+
 .allergen-dialog .allergen-header,
 .allergen-dialog .allergen-menu-name {
-  animation: allergen-content-in .30s cubic-bezier(.22, 1, .36, 1) .16s both;
+  animation: allergen-content-in .30s cubic-bezier(.22, 1, .36, 1) .14s both;
 }
+
 .allergen-dialog .allergen-row {
   opacity: 0;
   animation: allergen-row-in .30s cubic-bezier(.22, 1, .36, 1)
-    calc(.20s + var(--allergen-index, 0) * 28ms) forwards;
+    calc(.18s + var(--allergen-index, 0) * 28ms) forwards;
+}
+
+.allergen-dialog .allergen-trigger-target {
+  animation: allergen-trigger-text-in .42s cubic-bezier(.22, 1, .36, 1) .02s both;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.allergen-dialog.is-closing .allergen-header,
+.allergen-dialog.is-closing .allergen-menu-name,
+.allergen-dialog.is-closing .allergen-row {
+  animation: none;
 }
 
 @keyframes calendar-pop-in {
@@ -1357,28 +1379,65 @@ body.modal-open {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
 @keyframes allergen-dialog-expand {
-  from {
+  0% {
     opacity: 1;
     transform:
       translate3d(var(--modal-shift-x, 0px), var(--modal-shift-y, 0px), 0)
       scale(var(--modal-scale-x, 1), var(--modal-scale-y, 1));
-    border-radius: 9px;
+    border-radius: var(--modal-start-radius, 10px);
   }
-  72% {
+  70% {
     opacity: 1;
-    transform: scale(1.012, 1.012);
+    transform: scale(1.012);
     border-radius: 23px;
   }
-  to {
+  100% {
     opacity: 1;
-    transform: scale(1, 1);
+    transform: scale(1);
     border-radius: 22px;
   }
 }
+
+@keyframes allergen-dialog-contract {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    border-radius: 22px;
+  }
+  100% {
+    opacity: 1;
+    transform:
+      translate3d(var(--modal-shift-x, 0px), var(--modal-shift-y, 0px), 0)
+      scale(var(--modal-scale-x, 1), var(--modal-scale-y, 1));
+    border-radius: var(--modal-start-radius, 10px);
+  }
+}
+
+@keyframes allergen-trigger-text-in {
+  0% {
+    opacity: 1;
+    transform:
+      translate3d(var(--trigger-text-x, 0px), var(--trigger-text-y, 0px), 0)
+      scale(var(--trigger-text-scale, .8));
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 @keyframes allergen-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes allergen-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 @keyframes allergen-content-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -1402,7 +1461,8 @@ body.modal-open {
   .allergen-dialog,
   .allergen-dialog .allergen-header,
   .allergen-dialog .allergen-menu-name,
-  .allergen-dialog .allergen-row {
+  .allergen-dialog .allergen-row,
+  .allergen-dialog .allergen-trigger-target {
     animation: none !important;
     opacity: 1 !important;
     visibility: visible !important;

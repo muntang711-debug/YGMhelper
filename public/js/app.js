@@ -573,13 +573,100 @@
       .trim();
   }
 
-  function closeAllergenModal() {
-    document.querySelector(".allergen-modal")?.remove();
+  function removeAllergenModalNow(modal = document.querySelector(".allergen-modal")) {
+    if (modal) {
+      const origin = modal._allergenOriginElement;
+      if (origin) {
+        origin.hidden = false;
+        origin.style.visibility = modal._allergenOriginVisibility || "";
+      }
+      modal.remove();
+    }
     document.body.classList.remove("modal-open");
   }
 
+  function closeAllergenModal() {
+    const modal = document.querySelector(".allergen-modal");
+    if (!modal || modal.classList.contains("is-closing")) return;
+
+    const dialog = modal.querySelector(".allergen-dialog");
+    const backdrop = modal.querySelector(".allergen-backdrop");
+    const origin = modal._allergenOriginElement;
+    const sourceRect = modal._allergenSourceRect;
+
+    if (!dialog || !sourceRect || !origin) {
+      removeAllergenModalNow(modal);
+      return;
+    }
+
+    modal.classList.add("is-closing");
+    dialog.classList.add("is-closing");
+    backdrop?.classList.add("is-closing");
+
+    requestAnimationFrame(() => {
+      dialog.style.setProperty("--modal-shift-x", modal._allergenShiftX);
+      dialog.style.setProperty("--modal-shift-y", modal._allergenShiftY);
+      dialog.style.setProperty("--modal-scale-x", modal._allergenScaleX);
+      dialog.style.setProperty("--modal-scale-y", modal._allergenScaleY);
+    });
+
+    window.setTimeout(() => removeAllergenModalNow(modal), 430);
+  }
+
+  function prepareAllergenMorph(modal, originElement, targetElement) {
+    const dialog = modal.querySelector(".allergen-dialog");
+    if (!dialog || !originElement) return;
+
+    const sourceRect = originElement.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
+
+    if (!sourceRect.width || !sourceRect.height || !dialogRect.width || !dialogRect.height) return;
+
+    const sourceCenterX = sourceRect.left + sourceRect.width / 2;
+    const sourceCenterY = sourceRect.top + sourceRect.height / 2;
+    const dialogCenterX = dialogRect.left + dialogRect.width / 2;
+    const dialogCenterY = dialogRect.top + dialogRect.height / 2;
+
+    const shiftX = sourceCenterX - dialogCenterX;
+    const shiftY = sourceCenterY - dialogCenterY;
+    const scaleX = sourceRect.width / dialogRect.width;
+    const scaleY = sourceRect.height / dialogRect.height;
+
+    modal._allergenOriginElement = originElement;
+    modal._allergenOriginVisibility = originElement.style.visibility;
+    modal._allergenSourceRect = sourceRect;
+    modal._allergenShiftX = `${shiftX}px`;
+    modal._allergenShiftY = `${shiftY}px`;
+    modal._allergenScaleX = String(scaleX);
+    modal._allergenScaleY = String(scaleY);
+
+    dialog.style.setProperty("--modal-shift-x", modal._allergenShiftX);
+    dialog.style.setProperty("--modal-shift-y", modal._allergenShiftY);
+    dialog.style.setProperty("--modal-scale-x", modal._allergenScaleX);
+    dialog.style.setProperty("--modal-scale-y", modal._allergenScaleY);
+    dialog.style.setProperty("--modal-start-radius", getComputedStyle(originElement).borderRadius);
+
+    if (targetElement) {
+      const targetRect = targetElement.getBoundingClientRect();
+      const targetCenterX = targetRect.left + targetRect.width / 2;
+      const targetCenterY = targetRect.top + targetRect.height / 2;
+      targetElement.style.setProperty("--trigger-text-x", `${sourceCenterX - targetCenterX}px`);
+      targetElement.style.setProperty("--trigger-text-y", `${sourceCenterY - targetCenterY}px`);
+      targetElement.style.setProperty(
+        "--trigger-text-scale",
+        String(Math.min(1.2, Math.max(.65, sourceRect.height / Math.max(targetRect.height, 1))))
+      );
+      targetElement.classList.add("allergen-trigger-target");
+    }
+
+    originElement.style.visibility = "hidden";
+    requestAnimationFrame(() => {
+      dialog.classList.add("is-opening");
+    });
+  }
+
   function openAllergenModal(numbers, menuName = "", originElement = null) {
-    closeAllergenModal();
+    removeAllergenModalNow();
 
     const modal = document.createElement("div");
     modal.className = "allergen-modal";
@@ -602,7 +689,6 @@
                 <span class="allergen-name">${escapeHtml(ALLERGENS[number])}</span>
               </div>`).join("") : '<div class="allergen-empty">표시된 알레르기 번호가 없습니다.</div>'}
           </div>
-
         </div>
       </section>`;
 
@@ -613,31 +699,12 @@
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
 
-    animateAllergenDialog(modal, originElement);
-  }
-
-  function animateAllergenDialog(modal, originElement = null) {
-    const dialog = modal.querySelector(".allergen-dialog");
-    if (!dialog) return;
-
-    const sourceRect = originElement?.getBoundingClientRect();
-    const dialogRect = dialog.getBoundingClientRect();
-
-    if (sourceRect && dialogRect.width && dialogRect.height) {
-      const sourceCenterX = sourceRect.left + sourceRect.width / 2;
-      const sourceCenterY = sourceRect.top + sourceRect.height / 2;
-      const dialogCenterX = dialogRect.left + dialogRect.width / 2;
-      const dialogCenterY = dialogRect.top + dialogRect.height / 2;
-
-      dialog.style.setProperty("--modal-shift-x", `${sourceCenterX - dialogCenterX}px`);
-      dialog.style.setProperty("--modal-shift-y", `${sourceCenterY - dialogCenterY}px`);
-      dialog.style.setProperty("--modal-scale-x", String(sourceRect.width / dialogRect.width));
-      dialog.style.setProperty("--modal-scale-y", String(sourceRect.height / dialogRect.height));
-    }
+    const target = modal.querySelector(".allergen-number");
+    prepareAllergenMorph(modal, originElement, target);
   }
 
   function openAllergenReferenceModal(numbers = [], originElement = null) {
-    closeAllergenModal();
+    removeAllergenModalNow();
 
     const modal = document.createElement("div");
     modal.className = "allergen-modal";
@@ -660,7 +727,6 @@
                 ${numbers.includes(Number(number)) ? '<span class="allergen-used">오늘 사용</span>' : ""}
               </div>`).join("")}
           </div>
-
         </div>
       </section>`;
 
@@ -671,7 +737,8 @@
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
 
-    animateAllergenDialog(modal, originElement);
+    const target = modal.querySelector("#allergen-title");
+    prepareAllergenMorph(modal, originElement, target);
   }
 
   function renderMeal(data) {

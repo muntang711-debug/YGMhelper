@@ -1486,3 +1486,207 @@ body.modal-open {
     transform: none !important;
   }
 }
+
+
+/* Community meal ratings */
+.meal-rating-panel {
+  margin-top: 26px;
+  padding-top: 23px;
+  border-top: 1px solid var(--line);
+  animation: meal-footer-in .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+.meal-rating-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+.meal-rating-kicker {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.meal-rating-copy h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+.meal-rating-description {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.meal-rating-summary {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  padding-top: 1px;
+}
+.meal-rating-summary .rating-average {
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+}
+.meal-rating-summary .rating-count {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+.meal-rating-options {
+  display: grid;
+  gap: 7px;
+}
+.meal-rating-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(112px, auto) minmax(30px, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 43px;
+  padding: 7px 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-solid);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease, opacity .18s ease;
+}
+.meal-rating-option:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+.meal-rating-option.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 66%, var(--line));
+  background: var(--accent-soft);
+}
+.meal-rating-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.meal-rating-option:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+.meal-rating-option-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.meal-rating-emoji {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  font-size: 15px;
+}
+.meal-rating-option.is-selected .meal-rating-emoji {
+  background: var(--surface-solid);
+}
+.meal-rating-option-name {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.meal-rating-option-meter {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface-muted);
+}
+.meal-rating-option-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .28s cubic-bezier(.2, .8, .2, 1);
+}
+.meal-rating-option-count {
+  color: var(--text-soft);
+  text-align: right;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.meal-rating-option.is-selected .meal-rating-option-count {
+  color: var(--accent);
+}
+.meal-rating-status {
+  min-height: 16px;
+  margin: 11px 1px 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .meal-rating-panel {
+    margin-top: 24px;
+    padding-top: 21px;
+  }
+  .meal-rating-heading {
+    gap: 9px;
+  }
+  .meal-rating-copy h3 {
+    font-size: 17px;
+  }
+  .meal-rating-description {
+    max-width: 210px;
+    font-size: 11px;
+  }
+  .meal-rating-summary .rating-average {
+    font-size: 22px;
+  }
+  .meal-rating-option {
+    grid-template-columns: minmax(107px, auto) minmax(20px, 1fr) 21px;
+    gap: 7px;
+    min-height: 43px;
+    padding: 7px 8px;
+  }
+  .meal-rating-option-label {
+    gap: 7px;
+  }
+  .meal-rating-emoji {
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+  }
+  .meal-rating-option-name,
+  .meal-rating-option-count {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meal-rating-panel,
+  .meal-rating-option,
+  .meal-rating-option-fill {
+    animation: none !important;
+    transition: none !important;
+  }
+}

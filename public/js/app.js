@@ -12,6 +12,14 @@
     calendarDraftDate: new Date()
   };
 
+  const MEAL_RATING_OPTIONS = [
+    { value: 5, label: "매우 맛있음", emoji: "🤩" },
+    { value: 4, label: "맛있음", emoji: "😋" },
+    { value: 3, label: "갈만함", emoji: "🙂" },
+    { value: 2, label: "안 가도 됨", emoji: "😐" },
+    { value: 1, label: "가지 마", emoji: "🙅" }
+  ];
+
   const HOLIDAYS = {
     "2026-01-01": "신정",
     "2026-02-16": "설날 연휴",
@@ -741,6 +749,166 @@
     prepareAllergenMorph(modal, originElement, target);
   }
 
+  function createMealVoterId() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+    return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" +
+      hex.slice(16, 20) + "-" + hex.slice(20);
+  }
+
+  function getMealVoterId() {
+    const storageKey = "ygmhelper-meal-voter-v1";
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved)) {
+        return saved;
+      }
+      const created = createMealVoterId();
+      localStorage.setItem(storageKey, created);
+      return created;
+    } catch (error) {
+      return createMealVoterId();
+    }
+  }
+
+  function updateMealRatingPanel(panel, data) {
+    if (!panel?.isConnected) return;
+
+    const counts = data.counts || {};
+    const total = Math.max(0, Number(data.total) || 0);
+    const average = total > 0 && Number.isFinite(Number(data.average))
+      ? Number(data.average).toFixed(1)
+      : "—";
+    const averageElement = panel.querySelector(".rating-average");
+    const totalElement = panel.querySelector(".rating-count");
+    if (averageElement) averageElement.textContent = average;
+    if (totalElement) totalElement.textContent = total + "표";
+
+    const mine = Number(data.myRating) || 0;
+    panel.querySelectorAll(".meal-rating-option").forEach((button) => {
+      const rating = Number(button.dataset.rating);
+      const count = Math.max(0, Number(counts[String(rating)]) || 0);
+      const countElement = button.querySelector(".meal-rating-option-count");
+      const fill = button.querySelector(".meal-rating-option-fill");
+      const isSelected = mine === rating;
+
+      button.classList.toggle("is-selected", isSelected);
+      button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      if (countElement) countElement.textContent = String(count);
+      if (fill) fill.style.width = (total ? (count / total) * 100 : 0) + "%";
+    });
+
+    const status = panel.querySelector(".meal-rating-status");
+    const selected = MEAL_RATING_OPTIONS.find((option) => option.value === mine);
+    if (!status) return;
+    if (selected) {
+      status.textContent = "내 평가: " + selected.label + " · 다른 등급을 누르면 변경돼요.";
+    } else if (total > 0) {
+      status.textContent = "먹어본 급식에 가장 가까운 평가를 선택해 주세요.";
+    } else {
+      status.textContent = "첫 평가를 남겨보세요.";
+    }
+  }
+
+  function setupMealRating(date) {
+    const ratingDate = String(date || formatDateParam(state.date));
+    const panel = document.createElement("section");
+    panel.className = "meal-rating-panel";
+    panel.setAttribute("aria-label", "급식 맛 평가");
+    panel.dataset.date = ratingDate;
+
+    const optionsMarkup = MEAL_RATING_OPTIONS.map((option) =>
+      '<button class="meal-rating-option" type="button" data-rating="' + option.value +
+      '" aria-pressed="false" disabled>' +
+        '<span class="meal-rating-option-label">' +
+          '<span class="meal-rating-emoji" aria-hidden="true">' + option.emoji + '</span>' +
+          '<span class="meal-rating-option-name">' + escapeHtml(option.label) + '</span>' +
+        '</span>' +
+        '<span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span>' +
+        '<span class="meal-rating-option-count">0</span>' +
+      '</button>'
+    ).join("");
+
+    panel.innerHTML =
+      '<div class="meal-rating-heading">' +
+        '<div class="meal-rating-copy">' +
+          '<p class="meal-rating-kicker">TASTE CHECK</p>' +
+          '<h3>오늘의 급식 맛 평가</h3>' +
+          '<p class="meal-rating-description">직접 먹어본 급식에 투표해 주세요.</p>' +
+        '</div>' +
+        '<div class="meal-rating-summary" aria-live="polite">' +
+          '<strong class="rating-average">—</strong>' +
+          '<span class="rating-count">집계 중</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' +
+        optionsMarkup +
+      '</div>' +
+      '<p class="meal-rating-status" role="status" aria-live="polite">평가를 불러오는 중…</p>';
+
+    els.cards.meal.appendChild(panel);
+
+    const voterId = getMealVoterId();
+    panel.querySelectorAll(".meal-rating-option").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        const buttons = Array.from(panel.querySelectorAll(".meal-rating-option"));
+        buttons.forEach((item) => { item.disabled = true; });
+        const status = panel.querySelector(".meal-rating-status");
+        if (status) status.textContent = "평가 저장 중…";
+
+        try {
+          const response = await fetch("/api/meal-rating", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json"
+            },
+            cache: "no-store",
+            body: JSON.stringify({
+              date: ratingDate,
+              voterId,
+              rating: Number(button.dataset.rating)
+            })
+          });
+          const body = await response.json().catch(() => null);
+          if (!response.ok || !body?.ok) {
+            throw new Error(body?.error || "평가를 저장하지 못했습니다.");
+          }
+          updateMealRatingPanel(panel, body);
+        } catch (error) {
+          if (status) status.textContent = error.message || "평가를 저장하지 못했습니다. 다시 시도해 주세요.";
+        } finally {
+          if (panel.isConnected) {
+            panel.querySelectorAll(".meal-rating-option").forEach((item) => {
+              item.disabled = false;
+            });
+          }
+        }
+      });
+    });
+
+    fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate) +
+      "&voter=" + encodeURIComponent(voterId))
+      .then((data) => {
+        if (!panel.isConnected) return;
+        updateMealRatingPanel(panel, data);
+      })
+      .catch(() => {
+        const status = panel.querySelector(".meal-rating-status");
+        if (status) status.textContent = "평가 정보를 불러오지 못했어요. 등급을 선택해 다시 시도해 주세요.";
+      })
+      .finally(() => {
+        if (!panel.isConnected) return;
+        panel.querySelectorAll(".meal-rating-option").forEach((button) => {
+          button.disabled = false;
+        });
+      });
+  }
+
   function renderMeal(data) {
     if (!data?.items?.length) {
       els.cards.meal.innerHTML = `
@@ -790,7 +958,10 @@
     els.cards.meal.querySelector(".allergy-button")?.addEventListener("click", () => {
       openAllergenReferenceModal(mealAllergenNumbers, els.cards.meal.querySelector(".allergy-button"));
     });
+
+    setupMealRating(data.date || formatDateParam(state.date));
   }
+
   function normalizeTeacherName(value) {
     const raw = String(value || "").replace(/\*/g, "").trim();
     if (!raw) return "";

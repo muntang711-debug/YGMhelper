@@ -2,6 +2,13 @@
   "name": "ygmhelper",
   "main": "src/worker.js",
   "compatibility_date": "2026-10-04",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ygmhelper-meal-ratings",
+      "database_id": "55933f3b-ba4a-4589-a8ca-c31fc94273d4"
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

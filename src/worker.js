@@ -667,6 +667,127 @@ async function handleMeal(url, env) {
   });
 }
 
+
+function validMealRatingDate(value) {
+  if (!validDate(value)) return false;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(4, 6));
+  const day = Number(value.slice(6, 8));
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+}
+
+function validMealVoterId(value) {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function hashMealVoterId(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function readMealRatingSummary(date, voterKey, env) {
+  const aggregate = await env.DB.prepare(
+    "SELECT rating, COUNT(*) AS vote_count FROM meal_ratings WHERE date = ? GROUP BY rating"
+  ).bind(date).all();
+
+  const counts = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+  let total = 0;
+  let weightedTotal = 0;
+
+  for (const row of aggregate.results || []) {
+    const rating = Number(row.rating);
+    const count = Math.max(0, Number(row.vote_count) || 0);
+    if (rating < 1 || rating > 5) continue;
+    counts[String(rating)] = count;
+    total += count;
+    weightedTotal += rating * count;
+  }
+
+  let myRating = null;
+  if (voterKey) {
+    const personal = await env.DB.prepare(
+      "SELECT rating FROM meal_ratings WHERE date = ? AND voter_key = ? LIMIT 1"
+    ).bind(date, voterKey).first();
+    if (personal) myRating = Number(personal.rating);
+  }
+
+  return json({
+    ok: true,
+    date,
+    counts,
+    total,
+    average: total ? Math.round((weightedTotal / total) * 10) / 10 : null,
+    myRating
+  });
+}
+
+async function handleMealRating(request, url, env) {
+  if (!env.DB) {
+    return json({ ok: false, error: "맛 평가 저장소가 아직 연결되지 않았습니다." }, 503);
+  }
+
+  if (request.method === "GET") {
+    const date = url.searchParams.get("date") || "";
+    if (!validMealRatingDate(date)) {
+      return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+    }
+
+    const voterId = url.searchParams.get("voter") || "";
+    const voterKey = validMealVoterId(voterId) ? await hashMealVoterId(voterId) : null;
+    return readMealRatingSummary(date, voterKey, env);
+  }
+
+  if (request.method === "POST") {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return json({ ok: false, error: "평가 요청 형식이 올바르지 않습니다." }, 400);
+    }
+
+    const date = typeof body.date === "string" ? body.date : "";
+    const voterId = typeof body.voterId === "string" ? body.voterId : "";
+    const rating = body.rating;
+
+    if (!validMealRatingDate(date)) {
+      return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
+    }
+    if (!validMealVoterId(voterId)) {
+      return json({ ok: false, error: "평가 기기 정보가 올바르지 않습니다." }, 400);
+    }
+    if (typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return json({ ok: false, error: "평가 등급이 올바르지 않습니다." }, 400);
+    }
+
+    const voterKey = await hashMealVoterId(voterId);
+    await env.DB.prepare(
+      "INSERT INTO meal_ratings (date, voter_key, rating) VALUES (?, ?, ?) " +
+      "ON CONFLICT(date, voter_key) DO UPDATE SET rating = excluded.rating, updated_at = CURRENT_TIMESTAMP"
+    ).bind(date, voterKey, rating).run();
+
+    return readMealRatingSummary(date, voterKey, env);
+  }
+
+  return json({ ok: false, error: "지원하지 않는 요청 방식입니다." }, 405, {
+    Allow: "GET, POST"
+  });
+}
+
+async function handleMealRatingApi(request, url, env) {
+  try {
+    return await handleMealRating(request, url, env);
+  } catch (error) {
+    console.error("meal-rating", {
+      name: error?.name,
+      message: error?.message
+    });
+    return json({ ok: false, error: "맛 평가를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
+  }
+}
+
 async function handleApi(handler, env, { requireNeisKey = false } = {}) {
   if (requireNeisKey && !env.NEIS_API_KEY) {
     return json({
@@ -697,6 +818,10 @@ async function handleApi(handler, env, { requireNeisKey = false } = {}) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/meal-rating") {
+      return handleMealRatingApi(request, url, env);
+    }
 
     if (url.pathname === "/api/meal") {
       return handleApi(() => handleMeal(url, env), env, { requireNeisKey: true });

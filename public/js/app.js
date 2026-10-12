@@ -372,7 +372,7 @@
     makeDraftDate();
 
     const picker = document.createElement("div");
-    picker.className = "date-picker is-opening";
+    picker.className = "date-picker";
     picker.setAttribute("role", "dialog");
     picker.setAttribute("aria-label", "날짜 선택");
     state.calendarOpen = true;
@@ -406,6 +406,10 @@
 
     renderCalendar(picker);
     els.dateControl.appendChild(picker);
+    // Start the entrance animation only after the popup is attached and has a painted initial state.
+    requestAnimationFrame(() => {
+      if (picker.isConnected) picker.classList.add("is-opening");
+    });
 
     els.dateControl.querySelector(".date-trigger").setAttribute("aria-expanded", "true");
   }

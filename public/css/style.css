@@ -1250,7 +1250,7 @@ body.modal-open {
 /* Unified interaction motion */
 .date-picker {
   animation: calendar-pop-in .28s cubic-bezier(.22, 1, .36, 1) forwards;
-  transform-origin: top center;
+  transform-origin: top right;
   will-change: transform, opacity;
 }
 
@@ -1288,7 +1288,7 @@ body.modal-open {
   visibility: hidden;
   pointer-events: none;
   transform: translateY(-7px) scale(.975);
-  transform-origin: top right;
+  transform-origin: top center;
   transition:
     opacity .20s ease,
     transform .26s cubic-bezier(.22, 1, .36, 1),

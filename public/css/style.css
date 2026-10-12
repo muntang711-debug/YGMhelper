@@ -1250,7 +1250,7 @@ body.modal-open {
 /* Unified interaction motion */
 .date-picker {
   animation: calendar-pop-in .28s cubic-bezier(.22, 1, .36, 1) forwards;
-  transform-origin: top right;
+  transform-origin: top center;
   will-change: transform, opacity;
 }
 
@@ -1261,6 +1261,24 @@ body.modal-open {
 
 .date-picker .calendar-grid {
   animation: calendar-grid-in .32s cubic-bezier(.22, 1, .36, 1) .06s both;
+}
+
+/* Month navigation moves horizontally; the popup's opening motion stays vertical. */
+.date-picker.is-month-forward .calendar-head,
+.date-picker.is-month-forward .calendar-weekdays,
+.date-picker.is-month-backward .calendar-head,
+.date-picker.is-month-backward .calendar-weekdays {
+  animation: none;
+}
+
+.date-picker.is-month-forward .calendar-title,
+.date-picker.is-month-forward .calendar-grid {
+  animation: calendar-month-from-right .24s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.date-picker.is-month-backward .calendar-title,
+.date-picker.is-month-backward .calendar-grid {
+  animation: calendar-month-from-left .24s cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .select-menu {
@@ -1367,9 +1385,17 @@ body.modal-open {
   from { opacity: 0; transform: translateY(9px) scale(.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes select-option-in {
-  from { opacity: 0; transform: translateX(7px); }
+@keyframes calendar-month-from-right {
+  from { opacity: 0; transform: translateX(18px); }
   to { opacity: 1; transform: translateX(0); }
+}
+@keyframes calendar-month-from-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes select-option-in {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes meal-content-in {
   from { opacity: 0; transform: translateY(7px); }

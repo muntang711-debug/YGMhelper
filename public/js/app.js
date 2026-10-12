@@ -381,8 +381,12 @@
 
       const nav = event.target.closest("[data-cal-nav]");
       if (nav) {
-        shiftCalendarMonth(Number(nav.dataset.calNav));
-        renderCalendar(picker);
+        const delta = Number(nav.dataset.calNav);
+        if (shiftCalendarMonth(delta)) {
+          picker.classList.toggle("is-month-forward", delta > 0);
+          picker.classList.toggle("is-month-backward", delta < 0);
+          renderCalendar(picker);
+        }
         return;
       }
 

@@ -1249,9 +1249,13 @@ body.modal-open {
 
 /* Unified interaction motion */
 .date-picker {
-  animation: calendar-pop-in .34s cubic-bezier(.22, 1, .36, 1) both;
+  animation: none;
   transform-origin: top right;
   will-change: transform, opacity;
+}
+
+.date-picker.is-opening {
+  animation: calendar-pop-in .38s cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .date-picker .calendar-head,

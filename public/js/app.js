@@ -372,7 +372,7 @@
     makeDraftDate();
 
     const picker = document.createElement("div");
-    picker.className = "date-picker";
+    picker.className = "date-picker is-opening";
     picker.setAttribute("role", "dialog");
     picker.setAttribute("aria-label", "날짜 선택");
     state.calendarOpen = true;

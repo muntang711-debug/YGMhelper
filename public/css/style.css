@@ -1494,7 +1494,6 @@ body.modal-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .date-picker,
   .date-picker .calendar-head,
   .date-picker .calendar-weekdays,
   .date-picker .calendar-grid,

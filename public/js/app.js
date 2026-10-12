@@ -433,9 +433,10 @@
     let disabled = false;
 
     function renderOptions() {
-      menu.innerHTML = options.map((option) => `
+      menu.innerHTML = options.map((option, index) => `
         <button
           class="select-option${option.value === current ? " is-selected" : ""}"
+          style="--option-index:${index}"
           type="button"
           role="option"
           aria-selected="${option.value === current}"

@@ -1310,11 +1310,9 @@ body.modal-open {
 .custom-select.is-open .select-option {
   animation: select-option-in .24s cubic-bezier(.22, 1, .36, 1) both;
 }
-.custom-select.is-open .select-option:nth-child(1) { animation-delay: .02s; }
-.custom-select.is-open .select-option:nth-child(2) { animation-delay: .045s; }
-.custom-select.is-open .select-option:nth-child(3) { animation-delay: .07s; }
-.custom-select.is-open .select-option:nth-child(4) { animation-delay: .095s; }
-.custom-select.is-open .select-option:nth-child(5) { animation-delay: .12s; }
+.custom-select.is-open .select-option {
+  animation-delay: calc(.02s + var(--option-index, 0) * .025s);
+}
 
 .meal-card .meal-content {
   animation: meal-content-in .34s cubic-bezier(.22, 1, .36, 1) both;

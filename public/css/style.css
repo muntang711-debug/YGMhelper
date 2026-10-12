@@ -1502,14 +1502,6 @@ body.modal-open {
   gap: 14px;
   margin-bottom: 15px;
 }
-.meal-rating-kicker {
-  margin: 0 0 6px;
-  color: var(--accent);
-  font-size: 10px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: .14em;
-}
 .meal-rating-copy h3 {
   margin: 0;
   color: var(--text);

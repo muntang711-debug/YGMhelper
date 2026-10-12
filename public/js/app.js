@@ -805,7 +805,7 @@
     const selected = MEAL_RATING_OPTIONS.find((option) => option.value === mine);
     if (!status) return;
     if (selected) {
-      status.textContent = "내 평가: " + selected.label + " · 다른 등급을 누르면 변경돼요.";
+      status.textContent = "";
     } else if (total > 0) {
       status.textContent = "먹어본 급식에 가장 가까운 평가를 선택해 주세요.";
     } else {
@@ -835,7 +835,6 @@
     panel.innerHTML =
       '<div class="meal-rating-heading">' +
         '<div class="meal-rating-copy">' +
-          '<p class="meal-rating-kicker">TASTE CHECK</p>' +
           '<h3>오늘의 급식 맛 평가</h3>' +
           '<p class="meal-rating-description">직접 먹어본 급식에 투표해 주세요.</p>' +
         '</div>' +

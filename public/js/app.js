@@ -857,7 +857,6 @@
         const buttons = Array.from(panel.querySelectorAll(".meal-rating-option"));
         buttons.forEach((item) => { item.disabled = true; });
         const status = panel.querySelector(".meal-rating-status");
-        if (status) status.textContent = "평가 저장 중…";
 
         try {
           const response = await fetch("/api/meal-rating", {

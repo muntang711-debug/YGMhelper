@@ -825,12 +825,12 @@
     const status = panel.querySelector(".meal-rating-status");
     const selected = MEAL_RATING_OPTIONS.find((option) => option.value === mine);
     if (!status) return;
-    if (selected) {
+    if (selected || total > 0) {
       status.textContent = "";
-    } else if (total > 0) {
-      status.textContent = "";
+      status.hidden = true;
     } else {
       status.textContent = "첫 평가를 남겨보세요.";
+      status.hidden = false;
     }
   }
 

@@ -306,13 +306,19 @@
       nextMonth.getMonth(),
       state.calendarDraftDate.getDate()
     );
-
-    state.calendarMonth = nextMonth;
-    state.calendarDraftDate = new Date(
+    const proposedDate = new Date(
       nextMonth.getFullYear(),
       nextMonth.getMonth(),
       nextDay
     );
+    const { minDate, maxDate } = getSelectableDateRange();
+
+    state.calendarMonth = nextMonth;
+    state.calendarDraftDate = startOfDay(proposedDate) < minDate
+      ? new Date(minDate)
+      : startOfDay(proposedDate) > maxDate
+        ? new Date(maxDate)
+        : proposedDate;
 
     return true;
   }

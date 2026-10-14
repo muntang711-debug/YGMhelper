@@ -828,7 +828,7 @@
     if (selected) {
       status.textContent = "";
     } else if (total > 0) {
-      status.textContent = "먹어본 급식에 가장 가까운 평가를 선택해 주세요.";
+      status.textContent = "";
     } else {
       status.textContent = "첫 평가를 남겨보세요.";
     }
@@ -857,7 +857,7 @@
       '<div class="meal-rating-heading">' +
         '<div class="meal-rating-copy">' +
           '<h3>오늘의 급식 맛 평가</h3>' +
-          '<p class="meal-rating-description">직접 먹어본 급식에 투표해 주세요.</p>' +
+
         '</div>' +
         '<div class="meal-rating-summary" aria-live="polite">' +
           '<strong class="rating-average">—</strong>' +

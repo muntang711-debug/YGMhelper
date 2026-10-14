@@ -239,25 +239,29 @@
     ].join("-");
   }
 
-  function mealMaxDate(now = new Date()) {
-    const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const releaseStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      endOfCurrentMonth.getDate() - 2
-    );
+  function getSelectableDateRange(now = new Date()) {
+    const today = startOfDay(now);
+    const weekday = today.getDay();
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() - (weekday === 0 ? 6 : weekday - 1));
 
-    return startOfDay(now) >= releaseStart
-      ? new Date(now.getFullYear(), now.getMonth() + 2, 0)
-      : endOfCurrentMonth;
+    const maxDate = new Date(minDate);
+    maxDate.setDate(minDate.getDate() + 13);
+
+    return { minDate, maxDate };
   }
 
   function isDateSelectable(date) {
-    return startOfDay(date) <= startOfDay(mealMaxDate());
+    const { minDate, maxDate } = getSelectableDateRange();
+    const value = startOfDay(date);
+    return value >= minDate && value <= maxDate;
   }
 
   function canNavigateToMonth(year, monthIndex) {
-    return startOfMonth(new Date(year, monthIndex, 1)) <= startOfMonth(mealMaxDate());
+    const { minDate, maxDate } = getSelectableDateRange();
+    const monthStart = startOfMonth(new Date(year, monthIndex, 1));
+    const monthEnd = new Date(year, monthIndex + 1, 0);
+    return monthEnd >= minDate && monthStart <= maxDate;
   }
 
   function getClosedReason(date) {
@@ -315,13 +319,15 @@
 
   function calendarDaysMarkup() {
     const month = state.calendarMonth;
-    const maxDate = mealMaxDate();
+    const { minDate, maxDate } = getSelectableDateRange();
     const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
     const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     const startIndex = firstDay.getDay();
     const totalCells = Math.ceil((startIndex + lastDay.getDate()) / 7) * 7;
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    const previousMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
     const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    const canPrevious = canNavigateToMonth(previousMonth.getFullYear(), previousMonth.getMonth());
     const canNext = canNavigateToMonth(nextMonth.getFullYear(), nextMonth.getMonth());
 
     let cells = "";
@@ -329,7 +335,7 @@
     for (let i = 0; i < totalCells; i += 1) {
       const date = new Date(month.getFullYear(), month.getMonth(), i - startIndex + 1);
       const outside = date.getMonth() !== month.getMonth();
-      const selectable = !outside && startOfDay(date) <= startOfDay(maxDate);
+      const selectable = !outside && startOfDay(date) >= startOfDay(minDate) && startOfDay(date) <= startOfDay(maxDate);
       const selected = isSameDate(date, state.calendarDraftDate);
       const today = isSameDate(date, new Date());
       const closed = getClosedReason(date);
@@ -345,7 +351,7 @@
 
     return `
       <div class="calendar-head">
-        <button type="button" class="calendar-nav" data-cal-nav="-1" aria-label="이전 달">
+        <button type="button" class="calendar-nav" data-cal-nav="-1" aria-label="이전 달"${canPrevious ? "" : " disabled"}>
           <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
         </button>
         <div class="calendar-title" aria-label="현재 선택한 달">

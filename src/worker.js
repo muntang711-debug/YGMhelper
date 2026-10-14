@@ -505,7 +505,21 @@ async function handleClasses(url, env) {
   }
 
   const requestedWeek = comciganWeekForDate(date);
-  const weekNum = requestedWeek === null ? 0 : requestedWeek;
+  if (requestedWeek === null) {
+    return json({
+      ok: true,
+      date,
+      grade,
+      classes: [],
+      source: "comcigan",
+      available: false,
+      message: "컴시간에서는 현재 주와 다음 주까지만 조회할 수 있습니다."
+    }, 200, {
+      "Cache-Control": "no-store"
+    });
+  }
+
+  const weekNum = requestedWeek;
   const data = await fetchComciganWeek(weekNum);
   const classes = classNumbersFromComcigan(data, grade);
 
@@ -540,7 +554,7 @@ async function handleTimetable(url, env) {
   }
 
   const weekNum = comciganWeekForDate(date);
-  if (weekNum === null || getComciganDayIndex(date) === null) {
+  if (weekNum === null) {
     return json({
       ok: true,
       date,
@@ -550,7 +564,25 @@ async function handleTimetable(url, env) {
       items: [],
       source: "comcigan",
       available: false,
-      message: "컴시간에서는 현재 주와 다음 주 시간표만 조회할 수 있습니다."
+      message: "컴시간에서는 현재 주와 다음 주까지만 조회할 수 있습니다."
+    }, 200, {
+      "Cache-Control": "no-store"
+    });
+  }
+
+  if (getComciganDayIndex(date) === null) {
+    return json({
+      ok: true,
+      date,
+      grade,
+      class: className,
+      classes: [],
+      items: [],
+      source: "comcigan",
+      available: false,
+      message: "주말에는 시간표가 없습니다."
+    }, 200, {
+      "Cache-Control": "no-store"
     });
   }
 

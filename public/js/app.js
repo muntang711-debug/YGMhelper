@@ -822,16 +822,7 @@
       if (fill) fill.style.width = (total ? (count / total) * 100 : 0) + "%";
     });
 
-    const status = panel.querySelector(".meal-rating-status");
-    const selected = MEAL_RATING_OPTIONS.find((option) => option.value === mine);
-    if (!status) return;
-    if (selected || total > 0) {
-      status.textContent = "";
-      status.hidden = true;
-    } else {
-      status.textContent = "첫 평가를 남겨보세요.";
-      status.hidden = false;
-    }
+
   }
 
   function setupMealRating(date) {
@@ -866,8 +857,7 @@
       '</div>' +
       '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' +
         optionsMarkup +
-      '</div>' +
-      '<p class="meal-rating-status" role="status" aria-live="polite">평가를 불러오는 중…</p>';
+      '</div>';
 
     els.cards.meal.appendChild(panel);
 
@@ -877,7 +867,6 @@
         if (button.disabled) return;
         const buttons = Array.from(panel.querySelectorAll(".meal-rating-option"));
         buttons.forEach((item) => { item.disabled = true; });
-        const status = panel.querySelector(".meal-rating-status");
 
         try {
           const response = await fetch("/api/meal-rating", {
@@ -899,7 +888,7 @@
           }
           updateMealRatingPanel(panel, body);
         } catch (error) {
-          if (status) status.textContent = error.message || "평가를 저장하지 못했습니다. 다시 시도해 주세요.";
+          console.error("급식 평가 저장 실패:", error);
         } finally {
           if (panel.isConnected) {
             panel.querySelectorAll(".meal-rating-option").forEach((item) => {
@@ -916,9 +905,8 @@
         if (!panel.isConnected) return;
         updateMealRatingPanel(panel, data);
       })
-      .catch(() => {
-        const status = panel.querySelector(".meal-rating-status");
-        if (status) status.textContent = "평가 정보를 불러오지 못했어요. 등급을 선택해 다시 시도해 주세요.";
+      .catch((error) => {
+        console.error("급식 평가 불러오기 실패:", error);
       })
       .finally(() => {
         if (!panel.isConnected) return;

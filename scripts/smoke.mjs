@@ -8,7 +8,7 @@ const today=dateParam(kstToday());
 const range=selectableRange();const saturday=new Date(range.minDate);saturday.setUTCDate(saturday.getUTCDate()+5);
 const monday=dateParam(range.minDate),weekend=dateParam(saturday);
 const cases=[
-  ['home','/',200],['css','/css/style.css?v=20261029-1',200],['module','/js/app.js?v=20261029-1',200],['common','/js/common.js',200],
+  ['home','/',200],['css','/css/style.css?v=20261029-1',200],['module','/js/app.js?v=20261029-2',200],['common','/js/common.js',200],
   ['unknown-api','/api/missing',404],['missing-css','/css/missing.css',404],['invalid-date','/api/meal?date=20260230',400],
   ['invalid-grade','/api/timetable?date='+monday+'&grade=4&class=1',400],['weekend','/api/timetable?date='+weekend+'&grade=1&class=1',200],
   ['classes','/api/classes?date='+monday+'&grade=1',200],['timetable-1','/api/timetable?date='+monday+'&grade=1&class=1',200],

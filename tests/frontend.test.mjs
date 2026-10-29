@@ -7,10 +7,11 @@ import * as helpers from '../public/js/common.js';
 const html=await fs.readFile(new URL('../public/index.html',import.meta.url),'utf8');
 const script=(await fs.readFile(new URL('../public/js/app.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
 const flush=()=>new Promise(resolve=>setTimeout(resolve,20));
-async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1'}={}){
+async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1',width=1024}={}){
   const dom=new JSDOM(html,{url:'https://ygmhelper.xyz/',runScripts:'outside-only',pretendToBeVisual:true});
   t.after(()=>dom.window.close());const w=dom.window;
   Object.assign(w,helpers);
+  Object.defineProperty(w,'innerWidth',{value:width,configurable:true});
   w.matchMedia=query=>({matches:query.includes('prefers-reduced-motion'),addEventListener(){}});
   const calls=[];
   w.fetch=async(url,options={})=>{calls.push({url:String(url),options});return fetchImpl?fetchImpl(String(url),options):defaultResponse(String(url));};
@@ -98,4 +99,12 @@ test('future meal panel allows viewing but disables voting',async t=>{
   assert.match(document.querySelector('.meal-rating-title').textContent,/선택한 날/);
   assert([...document.querySelectorAll('.meal-rating-option')].every(b=>b.disabled));
   assert.match(document.querySelector('.meal-rating-status').textContent,/오늘 급식/);
+});
+
+test('mobile initial load waits to request hidden timetable until tab selection',async t=>{
+  const {document,calls}=await boot(t,null,{width:390});
+  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,0);
+  document.querySelector('[data-view="timetable"]').click();await flush();
+  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
+  assert.match(document.querySelector('#timetable-card').textContent,/국어/);
 });

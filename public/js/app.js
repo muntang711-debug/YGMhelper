@@ -1070,8 +1070,9 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
 
   function refreshData({force = false} = {}) {
     lastRefreshAt = Date.now();
-    void loadMeal({force});
-    void loadTimetable({force});
+    const desktop = window.innerWidth > 760;
+    if (desktop || state.mobileView === "meal") void loadMeal({force});
+    if (desktop || state.mobileView === "timetable") void loadTimetable({force});
   }
 
   function switchMobileView(view) {

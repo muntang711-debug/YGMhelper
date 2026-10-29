@@ -6,3 +6,6 @@ node_modules/
 .env.*
 !.env.example
 .DS_Store
+/analysis/
+/worker-configuration.d.ts
+/.test-results/

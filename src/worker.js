@@ -1,10 +1,13 @@
-import iconv from "iconv-lite";
+import { validDate, dateParam, kstToday } from "../public/js/common.js";
+import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
 
 const SCHOOL = {
   officeCode: "B10",
   schoolCode: "7134139",
   name: "용곡중학교",
-  region: "서울"
+  region: "서울",
+  // Fixed school name encoded as EUC-KR (not UTF-8 URL encoding).
+  encodedName: "%BF%EB%B0%EE%C1%DF%C7%D0%B1%B3"
 };
 
 const NEIS_BASE = "https://open.neis.go.kr/hub";
@@ -24,24 +27,10 @@ function json(data, status = 200, headers = {}) {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
+      ...SECURITY_HEADERS,
       ...headers
     }
   });
-}
-
-function validDate(value) {
-  return /^\d{8}$/.test(value);
-}
-
-function schoolYear(date) {
-  const year = Number(date.slice(0, 4));
-  const month = Number(date.slice(4, 6));
-  return month >= 3 ? year : year - 1;
-}
-
-function semester(date) {
-  const month = Number(date.slice(4, 6));
-  return month >= 3 && month <= 8 ? "1" : "2";
 }
 
 function cleanMealItem(value) {
@@ -111,16 +100,21 @@ async function neisRequest(path, params, apiKey) {
   let response;
   try {
     response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(10000),
       cf: {
         cacheTtl: 300,
         cacheEverything: true
       }
     });
   } catch (error) {
+    if (["TimeoutError", "AbortError"].includes(error?.name)) throw new NeisError("NEIS 응답 대기 시간이 초과되었습니다.", "UPSTREAM_TIMEOUT", 504);
     throw new NeisError("NEIS 서버에 연결하지 못했습니다.", "NETWORK_ERROR", 502);
   }
 
-  const payload = await response.json().catch(() => null);
+  let payload;
+  const bytes = await readBounded(response, 1024 * 1024);
+  try { payload = JSON.parse(new TextDecoder().decode(bytes)); }
+  catch { throw new NeisError("NEIS 응답 형식을 확인하지 못했습니다.", "INVALID_RESPONSE", 502); }
 
   if (!response.ok) {
     throw new NeisError(
@@ -146,7 +140,7 @@ async function neisRequest(path, params, apiKey) {
 
   if (result?.CODE && result.CODE.startsWith("ERROR-")) {
     throw new NeisError(
-      result.MESSAGE || "NEIS에서 요청을 처리하지 못했습니다.",
+      "NEIS에서 요청을 처리하지 못했습니다.",
       result.CODE,
       502
     );
@@ -207,23 +201,16 @@ async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE
   try {
     response = await fetch(url, fetchOptions);
   } catch (error) {
-    throw new Error("컴시간 서버에 연결하지 못했습니다.");
+    if (["TimeoutError", "AbortError"].includes(error?.name)) throw new HttpError("COMCIGAN_TIMEOUT", "컴시간 응답 대기 시간이 초과되었습니다.", 504);
+    throw new HttpError("COMCIGAN_ERROR", "컴시간 서버에 연결하지 못했습니다.");
   }
 
   if (!response.ok) {
-    throw new Error(`컴시간 서버 응답 오류 (${response.status})`);
+    throw new HttpError("COMCIGAN_HTTP_ERROR", "컴시간 서버 응답을 확인하지 못했습니다.");
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return eucKr ? iconv.decode(buffer, "euc-kr") : buffer.toString("utf-8");
-}
-
-function encodeEucKr(value) {
-  const bytes = iconv.encode(value, "euc-kr");
-
-  return Array.from(bytes, (byte) =>
-    `%${byte.toString(16).toUpperCase().padStart(2, "0")}`
-  ).join("");
+  const bytes = await readBounded(response, 4 * 1024 * 1024);
+  return new TextDecoder(eucKr ? "euc-kr" : "utf-8").decode(bytes);
 }
 
 async function getComciganCodes() {
@@ -245,7 +232,7 @@ async function getComciganCodes() {
   const originalCode = html.match(/원자료=Q자료\(자료\.자료(\d+)/)?.[1];
 
   if (!routeMatch || !code0 || !teacherCode || !subjectCode || !updateCode || !changedCode || !originalCode) {
-    throw new Error("컴시간 데이터 형식을 확인하지 못했습니다.");
+    throw new HttpError("COMCIGAN_ERROR", "컴시간 데이터 형식을 확인하지 못했습니다.");
   }
 
   comciganCodeCache = {
@@ -268,7 +255,7 @@ async function resolveComciganSchool(codes) {
     return comciganSchoolCache;
   }
 
-  const encodedName = encodeEucKr(SCHOOL.name);
+  const encodedName = SCHOOL.encodedName;
   const responseText = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${codes.searchPrefix}l${encodedName}`,
     { cacheTtl: 3600 }
@@ -280,7 +267,7 @@ async function resolveComciganSchool(codes) {
   try {
     payload = JSON.parse(cleaned);
   } catch (error) {
-    throw new Error("컴시간 학교 검색 응답을 해석하지 못했습니다.");
+    throw new HttpError("COMCIGAN_ERROR", "컴시간 학교 검색 응답을 해석하지 못했습니다.");
   }
 
   const schools = Array.isArray(payload?.학교검색) ? payload.학교검색 : [];
@@ -288,12 +275,10 @@ async function resolveComciganSchool(codes) {
     (school) => school?.[1] === SCHOOL.region && school?.[2] === SCHOOL.name
   );
 
-  const match = exactMatches[0] || schools.find(
-    (school) => school?.[2] === SCHOOL.name
-  );
+  const match = exactMatches[0];
 
-  if (!match || !match[3]) {
-    throw new Error("컴시간에 용곡중학교 시간표가 등록되어 있지 않거나 학교를 찾지 못했습니다.");
+  if (!match || !Number.isInteger(Number(match[3])) || Number(match[3]) <= 0) {
+    throw new HttpError("COMCIGAN_ERROR", "컴시간에 용곡중학교 시간표가 등록되어 있지 않거나 학교를 찾지 못했습니다.");
   }
 
   comciganSchoolCache = {
@@ -376,7 +361,7 @@ function cleanComciganJson(rawText) {
 
 function asPositiveNumber(value) {
   const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : 0;
 }
 
 function decodeComciganLesson(value, subjects, teachers) {
@@ -415,10 +400,11 @@ function decodeComciganLocation(value) {
 }
 
 async function fetchComciganWeek(weekNum) {
+  const weekKey = `${dateParam(kstToday())}-${weekNum}`;
   // The current week's Comcigan data can change after publication.
   // Never serve an in-process or edge-cached copy for the current week.
   if (weekNum !== 0) {
-    const cached = comciganWeekCache.get(weekNum);
+    const cached = comciganWeekCache.get(weekKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value;
     }
@@ -438,21 +424,20 @@ async function fetchComciganWeek(weekNum) {
   try {
     response = JSON.parse(cleanComciganJson(upstream));
   } catch (error) {
-    throw new Error("컴시간 시간표 응답을 해석하지 못했습니다.");
+    throw new HttpError("COMCIGAN_ERROR", "컴시간 시간표 응답을 해석하지 못했습니다.");
   }
 
-  const teachers = Array.isArray(response[`자료${codes.teacherCode}`])
-    ? [...response[`자료${codes.teacherCode}`]]
-    : [];
-  const subjects = Array.isArray(response[`자료${codes.subjectCode}`])
-    ? [...response[`자료${codes.subjectCode}`]]
-    : [];
+  const teachers = response[`자료${codes.teacherCode}`];
+  const subjects = response[`자료${codes.subjectCode}`];
   const dailyTimetable = response[`자료${codes.changedCode}`];
   const originalTimetable = response[`자료${codes.originalCode}`];
   const locationMatrix = response.자료245;
 
-  if (!Array.isArray(teachers) || !Array.isArray(subjects) || !Array.isArray(dailyTimetable) || !Array.isArray(originalTimetable)) {
-    throw new Error("컴시간 시간표 데이터가 예상한 형식이 아닙니다.");
+  if (!Array.isArray(teachers) || !teachers.length || teachers.length > 1000 ||
+      !Array.isArray(subjects) || !subjects.length || subjects.length > 1000 ||
+      !Array.isArray(dailyTimetable) || !Array.isArray(originalTimetable) ||
+      dailyTimetable.length > 4 || originalTimetable.length > 4) {
+    throw new HttpError("COMCIGAN_ERROR", "컴시간 시간표 데이터가 예상한 형식이 아닙니다.");
   }
 
   const value = {
@@ -467,7 +452,8 @@ async function fetchComciganWeek(weekNum) {
   };
 
   if (weekNum !== 0) {
-    comciganWeekCache.set(weekNum, {
+    comciganWeekCache.clear();
+    comciganWeekCache.set(weekKey, {
       value,
       expiresAt: Date.now() + COMCIGAN_CACHE_TTL * 1000
     });
@@ -481,6 +467,8 @@ function classNumbersFromComcigan(data, grade) {
   let count = asPositiveNumber(data.response?.학급수?.[gradeNumber]);
   const virtualCount = asPositiveNumber(data.response?.가상학급수?.[gradeNumber]);
 
+  if (count > 99 || virtualCount > 99) throw new HttpError("COMCIGAN_INVALID_RESPONSE", "컴시간 학급 정보를 확인하지 못했습니다.");
+
   if (count > 0) {
     count = Math.max(0, count - virtualCount);
     return Array.from({ length: count }, (_, index) => index + 1);
@@ -488,6 +476,7 @@ function classNumbersFromComcigan(data, grade) {
 
   const gradeData = data.dailyTimetable?.[gradeNumber] || data.originalTimetable?.[gradeNumber];
   if (!Array.isArray(gradeData)) return [];
+  if (gradeData.length > 100) throw new HttpError("COMCIGAN_INVALID_RESPONSE", "컴시간 학급 정보를 확인하지 못했습니다.");
 
   return Array.from({ length: Math.max(0, gradeData.length - 1) }, (_, index) => index + 1);
 }
@@ -620,6 +609,12 @@ async function handleTimetable(url, env) {
     0
   );
 
+  for (const day of [originalDayData, dayData]) {
+    if (day && (!Array.isArray(day) || !Number.isInteger(Number(day[0])) || Number(day[0]) < 0 || Number(day[0]) > 16 || day.length > 17)) {
+      throw new HttpError("COMCIGAN_INVALID_RESPONSE", "컴시간 교시 정보를 확인하지 못했습니다.");
+    }
+  }
+
   const items = [];
 
   for (let period = 1; period <= maxPeriod; period += 1) {
@@ -701,15 +696,7 @@ async function handleMeal(url, env) {
 
 
 function validMealRatingDate(value) {
-  if (!validDate(value)) return false;
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(4, 6));
-  const day = Number(value.slice(6, 8));
-  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  return parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === month - 1 &&
-    parsed.getUTCDate() === day;
+  return validDate(value);
 }
 
 function validMealVoterId(value) {
@@ -718,7 +705,7 @@ function validMealVoterId(value) {
 }
 
 async function hashMealVoterId(value) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value.toLowerCase()));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -754,7 +741,8 @@ async function readMealRatingSummary(date, voterKey, env) {
     counts,
     total,
     average: total ? Math.round((weightedTotal / total) * 10) / 10 : null,
-    myRating
+    myRating,
+    canVote: date === dateParam(kstToday())
   });
 }
 
@@ -769,13 +757,26 @@ async function handleMealRating(request, url, env) {
       return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
     }
 
-    const voterId = url.searchParams.get("voter") || "";
+    const voterId = request.headers.get("X-Meal-Voter") || url.searchParams.get("voter") || "";
     const voterKey = validMealVoterId(voterId) ? await hashMealVoterId(voterId) : null;
     return readMealRatingSummary(date, voterKey, env);
   }
 
   if (request.method === "POST") {
-    const body = await request.json().catch(() => null);
+    const origin = request.headers.get("Origin");
+    if (origin && origin !== url.origin) return json({ok: false, error: "허용되지 않은 요청 출처입니다."}, 403);
+    if (request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+      return json({ok: false, error: "JSON 형식으로 요청해 주세요."}, 415);
+    }
+    if (!env.RATING_IP_LIMITER || !env.RATING_VOTER_LIMITER) {
+      throw new HttpError("RATE_LIMIT_UNAVAILABLE", "평가 요청을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", 503);
+    }
+    const ip = request.headers.get("CF-Connecting-IP") || "local";
+    const ipLimit = await env.RATING_IP_LIMITER.limit({key: `meal-rating:${ip}`});
+    if (!ipLimit.success) return json({ok: false, error: "평가 요청이 많습니다. 잠시 후 다시 시도해 주세요."}, 429, {"Retry-After": "60"});
+    const bytes = await readBounded(request, 2048, {request: true});
+    let body;
+    try { body = JSON.parse(new TextDecoder().decode(bytes)); } catch { body = null; }
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return json({ ok: false, error: "평가 요청 형식이 올바르지 않습니다." }, 400);
     }
@@ -794,7 +795,15 @@ async function handleMealRating(request, url, env) {
       return json({ ok: false, error: "평가 등급이 올바르지 않습니다." }, 400);
     }
 
+    if (date !== dateParam(kstToday())) return json({ok: false, error: "오늘 급식에만 평가를 등록할 수 있습니다."}, 403);
     const voterKey = await hashMealVoterId(voterId);
+    const voterLimit = await env.RATING_VOTER_LIMITER.limit({key: `${date}:${voterKey}`});
+    if (!voterLimit.success) return json({ok: false, error: "평가를 너무 자주 바꾸고 있습니다. 잠시 후 다시 시도해 주세요."}, 429, {"Retry-After": "60"});
+    const mealUrl = new URL(url);
+    mealUrl.searchParams.set("date", date);
+    const meal = await (await handleMeal(mealUrl, env)).json();
+    if (!meal.available) return json({ok: false, error: "급식이 등록된 날짜에만 평가할 수 있습니다."}, 422);
+
     await env.DB.prepare(
       "INSERT INTO meal_ratings (date, voter_key, rating) VALUES (?, ?, ?) " +
       "ON CONFLICT(date, voter_key) DO UPDATE SET rating = excluded.rating, updated_at = CURRENT_TIMESTAMP"
@@ -808,68 +817,49 @@ async function handleMealRating(request, url, env) {
   });
 }
 
-async function handleMealRatingApi(request, url, env) {
-  try {
-    return await handleMealRating(request, url, env);
-  } catch (error) {
-    console.error("meal-rating", {
-      name: error?.name,
-      message: error?.message
-    });
-    return json({ ok: false, error: "맛 평가를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
-  }
-}
-
-async function handleApi(handler, env, { requireNeisKey = false } = {}) {
-  if (requireNeisKey && !env.NEIS_API_KEY) {
-    return json({
-      ok: false,
-      error: "NEIS API Secret이 설정되지 않았습니다."
-    }, 500);
-  }
-
-  try {
-    return await handler();
-  } catch (error) {
-    console.error("neis", {
-      name: error?.name,
-      code: error?.code,
-      message: error?.message
-    });
-
-    const status = Number.isInteger(error?.status) ? error.status : 502;
-    const message = error?.message || "NEIS 정보를 불러오지 못했습니다.";
-
-    return json({
-      ok: false,
-      error: message
-    }, status);
-  }
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    if (url.pathname === "/api/meal-rating") {
-      return handleMealRatingApi(request, url, env);
+    const requestId = crypto.randomUUID();
+    const started = Date.now();
+    const isApi = url.pathname.startsWith("/api/");
+    let response;
+    try {
+      if ((url.hostname === "ygmhelper.xyz" && url.protocol === "http:") || url.hostname === "www.ygmhelper.xyz") {
+        url.protocol = "https:";
+        url.hostname = "ygmhelper.xyz";
+        response = new Response(null, {status: 308, headers: {Location: url.href, ...SECURITY_HEADERS}});
+      } else if (isApi) {
+        const rating = url.pathname === "/api/meal-rating";
+        const paths = ["/api/meal", "/api/classes", "/api/timetable", "/api/meal-rating"];
+        const allowed = rating ? ["GET", "HEAD", "POST"] : ["GET", "HEAD"];
+        if (!paths.includes(url.pathname)) {
+          response = json({ok: false, error: "API 경로를 찾을 수 없습니다."}, 404);
+        } else if (!allowed.includes(request.method)) {
+          response = json({ok: false, error: "지원하지 않는 요청 방식입니다."}, 405, {Allow: allowed.join(", ")});
+        } else {
+          const effectiveRequest = request.method === "HEAD" ? new Request(request, {method: "GET"}) : request;
+          if (rating) response = await handleMealRating(effectiveRequest, url, env);
+          else if (url.pathname === "/api/meal") response = await handleMeal(url, env);
+          else if (url.pathname === "/api/classes") response = await handleClasses(url, env);
+          else response = await handleTimetable(url, env);
+        }
+      } else {
+        response = await env.ASSETS.fetch(request);
+      }
+    } catch (error) {
+      const known = error instanceof HttpError || error instanceof NeisError;
+      const status = known ? error.status : 500;
+      const upstream = url.pathname === "/api/meal-rating" ? "ratings" : url.pathname === "/api/meal" ? "neis" : "comcigan";
+      console[status >= 500 ? "error" : "warn"](JSON.stringify({event: "api_error", requestId, path: url.pathname, upstream, status, code: known ? error.code : "INTERNAL_ERROR"}));
+      response = json({ok: false, error: known ? error.message : "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.", requestId}, status);
     }
-
-    if (url.pathname === "/api/meal") {
-      return handleApi(() => handleMeal(url, env), env, { requireNeisKey: true });
+    if (isApi) {
+      console.log(JSON.stringify({event: "api_request", requestId, path: url.pathname, method: request.method, status: response.status, durationMs: Date.now() - started}));
     }
-
-    if (url.pathname === "/api/timetable") {
-      return handleApi(() => handleTimetable(url, env), env);
-    }
-
-    if (url.pathname === "/api/classes") {
-      return handleApi(() => handleClasses(url, env), env);
-    }
-
-    const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.status !== 404) return assetResponse;
-
-    return env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+    const headers = new Headers(response.headers);
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) headers.set(key, value);
+    headers.set("X-Request-Id", requestId);
+    return new Response(request.method === "HEAD" ? null : response.body, {status: response.status, statusText: response.statusText, headers});
   }
 };

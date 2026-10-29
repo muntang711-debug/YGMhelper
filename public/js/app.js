@@ -1,15 +1,20 @@
+import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createSafeStorage, createRequestTracker } from "./common.js";
+
 (() => {
   "use strict";
 
+  const storage = createSafeStorage(() => localStorage);
+  const requests = createRequestTracker();
+
   const state = {
     mobileView: "meal",
-    date: new Date(),
-    grade: /^[1-3]$/.test(localStorage.getItem("ygmhelper-grade") || "") ? localStorage.getItem("ygmhelper-grade") : "1",
-    className: /^\d{1,2}$/.test(localStorage.getItem("ygmhelper-class") || "") ? localStorage.getItem("ygmhelper-class") : "1",
+    date: kstToday(),
+    grade: /^[1-3]$/.test(storage.getItem("ygmhelper-grade") || "") ? storage.getItem("ygmhelper-grade") : "1",
+    className: /^\d{1,2}$/.test(storage.getItem("ygmhelper-class") || "") ? storage.getItem("ygmhelper-class") : "1",
     theme: null,
-    calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    calendarMonth: civilDate(kstToday().getUTCFullYear(), kstToday().getUTCMonth(), 1),
     calendarOpen: false,
-    calendarDraftDate: new Date()
+    calendarDraftDate: kstToday()
   };
 
   const MEAL_RATING_OPTIONS = [
@@ -19,58 +24,6 @@
     { value: 2, label: "안 가도 됨", emoji: "😐" },
     { value: 1, label: "가지 마", emoji: "🙅" }
   ];
-
-  const HOLIDAYS = {
-    "2026-01-01": "신정",
-    "2026-02-16": "설날 연휴",
-    "2026-02-17": "설날",
-    "2026-02-18": "설날 연휴",
-    "2026-03-01": "삼일절",
-    "2026-03-02": "삼일절 대체공휴일",
-    "2026-05-05": "어린이날",
-    "2026-05-25": "부처님오신날 대체공휴일",
-    "2026-06-03": "전국동시지방선거",
-    "2026-06-06": "현충일",
-    "2026-08-15": "광복절",
-    "2026-08-17": "광복절 대체공휴일",
-    "2026-09-24": "추석 연휴",
-    "2026-09-25": "추석",
-    "2026-09-26": "추석 연휴",
-    "2026-10-03": "개천절",
-    "2026-10-05": "개천절 대체공휴일",
-    "2026-10-09": "한글날",
-    "2026-12-25": "기독탄신일",
-    "2027-01-01": "신정",
-    "2027-02-06": "설날 연휴",
-    "2027-02-07": "설날",
-    "2027-02-08": "설날 연휴",
-    "2026-05-01": "노동절",
-    "2026-07-17": "제헌절",
-    "2027-01-01": "신정",
-    "2027-02-06": "설날 연휴",
-    "2027-02-07": "설날",
-    "2027-02-08": "설날 연휴",
-    "2027-02-09": "설날 대체공휴일",
-    "2027-03-01": "삼일절",
-    "2027-05-01": "노동절",
-    "2027-05-03": "노동절 대체공휴일",
-    "2027-05-05": "어린이날",
-    "2027-05-13": "부처님오신날",
-    "2027-06-06": "현충일",
-    "2027-07-17": "제헌절",
-    "2027-07-19": "제헌절 대체공휴일",
-    "2027-08-15": "광복절",
-    "2027-08-16": "광복절 대체공휴일",
-    "2027-09-14": "추석 연휴",
-    "2027-09-15": "추석",
-    "2027-09-16": "추석 연휴",
-    "2027-10-03": "개천절",
-    "2027-10-04": "개천절 대체공휴일",
-    "2027-10-09": "한글날",
-    "2027-10-11": "한글날 대체공휴일",
-    "2027-12-25": "기독탄신일",
-    "2027-12-27": "기독탄신일 대체공휴일"
-  };
 
   const els = {
     root: document.documentElement,
@@ -94,19 +47,19 @@
 
   const clampDay = (year, monthIndex, day) => Math.min(
     day,
-    new Date(year, monthIndex + 1, 0).getDate()
+    civilDate(year, monthIndex + 1, 0).getUTCDate()
   );
 
   const pad = (value) => String(value).padStart(2, "0");
 
   function formatDateParam(date) {
-    return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("");
+    return [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join("");
   }
 
   function schoolYear(date) {
     if (date instanceof Date) {
-      const year = date.getFullYear();
-      return date.getMonth() >= 2 ? year : year - 1;
+      const year = date.getUTCFullYear();
+      return date.getUTCMonth() >= 2 ? year : year - 1;
     }
 
     const value = String(date);
@@ -122,6 +75,7 @@
 
   function formatDateLabel(date) {
     return new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "UTC",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -130,9 +84,9 @@
   }
 
   function isSameDate(a, b) {
-    return a.getFullYear() === b.getFullYear()
-      && a.getMonth() === b.getMonth()
-      && a.getDate() === b.getDate();
+    return a.getUTCFullYear() === b.getUTCFullYear()
+      && a.getUTCMonth() === b.getUTCMonth()
+      && a.getUTCDate() === b.getUTCDate();
   }
 
   function escapeHtml(value) {
@@ -171,7 +125,7 @@
   }
 
   function resolveInitialTheme() {
-    const saved = localStorage.getItem("ygmhelper-theme");
+    const saved = storage.getItem("ygmhelper-theme");
     if (saved === "light" || saved === "dark") return saved;
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
@@ -179,7 +133,7 @@
   function applyTheme(theme, persist = false) {
     state.theme = theme;
     els.root.dataset.theme = theme;
-    if (persist) localStorage.setItem("ygmhelper-theme", theme);
+    if (persist) storage.setItem("ygmhelper-theme", theme);
   }
 
   function initTheme() {
@@ -191,24 +145,28 @@
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     media.addEventListener?.("change", () => {
-      if (!localStorage.getItem("ygmhelper-theme")) {
+      if (!storage.getItem("ygmhelper-theme")) {
         applyTheme(media.matches ? "dark" : "light");
       }
     });
   }
 
   function closeDatePicker() {
+    const restoreFocus = document.activeElement?.closest(".date-picker");
     document.querySelector(".date-picker")?.remove();
     document.querySelector(".date-trigger")?.setAttribute("aria-expanded", "false");
     state.calendarOpen = false;
     state.calendarDraftDate = new Date(state.date);
+    if (restoreFocus) els.dateControl.querySelector(".date-trigger")?.focus();
   }
 
   function closeSelects(except = null) {
     document.querySelectorAll(".custom-select.is-open").forEach((node) => {
       if (node !== except) {
+        const restoreFocus = node.contains(document.activeElement);
         node.classList.remove("is-open");
         node.querySelector(".select-trigger")?.setAttribute("aria-expanded", "false");
+        if (restoreFocus) node.querySelector(".select-trigger")?.focus();
       }
     });
   }
@@ -224,31 +182,23 @@
   }
 
   function startOfDay(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return civilDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   }
 
   function startOfMonth(date) {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
+    return civilDate(date.getUTCFullYear(), date.getUTCMonth(), 1);
   }
 
   function dateKey(date) {
     return [
-      date.getFullYear(),
-      pad(date.getMonth() + 1),
-      pad(date.getDate())
+      date.getUTCFullYear(),
+      pad(date.getUTCMonth() + 1),
+      pad(date.getUTCDate())
     ].join("-");
   }
 
-  function getSelectableDateRange(now = new Date()) {
-    const today = startOfDay(now);
-    const weekday = today.getDay();
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() - (weekday === 0 ? 6 : weekday - 1));
-
-    const maxDate = new Date(minDate);
-    maxDate.setDate(minDate.getDate() + 13);
-
-    return { minDate, maxDate };
+  function getSelectableDateRange(now = kstToday()) {
+    return selectableRange(now);
   }
 
   function isDateSelectable(date) {
@@ -259,56 +209,48 @@
 
   function canNavigateToMonth(year, monthIndex) {
     const { minDate, maxDate } = getSelectableDateRange();
-    const monthStart = startOfMonth(new Date(year, monthIndex, 1));
-    const monthEnd = new Date(year, monthIndex + 1, 0);
+    const monthStart = startOfMonth(civilDate(year, monthIndex, 1));
+    const monthEnd = civilDate(year, monthIndex + 1, 0);
     return monthEnd >= minDate && monthStart <= maxDate;
   }
 
   function getClosedReason(date) {
-    const day = date.getDay();
-
-    if (day === 0 || day === 6) {
-      return { type: "weekend" };
-    }
-
-    const holidayName = HOLIDAYS[dateKey(date)];
-    return holidayName
-      ? { type: "holiday", name: holidayName }
-      : null;
+    // Registered upstream data is authoritative; do not hide it with guessed holidays.
+    return [0, 6].includes(date.getUTCDay()) ? { type: "weekend" } : null;
   }
 
   function makeDraftDate() {
-    state.calendarDraftDate = new Date(
-      state.date.getFullYear(),
-      state.date.getMonth(),
-      state.date.getDate()
+    state.calendarDraftDate = civilDate(
+      state.date.getUTCFullYear(),
+      state.date.getUTCMonth(),
+      state.date.getUTCDate()
     );
-    state.calendarMonth = new Date(
-      state.calendarDraftDate.getFullYear(),
-      state.calendarDraftDate.getMonth(),
+    state.calendarMonth = civilDate(
+      state.calendarDraftDate.getUTCFullYear(),
+      state.calendarDraftDate.getUTCMonth(),
       1
     );
   }
 
   function shiftCalendarMonth(delta) {
-    const nextMonth = new Date(
-      state.calendarMonth.getFullYear(),
-      state.calendarMonth.getMonth() + delta,
+    const nextMonth = civilDate(
+      state.calendarMonth.getUTCFullYear(),
+      state.calendarMonth.getUTCMonth() + delta,
       1
     );
 
-    if (!canNavigateToMonth(nextMonth.getFullYear(), nextMonth.getMonth())) {
+    if (!canNavigateToMonth(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth())) {
       return false;
     }
 
     const nextDay = clampDay(
-      nextMonth.getFullYear(),
-      nextMonth.getMonth(),
-      state.calendarDraftDate.getDate()
+      nextMonth.getUTCFullYear(),
+      nextMonth.getUTCMonth(),
+      state.calendarDraftDate.getUTCDate()
     );
-    const proposedDate = new Date(
-      nextMonth.getFullYear(),
-      nextMonth.getMonth(),
+    const proposedDate = civilDate(
+      nextMonth.getUTCFullYear(),
+      nextMonth.getUTCMonth(),
       nextDay
     );
     const { minDate, maxDate } = getSelectableDateRange();
@@ -326,24 +268,24 @@
   function calendarDaysMarkup() {
     const month = state.calendarMonth;
     const { minDate, maxDate } = getSelectableDateRange();
-    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-    const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-    const startIndex = firstDay.getDay();
-    const totalCells = Math.ceil((startIndex + lastDay.getDate()) / 7) * 7;
+    const firstDay = civilDate(month.getUTCFullYear(), month.getUTCMonth(), 1);
+    const lastDay = civilDate(month.getUTCFullYear(), month.getUTCMonth() + 1, 0);
+    const startIndex = firstDay.getUTCDay();
+    const totalCells = Math.ceil((startIndex + lastDay.getUTCDate()) / 7) * 7;
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-    const previousMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
-    const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
-    const canPrevious = canNavigateToMonth(previousMonth.getFullYear(), previousMonth.getMonth());
-    const canNext = canNavigateToMonth(nextMonth.getFullYear(), nextMonth.getMonth());
+    const previousMonth = civilDate(month.getUTCFullYear(), month.getUTCMonth() - 1, 1);
+    const nextMonth = civilDate(month.getUTCFullYear(), month.getUTCMonth() + 1, 1);
+    const canPrevious = canNavigateToMonth(previousMonth.getUTCFullYear(), previousMonth.getUTCMonth());
+    const canNext = canNavigateToMonth(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth());
 
     let cells = "";
 
     for (let i = 0; i < totalCells; i += 1) {
-      const date = new Date(month.getFullYear(), month.getMonth(), i - startIndex + 1);
-      const outside = date.getMonth() !== month.getMonth();
+      const date = civilDate(month.getUTCFullYear(), month.getUTCMonth(), i - startIndex + 1);
+      const outside = date.getUTCMonth() !== month.getUTCMonth();
       const selectable = !outside && startOfDay(date) >= startOfDay(minDate) && startOfDay(date) <= startOfDay(maxDate);
       const selected = isSameDate(date, state.calendarDraftDate);
-      const today = isSameDate(date, new Date());
+      const today = isSameDate(date, kstToday());
       const closed = getClosedReason(date);
 
       cells += `
@@ -351,8 +293,12 @@
           class="calendar-day${outside ? " is-outside" : ""}${selected && selectable ? " is-selected" : ""}${today ? " is-today" : ""}${closed ? " is-closed" : ""}${!selectable ? " is-disabled" : ""}"
           type="button"
           data-date="${formatDateParam(date)}"
+          aria-label="${formatDateLabel(date)}"
+          aria-pressed="${selected && selectable}"
+          tabindex="${selected && selectable ? "0" : "-1"}"
+          ${today ? 'aria-current="date"' : ""}
           ${selectable ? "" : "disabled"}
-        >${date.getDate()}</button>`;
+        >${date.getUTCDate()}</button>`;
     }
 
     return `
@@ -361,7 +307,7 @@
           <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
         </button>
         <div class="calendar-title" aria-label="현재 선택한 달">
-          ${month.getFullYear()}년 ${month.getMonth() + 1}월
+          ${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월
         </div>
         <button type="button" class="calendar-nav" data-cal-nav="1" aria-label="다음 달"${canNext ? "" : " disabled"}>
           <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
@@ -377,6 +323,10 @@
     picker.innerHTML = calendarDaysMarkup();
   }
 
+  function focusCalendarDay(picker) {
+    picker.querySelector(`[data-date="${formatDateParam(state.calendarDraftDate)}"]:not(:disabled)`)?.focus();
+  }
+
   function openDatePicker() {
     closeSelects();
     closeDatePicker();
@@ -387,6 +337,7 @@
     picker.className = "date-picker";
     picker.setAttribute("role", "dialog");
     picker.setAttribute("aria-label", "날짜 선택");
+    picker.id = "date-picker";
     state.calendarOpen = true;
     picker.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -398,6 +349,7 @@
           picker.classList.toggle("is-month-forward", delta > 0);
           picker.classList.toggle("is-month-backward", delta < 0);
           renderCalendar(picker);
+          focusCalendarDay(picker);
         }
         return;
       }
@@ -406,7 +358,7 @@
       if (!dateButton) return;
 
       const value = dateButton.dataset.date;
-      state.date = new Date(
+      state.date = civilDate(
         Number(value.slice(0, 4)),
         Number(value.slice(4, 6)) - 1,
         Number(value.slice(6))
@@ -414,6 +366,21 @@
       closeDatePicker();
       syncDateControl();
       refreshData();
+    });
+
+    picker.addEventListener("keydown", event => {
+      const button = event.target.closest("[data-date]");
+      if (!button) return;
+      const offsets = {ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7};
+      if (!(event.key in offsets)) return;
+      event.preventDefault();
+      const current = civilDate(Number(button.dataset.date.slice(0, 4)), Number(button.dataset.date.slice(4, 6)) - 1, Number(button.dataset.date.slice(6, 8)));
+      current.setUTCDate(current.getUTCDate() + offsets[event.key]);
+      if (!isDateSelectable(current)) return;
+      state.calendarDraftDate = current;
+      state.calendarMonth = startOfMonth(current);
+      renderCalendar(picker);
+      focusCalendarDay(picker);
     });
 
     renderCalendar(picker);
@@ -424,6 +391,7 @@
     });
 
     els.dateControl.querySelector(".date-trigger").setAttribute("aria-expanded", "true");
+    focusCalendarDay(picker);
   }
 
   function renderDateControl() {
@@ -442,6 +410,9 @@
     const trigger = root.querySelector(".select-trigger");
     const value = root.querySelector(".select-value");
     const menu = root.querySelector(".select-menu");
+    menu.id = `${name}-options`;
+    menu.setAttribute("aria-label", name === "grade" ? "학년" : "반");
+    trigger.setAttribute("aria-controls", menu.id);
     let options = [...initialOptions];
     let current = options.some((option) => option.value === defaultValue)
       ? defaultValue
@@ -456,13 +427,38 @@
           type="button"
           role="option"
           aria-selected="${option.value === current}"
+          tabindex="${option.value === current ? "0" : "-1"}"
           data-value="${escapeHtml(option.value)}"
         >${escapeHtml(option.label)}</button>`).join("");
 
       value.textContent = options.find((option) => option.value === current)?.label ?? "";
       trigger.disabled = disabled;
       trigger.setAttribute("aria-disabled", String(disabled));
+      trigger.setAttribute("aria-label", `${name === "grade" ? "학년" : "반"} 선택, ${value.textContent}`);
     }
+
+    function openAndFocus(index) {
+      if (disabled) return;
+      closeDatePicker(); closeSelects(root);
+      root.classList.add("is-open"); trigger.setAttribute("aria-expanded", "true");
+      const buttons = menu.querySelectorAll(".select-option");
+      const selected = options.findIndex(option => option.value === current);
+      buttons[Math.max(0, Math.min(buttons.length - 1, index ?? selected))]?.focus();
+    }
+
+    root.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        event.preventDefault(); closeSelects(); trigger.focus(); return;
+      }
+      const buttons = Array.from(menu.querySelectorAll(".select-option"));
+      const index = buttons.indexOf(document.activeElement);
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openAndFocus(index < 0 ? undefined : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length);
+      } else if (index >= 0 && (event.key === "Home" || event.key === "End")) {
+        event.preventDefault(); openAndFocus(event.key === "Home" ? 0 : buttons.length - 1);
+      }
+    });
 
     trigger.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -476,8 +472,7 @@
         root.classList.remove("is-open");
         trigger.setAttribute("aria-expanded", "false");
       } else {
-        root.classList.add("is-open");
-        trigger.setAttribute("aria-expanded", "true");
+        openAndFocus();
       }
     });
 
@@ -492,6 +487,7 @@
       root.classList.remove("is-open");
       trigger.setAttribute("aria-expanded", "false");
       renderOptions();
+      trigger.focus();
       onChange(current);
     });
 
@@ -522,32 +518,25 @@
     };
   }
 
-  async function fetchJson(url) {
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      cache: "no-store"
-    });
-
-    const body = await response.json().catch(() => null);
-
-    if (!response.ok || !body?.ok) {
-      throw new Error(body?.error || "요청을 처리하지 못했습니다.");
+  async function fetchJson(url, options = {}) {
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    options.signal?.addEventListener("abort", cancel, {once: true});
+    if (options.signal?.aborted) cancel();
+    const timer = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(url, {...options, signal: controller.signal, headers: {Accept: "application/json", ...options.headers}, cache: "no-store"});
+      const body = await response.json().catch(() => null);
+      if (controller.signal.aborted) throw new DOMException("Request aborted", "AbortError");
+      if (!response.ok || !body?.ok) throw new Error(body?.error || "요청을 처리하지 못했습니다.");
+      return body;
+    } catch (error) {
+      if (controller.signal.aborted && !options.signal?.aborted) throw new Error("응답 대기 시간이 초과되었습니다. 다시 시도해 주세요.");
+      throw error;
+    } finally {
+      window.clearTimeout(timer);
+      options.signal?.removeEventListener("abort", cancel);
     }
-
-    return body;
-  }
-
-  async function fetchClassOptions() {
-    const body = await fetchJson(
-      `/api/classes?date=${formatDateParam(state.date)}&grade=${encodeURIComponent(state.grade)}`
-    );
-
-    return Array.isArray(body.classes)
-      ? body.classes
-          .filter((value) => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 99)
-          .map((value) => String(value))
-          .filter((value, index, values) => values.indexOf(value) === index)
-      : [];
   }
 
   function renderClosed(kind, reason) {
@@ -583,26 +572,12 @@
     19: "잣"
   };
 
-  function extractAllergenNumbers(text) {
-    const found = new Set();
-    const matches = String(text).match(/\d{1,2}/g) || [];
+  function extractAllergenNumbers(text) { return parseMealText(text).allergens; }
 
-    for (const match of matches) {
-      const number = Number(match);
-      if (ALLERGENS[number]) found.add(number);
-    }
-
-    return [...found].sort((a, b) => a - b);
-  }
-
-  function cleanMealLabel(text) {
-    return String(text)
-      .replace(/\s*\([^)]*\)\s*$/u, "")
-      .replace(/\s*\[[^\]]*\]\s*$/u, "")
-      .trim();
-  }
+  function cleanMealLabel(text) { return parseMealText(text).label; }
 
   function removeAllergenModalNow(modal = document.querySelector(".allergen-modal")) {
+    if (!modal) return;
     if (modal) {
       const origin = modal._allergenOriginElement;
       if (origin) {
@@ -610,6 +585,8 @@
         origin.style.visibility = modal._allergenOriginVisibility || "";
       }
       modal.remove();
+      els.body.querySelector("#app").inert = Boolean(modal._previousInert);
+      if (modal._returnFocus?.isConnected) modal._returnFocus.focus();
     }
     document.body.classList.remove("modal-open");
   }
@@ -617,6 +594,7 @@
   function closeAllergenModal() {
     const modal = document.querySelector(".allergen-modal");
     if (!modal || modal.classList.contains("is-closing")) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { removeAllergenModalNow(modal); return; }
 
     const dialog = modal.querySelector(".allergen-dialog");
     const backdrop = modal.querySelector(".allergen-backdrop");
@@ -694,6 +672,23 @@
     });
   }
 
+  function activateAllergenModal(modal, originElement) {
+    closeFloatingMenus();
+    modal._returnFocus = originElement || document.activeElement;
+    const app = els.body.querySelector("#app");
+    modal._previousInert = app.inert;
+    app.inert = true;
+    modal.querySelector(".allergen-scroll").tabIndex = 0;
+    modal.querySelector(".allergen-close").focus();
+    modal.addEventListener("keydown", event => {
+      if (event.key !== "Tab") return;
+      const focusable = [...modal.querySelectorAll('button:not(:disabled), [tabindex="0"]')];
+      const first = focusable[0], last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+  }
+
   function openAllergenModal(numbers, menuName = "", originElement = null) {
     removeAllergenModalNow();
 
@@ -730,6 +725,7 @@
 
     const target = modal.querySelector(".allergen-number");
     prepareAllergenMorph(modal, originElement, target);
+    activateAllergenModal(modal, originElement);
   }
 
   function openAllergenReferenceModal(numbers = [], originElement = null) {
@@ -768,6 +764,7 @@
 
     const target = modal.querySelector("#allergen-title");
     prepareAllergenMorph(modal, originElement, target);
+    activateAllergenModal(modal, originElement);
   }
 
   function createMealVoterId() {
@@ -781,18 +778,11 @@
   }
 
   function getMealVoterId() {
-    const storageKey = "ygmhelper-meal-voter-v1";
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved)) {
-        return saved;
-      }
-      const created = createMealVoterId();
-      localStorage.setItem(storageKey, created);
-      return created;
-    } catch (error) {
-      return createMealVoterId();
-    }
+    const key = "ygmhelper-meal-voter-v1";
+    const saved = storage.getItem(key);
+    const value = saved && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved) ? saved.toLowerCase() : createMealVoterId();
+    storage.setItem(key, value);
+    return value;
   }
 
   function updateMealRatingPanel(panel, data) {
@@ -827,93 +817,62 @@
 
   function setupMealRating(date) {
     const ratingDate = String(date || formatDateParam(state.date));
+    const token = requests.begin("rating", ratingDate, 0, true);
+    const voterId = getMealVoterId();
     const panel = document.createElement("section");
     panel.className = "meal-rating-panel";
     panel.setAttribute("aria-label", "급식 맛 평가");
     panel.dataset.date = ratingDate;
-
-    const optionsMarkup = MEAL_RATING_OPTIONS.map((option) =>
-      '<button class="meal-rating-option" type="button" data-rating="' + option.value +
-      '" aria-pressed="false" disabled>' +
-        '<span class="meal-rating-option-label">' +
-          '<span class="meal-rating-emoji" aria-hidden="true">' + option.emoji + '</span>' +
-          '<span class="meal-rating-option-name">' + escapeHtml(option.label) + '</span>' +
-        '</span>' +
-        '<span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span>' +
-        '<span class="meal-rating-option-count">0</span>' +
-      '</button>'
-    ).join("");
-
-    panel.innerHTML =
-      '<div class="meal-rating-heading">' +
-        '<div class="meal-rating-copy">' +
-          '<h3>오늘의 급식 맛 평가</h3>' +
-
-        '</div>' +
-        '<div class="meal-rating-summary" aria-live="polite">' +
-          '<strong class="rating-average">—</strong>' +
-          '<span class="rating-count">집계 중</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' +
-        optionsMarkup +
-      '</div>';
-
+    let canVote = ratingDate === dateParam(kstToday());
+    let loaded = false;
+    let busy = false;
+    const title = canVote ? "오늘의 급식 맛 평가" : "선택한 날의 급식 맛 평가";
+    panel.innerHTML = '<div class="meal-rating-heading"><div class="meal-rating-copy"><h3 class="meal-rating-title">' + title +
+      '</h3></div><div class="meal-rating-summary" aria-live="polite"><strong class="rating-average">—</strong><span class="rating-count">집계 중</span></div></div>' +
+      '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' + MEAL_RATING_OPTIONS.map(option =>
+        '<button class="meal-rating-option" type="button" data-rating="' + option.value + '" aria-pressed="false" disabled>' +
+        '<span class="meal-rating-option-label"><span class="meal-rating-emoji" aria-hidden="true">' + option.emoji + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
+        '</span></span><span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span><span class="meal-rating-option-count">0</span></button>'
+      ).join("") + '</div><p class="meal-rating-status" role="status" hidden></p><button type="button" class="rating-retry" hidden>다시 시도</button>';
     els.cards.meal.appendChild(panel);
-
-    const voterId = getMealVoterId();
-    panel.querySelectorAll(".meal-rating-option").forEach((button) => {
+    const status = panel.querySelector(".meal-rating-status");
+    const retry = panel.querySelector(".rating-retry");
+    const live = () => panel.isConnected && token.current();
+    const showStatus = message => { status.textContent = message; status.hidden = !message; };
+    const syncButtons = () => {
+      panel.querySelectorAll(".meal-rating-option").forEach(button => { button.disabled = busy || !loaded || !canVote; });
+      retry.disabled = busy;
+    };
+    async function loadSummary() {
+      if (busy || !live()) return;
+      busy = true; retry.hidden = true; syncButtons();
+      try {
+        const data = await fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate), {headers: {"X-Meal-Voter": voterId}, signal: token.signal});
+        if (!live()) return;
+        loaded = true; canVote = canVote && data.canVote !== false;
+        updateMealRatingPanel(panel, data);
+        showStatus(canVote ? "" : "평가는 오늘 급식에만 등록할 수 있습니다.");
+      } catch (error) {
+        if (!live()) return;
+        panel.querySelector(".rating-count").textContent = "집계 실패";
+        showStatus(error.message || "집계를 불러오지 못했습니다."); retry.hidden = false;
+      } finally { busy = false; if (live()) syncButtons(); }
+    }
+    retry.addEventListener("click", () => { void loadSummary(); });
+    panel.querySelectorAll(".meal-rating-option").forEach(button => {
       button.addEventListener("click", async () => {
-        if (button.disabled) return;
-        const buttons = Array.from(panel.querySelectorAll(".meal-rating-option"));
-        buttons.forEach((item) => { item.disabled = true; });
-
+        if (button.disabled || !live()) return;
+        busy = true; syncButtons();
         try {
-          const response = await fetch("/api/meal-rating", {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json"
-            },
-            cache: "no-store",
-            body: JSON.stringify({
-              date: ratingDate,
-              voterId,
-              rating: Number(button.dataset.rating)
-            })
-          });
-          const body = await response.json().catch(() => null);
-          if (!response.ok || !body?.ok) {
-            throw new Error(body?.error || "평가를 저장하지 못했습니다.");
-          }
-          updateMealRatingPanel(panel, body);
-        } catch (error) {
-          console.error("급식 평가 저장 실패:", error);
-        } finally {
-          if (panel.isConnected) {
-            panel.querySelectorAll(".meal-rating-option").forEach((item) => {
-              item.disabled = false;
-            });
-          }
-        }
+          const data = await fetchJson("/api/meal-rating", {method: "POST", headers: {"Content-Type": "application/json"}, signal: token.signal,
+            body: JSON.stringify({date: ratingDate, voterId, rating: Number(button.dataset.rating)})});
+          if (!live()) return;
+          updateMealRatingPanel(panel, data); showStatus("");
+        } catch (error) { if (live()) showStatus(error.message || "평가를 저장하지 못했습니다. 다시 선택해 주세요."); }
+        finally { busy = false; if (live()) syncButtons(); }
       });
     });
-
-    fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate) +
-      "&voter=" + encodeURIComponent(voterId))
-      .then((data) => {
-        if (!panel.isConnected) return;
-        updateMealRatingPanel(panel, data);
-      })
-      .catch((error) => {
-        console.error("급식 평가 불러오기 실패:", error);
-      })
-      .finally(() => {
-        if (!panel.isConnected) return;
-        panel.querySelectorAll(".meal-rating-option").forEach((button) => {
-          button.disabled = false;
-        });
-      });
+    void loadSummary();
   }
 
   function renderMeal(data) {
@@ -928,7 +887,7 @@
       return;
     }
 
-    const mealAllergenNumbers = extractAllergenNumbers(data.items.join(" "));
+    const mealAllergenNumbers = [...new Set(data.items.flatMap(item => extractAllergenNumbers(item)))].sort((a, b) => a - b);
 
     els.cards.meal.innerHTML = `
       <div class="meal-content">
@@ -956,7 +915,7 @@
 
     els.cards.meal.querySelectorAll(".meal-allergen-button").forEach((button) => {
       button.addEventListener("click", () => {
-        const numbers = extractAllergenNumbers(button.textContent);
+        const numbers = button.textContent.split(".").map(Number);
         const menuName = button.parentElement?.querySelector(".meal-name")?.textContent || "";
         openAllergenModal(numbers, menuName, button);
       });
@@ -1012,178 +971,107 @@
   }
 
   let classSelect = null;
-  let classOptionsKey = "";
-  let classOptionsLoadedKey = "";
-  let mealRequestId = 0;
-  let timetableRequestId = 0;
+  let lastRefreshAt = 0;
 
   function classOptionsCacheKey(date = state.date, grade = state.grade) {
-    return `${schoolYear(date)}-${grade}`;
+    const day = date.getUTCDay();
+    const monday = civilDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - (day === 0 ? 6 : day - 1));
+    return formatDateParam(monday) + "-" + grade;
   }
 
   function classOptionsFromValues(values) {
-    return [...new Set(
-      (Array.isArray(values) ? values : [])
-        .map((value) => Number(value))
-        .filter((value) => Number.isInteger(value) && value >= 1 && value <= 99)
-    )]
-      .sort((a, b) => a - b)
-      .map((classNumber) => ({
-        value: String(classNumber),
-        label: `${classNumber}반`
-      }));
+    return [...new Set((Array.isArray(values) ? values : []).map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 99))]
+      .sort((a, b) => a - b).map(n => ({value: String(n), label: n + "반"}));
   }
 
-  function readCachedClassOptions() {
+  function readCachedClassOptions(date = state.date, grade = state.grade) {
     try {
-      const raw = localStorage.getItem(`ygmhelper-classes-${classOptionsCacheKey()}`);
-      const values = JSON.parse(raw || "null");
-      return Array.isArray(values) ? values : [];
-    } catch {
-      return [];
-    }
+      const cached = JSON.parse(storage.getItem("ygmhelper-classes-v2-" + classOptionsCacheKey(date, grade)) || "null");
+      return cached?.expiresAt > Date.now() && Array.isArray(cached.values) ? cached.values : [];
+    } catch { return []; }
   }
 
-  function applyClassOptions(values, persist = true) {
+  function applyClassOptions(values, persist = true, date = state.date, grade = state.grade) {
+    if (formatDateParam(date) !== formatDateParam(state.date) || grade !== state.grade) return false;
     const options = classOptionsFromValues(values);
     if (!options.length) return false;
-
     const previous = state.className;
-    const preferred = options.some((option) => option.value === previous)
-      ? previous
-      : options[0].value;
-
-    state.className = preferred;
-    localStorage.setItem("ygmhelper-class", preferred);
-
-    if (classSelect) {
-      classSelect.setOptions(options, preferred);
-      classSelect.setDisabled(false);
-    }
-
-    classOptionsKey = classOptionsCacheKey();
-    if (persist) classOptionsLoadedKey = classOptionsKey;
-
-    if (persist) {
-      localStorage.setItem(
-        `ygmhelper-classes-${classOptionsKey}`,
-        JSON.stringify(options.map((option) => Number(option.value)))
-      );
-    }
-
-    return preferred !== previous;
+    state.className = options.some(option => option.value === previous) ? previous : options[0].value;
+    storage.setItem("ygmhelper-class", state.className);
+    classSelect?.setOptions(options, state.className);
+    classSelect?.setDisabled(false);
+    if (persist) storage.setItem("ygmhelper-classes-v2-" + classOptionsCacheKey(date, grade), JSON.stringify({values: options.map(o => Number(o.value)), expiresAt: Date.now() + 3600000}));
+    return state.className !== previous;
   }
 
   async function loadClassOptions(force = false) {
-    const key = classOptionsCacheKey();
-
-    if (!force && classOptionsLoadedKey === key) {
-      return true;
-    }
-
-    const cached = readCachedClassOptions();
-    if (cached.length) {
-      applyClassOptions(cached, false);
-    }
-
+    const date = new Date(state.date), grade = state.grade;
+    const token = requests.begin("classes", classOptionsCacheKey(date, grade), 3600000, force);
+    if (!token) return;
+    const cached = readCachedClassOptions(date, grade);
+    if (cached.length) applyClassOptions(cached, false, date, grade);
+    let success = false;
     try {
-      const values = await fetchClassOptions();
-      if (!values.length) {
-        throw new Error("해당 학년의 반 정보를 찾을 수 없습니다.");
-      }
-
-      applyClassOptions(values, true);
-      return true;
+      const data = await fetchJson("/api/classes?date=" + formatDateParam(date) + "&grade=" + grade, {signal: token.signal});
+      if (!token.current() || formatDateParam(state.date) !== formatDateParam(date) || state.grade !== grade) return;
+      if (!data.classes?.length) throw new Error("해당 학년의 반 정보를 찾을 수 없습니다.");
+      applyClassOptions(data.classes, true, date, grade); success = true;
     } catch (error) {
-      if (!cached.length) {
-        classOptionsKey = "";
-        classSelect?.setDisabled(false);
-        setStatus("timetable", error.message || "반 정보를 불러오지 못했습니다.", "error");
-      }
-      return false;
-    }
+      if (token.current() && state.grade === grade && formatDateParam(state.date) === formatDateParam(date) && !cached.length) setStatus("timetable", error.message, "error");
+    } finally { token.finish(success); }
   }
 
-  async function loadMeal(requestId = ++mealRequestId) {
-    const closedReason = getClosedReason(state.date);
-
-    if (closedReason) {
-      if (requestId !== mealRequestId) return;
-      setStatus("meal", "");
-      renderClosed("meal", closedReason);
-      return;
-    }
-
-    setLoading("meal");
+  async function loadMeal({force = false} = {}) {
+    const date = new Date(state.date);
+    const token = requests.begin("meal", formatDateParam(date), 60000, force);
+    if (!token) return;
+    requests.cancel("rating");
+    removeAllergenModalNow();
     setStatus("meal", "");
-
+    const closedReason = getClosedReason(date);
+    if (closedReason) { renderClosed("meal", closedReason); token.finish(true); return; }
+    setLoading("meal");
+    let success = false;
     try {
-      const data = await fetchJson(`/api/meal?date=${formatDateParam(state.date)}`);
-      if (requestId !== mealRequestId) return;
-      renderMeal(data);
+      const data = await fetchJson("/api/meal?date=" + formatDateParam(date), {signal: token.signal});
+      if (!token.current()) return;
+      renderMeal(data); success = true;
     } catch (error) {
-      if (requestId !== mealRequestId) return;
-      els.cards.meal.innerHTML = `
-        <div class="empty-state">
-          <div>
-            <h3>급식을 불러오지 못했습니다.</h3>
-            <p>오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
-          </div>
-        </div>`;
-      setStatus("meal", error.message || "급식 정보를 불러오지 못했습니다.", "error");
-    }
+      if (!token.current()) return;
+      els.cards.meal.innerHTML = '<div class="empty-state"><div><h3>급식을 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></div>';
+      setStatus("meal", error.message, "error");
+    } finally { token.finish(success); }
   }
 
-  async function loadTimetable(requestId = ++timetableRequestId) {
-    const closedReason = getClosedReason(state.date);
-
-    if (closedReason) {
-      if (requestId !== timetableRequestId) return;
-      setStatus("timetable", "");
-      renderClosed("timetable", closedReason);
-      await loadClassOptions(false);
-      return;
-    }
-
-    setLoading("timetable");
+  async function loadTimetable({force = false, retry = false} = {}) {
+    const date = new Date(state.date), grade = state.grade, className = state.className;
+    const key = formatDateParam(date) + "-" + grade + "-" + className;
+    const token = requests.begin("timetable", key, 5000, force);
+    if (!token) return;
     setStatus("timetable", "");
-
+    const closedReason = getClosedReason(date);
+    if (closedReason) { renderClosed("timetable", closedReason); token.finish(true); void loadClassOptions(); return; }
+    setLoading("timetable");
+    let success = false;
     try {
-      const data = await fetchJson(
-        `/api/timetable?date=${formatDateParam(state.date)}&grade=${encodeURIComponent(state.grade)}&class=${encodeURIComponent(state.className)}`
-      );
-
-      if (requestId !== timetableRequestId) return;
-
-      const previousClass = state.className;
-
-      if (Array.isArray(data.classes) && data.classes.length) {
-        applyClassOptions(data.classes, true);
+      const data = await fetchJson("/api/timetable?date=" + formatDateParam(date) + "&grade=" + grade + "&class=" + className, {signal: token.signal});
+      if (!token.current()) return;
+      if (data.classes?.length) applyClassOptions(data.classes, true, date, grade);
+      if (state.className !== className && !retry) {
+        token.finish(true); await loadTimetable({retry: true}); return;
       }
-
-      if (data.invalidClass || state.className !== previousClass) {
-        const retryId = ++timetableRequestId;
-        await loadTimetable(retryId);
-        return;
-      }
-
-      renderTimetable(data);
+      renderTimetable(data); success = true;
     } catch (error) {
-      if (requestId !== timetableRequestId) return;
-      els.cards.timetable.innerHTML = `
-        <div class="empty-state">
-          <div>
-            <h3>시간표를 불러오지 못했습니다.</h3>
-            <p>오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
-          </div>
-        </div>`;
-      setStatus("timetable", error.message || "시간표 정보를 불러오지 못했습니다.", "error");
-    }
+      if (!token.current()) return;
+      els.cards.timetable.innerHTML = '<div class="empty-state"><div><h3>시간표를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></div>';
+      setStatus("timetable", error.message, "error");
+    } finally { token.finish(success); }
   }
 
-  function refreshData() {
-    loadMeal(++mealRequestId);
-    loadTimetable(++timetableRequestId);
+  function refreshData({force = false} = {}) {
+    lastRefreshAt = Date.now();
+    void loadMeal({force});
+    void loadTimetable({force});
   }
 
   function switchMobileView(view) {
@@ -1194,13 +1082,14 @@
       const active = button.dataset.view === view;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
     });
 
     closeFloatingMenus();
 
     if (window.innerWidth <= 760) {
-      if (view === "meal") loadMeal(++mealRequestId);
-      else loadTimetable(++timetableRequestId);
+      if (view === "meal") loadMeal();
+      else loadTimetable();
     }
   }
 
@@ -1214,9 +1103,8 @@
       state.grade,
       (value) => {
         state.grade = value;
-        localStorage.setItem("ygmhelper-grade", value);
-        classOptionsKey = "";
-        classOptionsLoadedKey = "";
+        storage.setItem("ygmhelper-grade", value);
+        requests.cancel("classes");
 
         const cached = readCachedClassOptions();
         if (cached.length) {
@@ -1229,7 +1117,7 @@
           classSelect?.setDisabled(false);
         }
 
-        loadTimetable(++timetableRequestId);
+        loadTimetable();
       }
     );
 
@@ -1244,8 +1132,8 @@
       (value) => {
         if (!value) return;
         state.className = value;
-        localStorage.setItem("ygmhelper-class", value);
-        loadTimetable(++timetableRequestId);
+        storage.setItem("ygmhelper-class", value);
+        loadTimetable();
       }
     );
 
@@ -1256,13 +1144,23 @@
       });
     });
 
+    els.mobileSwitch.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const view = event.key === "Home" ? "meal" : event.key === "End" ? "timetable" : state.mobileView === "meal" ? "timetable" : "meal";
+      switchMobileView(view);
+      els.mobileSwitch.querySelector(`[data-view="${view}"]`).focus();
+    });
+
     document.addEventListener("click", (event) => {
       if (!event.target.closest(".date-control")) closeDatePicker();
       if (!event.target.closest(".custom-select")) closeSelects();
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeAllergenModal();
+      if (event.key !== "Escape") return;
+      if (document.querySelector(".allergen-modal")) closeAllergenModal();
+      else closeFloatingMenus();
     });
 
     let lastIsDesktop = window.innerWidth > 760;
@@ -1274,15 +1172,29 @@
       closeFloatingMenus();
 
       if (isDesktop) {
-        loadMeal(++mealRequestId);
-        loadTimetable(++timetableRequestId);
+        loadMeal();
+        loadTimetable();
       } else {
         switchMobileView(state.mobileView);
       }
     });
 
-    loadMeal(++mealRequestId);
-    loadTimetable(++timetableRequestId);
+    let lastToday = formatDateParam(kstToday());
+    function resume() {
+      if (document.visibilityState === "hidden") return;
+      const today = kstToday(), todayKey = formatDateParam(today);
+      const changed = todayKey !== lastToday;
+      if (changed) {
+        if (formatDateParam(state.date) === lastToday || !isDateSelectable(state.date)) state.date = today;
+        lastToday = todayKey;
+        closeFloatingMenus(); syncDateControl();
+      }
+      if (changed || Date.now() - lastRefreshAt > 30000) refreshData({force: true});
+    }
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("focus", resume);
+    window.setInterval(() => { if (lastToday !== formatDateParam(kstToday())) resume(); }, 60000);
+    refreshData();
   }
 
   init();

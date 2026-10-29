@@ -1,16 +1,23 @@
 {
   "name": "ygmhelper",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "deploy": "wrangler deploy || wrangler deploy",
+    "deploy": "npm run verify && wrangler deploy",
     "dev": "wrangler dev",
-    "check": "wrangler deploy --dry-run"
+    "check": "wrangler deploy --dry-run",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "node --check src/worker.js && node --check src/http.js && node --check public/js/app.js && node --check public/js/common.js && npm test && npm run check",
+    "db:init": "wrangler d1 migrations apply DB --local",
+    "types": "wrangler types"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "iconv-lite": "^0.7.3",
+    "jsdom": "^27.0.1",
+    "wrangler": "4.155.0"
   },
-  "dependencies": {
-    "iconv-lite": "^0.7.3"
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

@@ -526,7 +526,7 @@ async function handleClasses(url, env) {
   });
 }
 
-async function handleTimetable(url, env) {
+async function handleTimetable(url, env, sharedWeek = null) {
   const date = url.searchParams.get("date") || "";
   const grade = url.searchParams.get("grade") || "";
   const className = url.searchParams.get("class") || "";
@@ -560,6 +560,27 @@ async function handleTimetable(url, env) {
     });
   }
 
+  if (url.searchParams.get("view") === "week") {
+    // One upstream snapshot supplies all five days, including daily changes.
+    const data = await fetchComciganWeek(weekNum);
+    const start = new Date(utcDayValue(dateParts(date)));
+    const weekday = start.getUTCDay();
+    start.setUTCDate(start.getUTCDate() - (weekday === 0 ? 6 : weekday - 1));
+    const days = [];
+    for (let index = 0; index < 5; index++) {
+      const day = new Date(start);
+      day.setUTCDate(day.getUTCDate() + index);
+      const dayUrl = new URL(url);
+      dayUrl.searchParams.delete("view");
+      dayUrl.searchParams.set("date", dateParam(day));
+      const result = await handleTimetable(dayUrl, env, data);
+      if (!result.ok) return result;
+      days.push(await result.json());
+    }
+    const selected = days.find(day => day.date === date) || {...days[0], items: [], available: false};
+    return json({...selected, date, days, weekStart: dateParam(start)});
+  }
+
   if (getComciganDayIndex(date) === null) {
     return json({
       ok: true,
@@ -576,7 +597,7 @@ async function handleTimetable(url, env) {
     });
   }
 
-  const data = await fetchComciganWeek(weekNum);
+  const data = sharedWeek || await fetchComciganWeek(weekNum);
   const classes = classNumbersFromComcigan(data, grade);
   const dayIndex = getComciganDayIndex(date);
   const gradeNumber = Number(grade);

@@ -29,10 +29,12 @@ function comciData(){
   return {학급수:[0,2,2,3],가상학급수:[0,0,0,0],자료101:['','교사A','교사B'],자료102:['','국어','수학'],자료103:'fixture',자료104:matrix(),자료105:matrix()};
 }
 function mockComci(t,data){
+  const calls=[];
   const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
   const wrapped=`/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
-  t.mock.method(globalThis,'fetch',async url=>String(url).endsWith('/st')?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data));
+  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));return String(url).endsWith('/st')?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
+  return calls;
 }
 
 test('all APIs reject impossible dates without calling upstream',async t=>{
@@ -113,5 +115,18 @@ test('malformed Comcigan lookup and excessive class/period counts reject',async 
   for(const mutate of [d=>delete d.자료101,d=>d.학급수[1]=100000,d=>d.자료104[1][1][1][0]=100000]){
     const d=comciData();mutate(d);mockComci(t,d);
     const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1'),env);assert.equal(r.status,502);
+  }
+});
+
+test('weekly timetable shares one snapshot and maps weekday and weekend selections',async t=>{
+  quiet(t);const calls=mockComci(t,comciData());const env=environment(t);
+  for(const offset of [0,1,5,6]){
+    calls.length=0;const date=new Date(selectableRange().minDate);date.setUTCDate(date.getUTCDate()+offset);
+    const r=await worker.fetch(request('/api/timetable?date='+dateParam(date)+'&grade=1&class=1&view=week'),env);
+    assert.equal(r.status,200);const data=await r.json();
+    assert.equal(data.days.length,5);assert.equal(data.weekStart,monday);
+    assert.equal(data.days[0].date,monday);assert.equal(data.days[4].items.length,2);
+    assert.equal(data.items.length,offset<5?2:0);
+    assert.equal(calls.filter(url=>!url.endsWith('/st')&&!url.includes('991l')).length,1);
   }
 });

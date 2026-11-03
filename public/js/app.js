@@ -970,6 +970,31 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       </div>`;
   }
 
+  function renderWeeklyTimetable(data) {
+    const container = document.getElementById("weekly-timetable");
+    const range = document.getElementById("weekly-range");
+    const days = Array.isArray(data.days) ? data.days : [];
+    if (days.length !== 5) {
+      range.textContent = "";
+      container.innerHTML = '<p class="weekly-message">주간 시간표가 없습니다.</p>';
+      return;
+    }
+    const shortDate = value => Number(value.slice(4, 6)) + "." + Number(value.slice(6, 8));
+    range.textContent = shortDate(days[0].date) + " – " + shortDate(days[4].date);
+    const periods = Math.max(0, ...days.flatMap(day => (day.items || []).map(item => Number(item.period))));
+    if (!periods) {
+      container.innerHTML = '<p class="weekly-message">선택한 학급의 주간 시간표가 없습니다.</p>';
+      return;
+    }
+    const labels = ["월", "화", "수", "목", "금"];
+    container.innerHTML = `<table class="weekly-table"><caption class="sr-only">${escapeHtml(state.grade)}학년 ${escapeHtml(state.className)}반 주간 시간표</caption>
+      <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
+      <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
+        const item = day.items?.find(item => Number(item.period) === index + 1);
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.changed ? '<small>변동</small>' : ""}${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}` : '<span aria-label="수업 없음">—</span>'}</td>`;
+      }).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+
   let classSelect = null;
   let lastRefreshAt = 0;
 
@@ -1050,21 +1075,26 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     if (!token) return;
     setStatus("timetable", "");
     const closedReason = getClosedReason(date);
-    if (closedReason) { renderClosed("timetable", closedReason); token.finish(true); void loadClassOptions(); return; }
+    if (closedReason) void loadClassOptions();
     setLoading("timetable");
+    document.getElementById("weekly-range").textContent = "";
+    document.getElementById("weekly-timetable").innerHTML = '<p class="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p>';
     let success = false;
     try {
-      const data = await fetchJson("/api/timetable?date=" + formatDateParam(date) + "&grade=" + grade + "&class=" + className, {signal: token.signal});
+      const data = await fetchJson("/api/timetable?date=" + formatDateParam(date) + "&grade=" + grade + "&class=" + className + "&view=week", {signal: token.signal});
       if (!token.current()) return;
       if (data.classes?.length) applyClassOptions(data.classes, true, date, grade);
       if (state.className !== className && !retry) {
         token.finish(true); await loadTimetable({retry: true}); return;
       }
-      renderTimetable(data); success = true;
+      if (closedReason) renderClosed("timetable", closedReason);
+      else renderTimetable(data);
+      renderWeeklyTimetable(data); success = true;
     } catch (error) {
       if (!token.current()) return;
       els.cards.timetable.innerHTML = '<div class="empty-state"><div><h3>시간표를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></div>';
       setStatus("timetable", error.message, "error");
+      document.getElementById("weekly-timetable").innerHTML = '<p class="weekly-message">주간 시간표를 불러오지 못했습니다. 날짜나 학급을 다시 선택해 주세요.</p>';
     } finally { token.finish(success); }
   }
 

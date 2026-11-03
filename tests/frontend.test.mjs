@@ -109,3 +109,17 @@ test('mobile initial load waits to request hidden timetable until tab selection'
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
   assert.match(document.querySelector('#timetable-card').textContent,/국어/);
 });
+
+test('weekly table renders five dates, changed lessons, safe text and selected day',async t=>{
+ const days=Array.from({length:5},(_,index)=>{const date=new Date(helpers.selectableRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'교사*',changed:index===1}]};});
+ const {document,calls}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],items:days[0].items,days}):defaultResponse(url));
+ assert(calls.some(c=>c.url.includes('view=week')));
+ assert.equal(document.querySelectorAll('.weekly-table thead th').length,6);
+ assert.equal(document.querySelectorAll('.weekly-table td').length,5);
+ assert.equal(document.querySelector('.weekly-table img'),null);
+ assert.match(document.querySelector('.weekly-table').textContent,/<img src=x>/);
+ assert.equal(document.querySelectorAll('.weekly-table td.is-changed').length,1);
+ document.querySelector('.date-trigger').click();document.querySelector('.calendar-day[tabindex="0"]').dispatchEvent(new document.defaultView.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ clickDate(document,days[1].date);await flush();
+ assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+Number(days[1].date.slice(4,6))+'.'+Number(days[1].date.slice(6,8)));
+});

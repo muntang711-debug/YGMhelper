@@ -40,8 +40,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       timetable: document.getElementById("timetable-status")
     },
     cards: {
-      meal: document.getElementById("meal-card"),
-      timetable: document.getElementById("timetable-card")
+      meal: document.getElementById("meal-card")
     }
   };
 
@@ -932,53 +931,17 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     return String(value || "").trim();
   }
 
-  function renderTimetable(data) {
-    if (!data?.items?.length) {
-      els.cards.timetable.innerHTML = `
-        <div class="empty-state">
-          <div>
-            <h3>시간표가 없습니다.</h3>
-            <p>선택한 학급과 날짜에는 등록된 시간표 데이터가 없습니다.</p>
-          </div>
-        </div>`;
-      return;
-    }
-
-    const items = [...data.items].sort((a, b) => Number(a.period) - Number(b.period));
-
-    els.cards.timetable.innerHTML = `
-      <div class="timetable-list">
-        ${items.map((item, index) => {
-          const teacher = normalizeTeacherName(item.teacher);
-          const location = String(item.location || "").trim();
-
-          return `
-            <article class="period-card${item.changed ? " is-changed" : ""}" style="--item-index:${index}">
-              <span class="period-card-number">${escapeHtml(item.period)}교시</span>
-              <div class="period-card-main">
-                <div class="period-card-subject-row">
-                  <strong class="period-card-subject">${escapeHtml(item.subject || "수업 정보 없음")}</strong>
-                  ${item.changed ? '<span class="period-card-changed">변동</span>' : ""}
-                </div>
-                ${teacher ? `<span class="period-card-teacher">${escapeHtml(teacher)}</span>` : ""}
-                ${location ? `<span class="period-card-location">${escapeHtml(location)}</span>` : ""}
-              </div>
-            </article>`;
-        }).join("")}
-      </div>`;
-  }
-
   function renderWeeklyTimetable(data) {
     const container = document.getElementById("weekly-timetable");
-    const range = document.getElementById("weekly-range");
+
     const days = Array.isArray(data.days) ? data.days : [];
     if (days.length !== 5) {
-      range.textContent = "";
+
       container.innerHTML = '<p class="weekly-message">주간 시간표가 없습니다.</p>';
       return;
     }
     const shortDate = value => Number(value.slice(4, 6)) + "." + Number(value.slice(6, 8));
-    range.textContent = shortDate(days[0].date) + " – " + shortDate(days[4].date);
+
     const periods = Math.max(0, ...days.flatMap(day => (day.items || []).map(item => Number(item.period))));
     if (!periods) {
       container.innerHTML = '<p class="weekly-message">선택한 학급의 주간 시간표가 없습니다.</p>';
@@ -989,7 +952,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}` : '<span aria-label="수업 없음">—</span>'}</td>`;
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}${item.changed ? '<i class="weekly-change">변경</i>' : ""}</div>` : '<span aria-label="수업 없음">—</span>'}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>`;
   }
 
@@ -1075,8 +1038,8 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     document.querySelector(".weekly-section").hidden = false;
     const closedReason = getClosedReason(date);
     if (closedReason) void loadClassOptions();
-    setLoading("timetable");
-    document.getElementById("weekly-range").textContent = "";
+
+
     document.getElementById("weekly-timetable").innerHTML = '<p class="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p>';
     let success = false;
     try {
@@ -1086,12 +1049,11 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       if (state.className !== className && !retry) {
         token.finish(true); await loadTimetable({retry: true}); return;
       }
-      if (closedReason) renderClosed("timetable", closedReason);
-      else renderTimetable(data);
+
       renderWeeklyTimetable(data); success = true;
     } catch (error) {
       if (!token.current()) return;
-      els.cards.timetable.innerHTML = "";
+
       document.getElementById("weekly-timetable").innerHTML = "";
       document.querySelector(".weekly-section").hidden = true;
       showLoadError("timetable", () => loadTimetable({force: true}));
@@ -1137,6 +1099,17 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   function init() {
     initTheme();
     renderDateControl();
+    document.querySelectorAll(".data-refresh").forEach(refresh => refresh.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      closeFloatingMenus();
+      lastRefreshAt = Date.now();
+      try {
+        if (button.dataset.refresh === "meal") await loadMeal({force: true});
+        else await loadTimetable({force: true});
+      } finally { button.disabled = false; button.removeAttribute("aria-busy"); }
+    }));
 
     setupSelect(
       "grade",

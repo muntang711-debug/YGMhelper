@@ -6,13 +6,14 @@
   <meta name="theme-color" content="#f5f7fb">
   <meta name="description" content="급식표와 시간표를 빠르게 확인할 수 있는 YGMhelper">
   <title>YGMhelper</title>
-  <link rel="stylesheet" href="/css/style.css?v=20261103-2">
+  <link rel="stylesheet" href="/css/style.css?v=20261103-12">
 </head>
 <body data-mobile-view="meal">
   <div id="app">
     <header class="topbar">
       <a class="brand" href="/" aria-label="YGMhelper 홈">YGMhelper</a>
 
+      <div class="topbar-actions">
       <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
         <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"></circle>
@@ -22,6 +23,7 @@
           <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
         </svg>
       </button>
+      </div>
     </header>
 
     <main class="page-shell">
@@ -32,6 +34,7 @@
       </div>
 
       <div class="global-toolbar">
+
         <div class="date-control">
           <button class="date-trigger" type="button" aria-haspopup="dialog" aria-controls="date-picker" aria-expanded="false">
             <span></span>
@@ -47,6 +50,7 @@
               <p class="section-kicker">MEAL</p>
               <h2>급식</h2>
             </div>
+            <button id="refresh-data" class="icon-button data-refresh" data-refresh="meal" type="button" aria-label="급식 새로고침" title="새로고침"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5"/></svg></button>
           </div>
 
           <div id="meal-status" class="status-message" role="status" aria-atomic="true" hidden></div>
@@ -77,12 +81,11 @@
                 <div class="select-menu" role="listbox"></div>
               </div>
             </div>
+            <button id="refresh-timetable" class="icon-button data-refresh" data-refresh="timetable" type="button" aria-label="시간표 새로고침" title="새로고침"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5"/></svg></button>
           </div>
 
           <div id="timetable-status" class="status-message" role="status" aria-atomic="true" hidden></div>
-          <div id="timetable-card" class="data-card timetable-card"></div>
-          <section class="weekly-section" aria-labelledby="weekly-title">
-            <div class="weekly-heading"><h3 id="weekly-title">주간 시간표</h3><span id="weekly-range"></span></div>
+          <section class="weekly-section" aria-label="시간표">
             <div id="weekly-timetable" class="weekly-scroll" role="region" aria-label="월요일부터 금요일까지 주간 시간표"></div>
           </section>
         </section>
@@ -92,6 +95,6 @@
     <footer class="footer">YGMhelper</footer>
   </div>
 
-  <script src="/js/app.js?v=20261103-2" type="module"></script>
+  <script src="/js/app.js?v=20261103-12" type="module"></script>
 </body>
 </html>

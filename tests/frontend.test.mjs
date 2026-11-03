@@ -23,7 +23,8 @@ function defaultResponse(url){
   if(url.startsWith('/api/meal-rating'))return Response.json({ok:true,total:0,counts:{},myRating:null,average:null,canVote:true});
   if(url.startsWith('/api/meal?'))return Response.json({ok:true,date:new URL(url,'https://test').searchParams.get('date'),items:['비타민C100음료 (12)','우유 (선택)'],calories:'100 Kcal'});
   if(url.startsWith('/api/classes'))return Response.json({ok:true,classes:[1,2]});
-  return Response.json({ok:true,classes:[1,2],items:[{period:1,subject:'국어',teacher:'교사*'}],available:true});
+  const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'국어',teacher:'교사*'}]};});
+  return Response.json({ok:true,classes:[1,2],items:days[0].items,days,available:true});
 }
 function clickDate(document,param){document.querySelector('.date-trigger').click();let button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);if(!button){document.querySelector('[data-cal-nav="1"]').click();button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);}assert(button,'selectable date exists');button.click();}
 
@@ -38,7 +39,7 @@ test('blocked storage still renders data and stable rating identity',async t=>{
 test('empty invalid-class response does not loop',async t=>{
   const {calls,document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[],items:[],invalidClass:true}):defaultResponse(url),{savedClass:'99'});
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
-  assert.match(document.querySelector('#timetable-card').textContent,/시간표가 없습니다/);
+  assert.match(document.querySelector('#weekly-timetable').textContent,/시간표가 없습니다/);
 });
 test('invalid class switches to a valid class and retries only once',async t=>{
   const {calls}=await boot(t,url=>url.startsWith('/api/timetable')&&url.includes('class=99')?Response.json({ok:true,classes:[1,2],items:[],invalidClass:true}):defaultResponse(url),{savedClass:'99'});
@@ -107,13 +108,15 @@ test('mobile initial load waits to request hidden timetable until tab selection'
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,0);
   document.querySelector('[data-view="timetable"]').click();await flush();
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
-  assert.match(document.querySelector('#timetable-card').textContent,/국어/);
+  assert.match(document.querySelector('#weekly-timetable').textContent,/국어/);
 });
 
 test('weekly table renders five dates, changed lessons, safe text and selected day',async t=>{
  const days=Array.from({length:5},(_,index)=>{const date=new Date(helpers.selectableRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'김민수',changed:index===1}]};});
  const {document,calls}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],items:days[0].items,days}):defaultResponse(url));
  assert(calls.some(c=>c.url.includes('view=week')));
+ assert.equal(document.querySelector('#timetable-card'),null);
+ assert.equal(document.querySelector('.period-card'),null);
  assert.equal(document.querySelectorAll('.weekly-table thead th').length,6);
  assert.equal(document.querySelectorAll('.weekly-table td').length,5);
  assert.equal(document.querySelector('.weekly-table img'),null);
@@ -127,10 +130,9 @@ test('weekly table renders five dates, changed lessons, safe text and selected d
  assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+Number(days[1].date.slice(4,6))+'.'+Number(days[1].date.slice(6,8)));
 });
 
-test('one timetable error replaces both views and retry restores them',async t=>{
+test('weekly timetable error offers one retry and restores the table',async t=>{
  let broken=true;
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')&&broken?Response.json({ok:false,error:'컴시간 시간표 응답을 해석하지 못했습니다.'},{status:502}):defaultResponse(url));
- assert.equal(document.querySelector('#timetable-card').textContent,'');
  assert.equal(document.querySelector('#weekly-timetable').textContent,'');
  assert.equal(document.querySelector('.weekly-section').hidden,true);
  assert.equal(document.querySelector('#timetable-status').textContent,'시간표를 불러오지 못했습니다.다시 시도');
@@ -138,5 +140,26 @@ test('one timetable error replaces both views and retry restores them',async t=>
  broken=false;document.querySelector('#timetable-status .load-retry').click();await flush();
  assert.equal(document.querySelector('#timetable-status').hidden,true);
  assert.equal(document.querySelector('.weekly-section').hidden,false);
- assert.match(document.querySelector('#timetable-card').textContent,/국어/);
+ assert.match(document.querySelector('#weekly-timetable').textContent,/국어/);
+});
+
+test('refresh reloads the visible mobile timetable without requesting hidden meals',async t=>{
+ const {document,calls}=await boot(t,null,{width:390});
+ document.querySelector('[data-view="timetable"]').click();await flush();
+ const before=calls.length;
+ document.querySelector('#refresh-timetable').click();await flush();
+ const added=calls.slice(before);
+ assert.equal(added.filter(c=>c.url.startsWith('/api/timetable')).length,1);
+ assert.equal(added.filter(c=>c.url.startsWith('/api/meal?')).length,0);
+ assert.equal(document.querySelector('#refresh-timetable').disabled,false);
+});
+
+test('refresh stays busy until the request fails and then becomes usable again',async t=>{
+ let resolve;let defer=false;
+ const {document}=await boot(t,url=>defer&&url.startsWith('/api/meal?')?new Promise(r=>{resolve=r;}):defaultResponse(url));
+ defer=true;const button=document.querySelector('#refresh-data');button.click();
+ assert.equal(button.closest('.section-heading')?.parentElement.id,'view-meal');
+ assert.equal(button.disabled,true);assert.equal(button.getAttribute('aria-busy'),'true');
+ resolve(Response.json({ok:false,error:'failed'},{status:502}));await flush();
+ assert.equal(button.disabled,false);assert.equal(button.hasAttribute('aria-busy'),false);
 });

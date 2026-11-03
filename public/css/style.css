@@ -1718,3 +1718,8 @@ body.modal-open {
   .section-heading > .control-row { grid-column: 1 / -1; grid-row: 2; }
 }
 @media (prefers-reduced-motion: reduce) { .data-refresh[aria-busy="true"] svg { animation: none; } }
+
+/* Keep the timetable header dark in both themes. */
+[data-theme="dark"] .weekly-table thead th { background: #0b1018; color: #edf2fc; }
+[data-theme="dark"] .weekly-table thead .is-selected { background: color-mix(in srgb, #0b1018 78%, white); }
+[data-theme="dark"] .weekly-table tbody .is-selected { background: color-mix(in srgb, var(--surface-solid) 88%, white); }

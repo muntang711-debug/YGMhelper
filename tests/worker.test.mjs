@@ -33,7 +33,7 @@ function mockComci(t,data){
   const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
   const wrapped=`/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
-  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));return String(url).endsWith('/st')?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
+  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));return new URL(String(url)).pathname==='/st'?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
   return calls;
 }
 
@@ -127,6 +127,19 @@ test('weekly timetable shares one snapshot and maps weekday and weekend selectio
     assert.equal(data.days.length,5);assert.equal(data.weekStart,monday);
     assert.equal(data.days[0].date,monday);assert.equal(data.days[4].items.length,2);
     assert.equal(data.items.length,offset<5?2:0);
-    assert.equal(calls.filter(url=>!url.endsWith('/st')&&!url.includes('991l')).length,1);
+    assert.equal(calls.filter(url=>new URL(url).pathname!=='/st'&&!url.includes('991l')).length,1);
   }
+});
+
+test('rotated Comcigan endpoint is rediscovered once after invalid JSON',async t=>{
+ quiet(t);let payloads=0,refreshes=0;
+ const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
+ t.mock.method(globalThis,'fetch',async url=>{
+  const u=new URL(String(url));
+  if(u.pathname==='/st'){if(u.searchParams.has('refresh'))refreshes++;return new Response(iconv.encode(html,'euc-kr'));}
+  if(u.search.includes('991l'))return Response.json({학교검색:[[0,'서울','용곡중학교',12345]]});
+  payloads++;return payloads===1?new Response('expired endpoint'):Response.json(comciData());
+ });
+ const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));
+ assert.equal(r.status,200);assert.equal((await r.json()).days.length,5);assert.equal(payloads,2);assert.equal(refreshes,1);
 });

@@ -214,14 +214,14 @@ async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE
   return new TextDecoder(eucKr ? "euc-kr" : "utf-8").decode(bytes);
 }
 
-async function getComciganCodes() {
-  if (comciganCodeCache && comciganCodeCacheExpiresAt > Date.now()) {
+async function getComciganCodes(refresh = false) {
+  if (!refresh && comciganCodeCache && comciganCodeCacheExpiresAt > Date.now()) {
     return comciganCodeCache;
   }
 
-  const html = decodeComciganPage(await fetchComciganText(`${COMCIGAN_URL}/st`, {
+  const html = decodeComciganPage(await fetchComciganText(`${COMCIGAN_URL}/st${refresh ? '?refresh=' + Date.now() : ''}`, {
     eucKr: true,
-    cacheTtl: 300
+    cacheTtl: refresh ? 0 : 300
   }));
 
   const routeMatch = html.match(/\.\/(\d+)\?(\d+)l/);
@@ -401,17 +401,27 @@ function decodeComciganLocation(value) {
 }
 
 async function fetchComciganWeek(weekNum) {
+  try {
+    return await fetchComciganWeekOnce(weekNum);
+  } catch (error) {
+    if (!(error instanceof HttpError) || !["COMCIGAN_ERROR", "COMCIGAN_HTTP_ERROR"].includes(error.code)) throw error;
+    // Comcigan rotates its endpoint and field codes. Rediscover once on mismatch.
+    return fetchComciganWeekOnce(weekNum, true);
+  }
+}
+
+async function fetchComciganWeekOnce(weekNum, refresh = false) {
   const weekKey = `${dateParam(kstToday())}-${weekNum}`;
   // The current week's Comcigan data can change after publication.
   // Never serve an in-process or edge-cached copy for the current week.
-  if (weekNum !== 0) {
+  if (weekNum !== 0 && !refresh) {
     const cached = comciganWeekCache.get(weekKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value;
     }
   }
 
-  const codes = await getComciganCodes();
+  const codes = await getComciganCodes(refresh);
   const school = await resolveComciganSchool(codes);
 
   const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}`;

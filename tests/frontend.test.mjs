@@ -111,7 +111,7 @@ test('mobile initial load waits to request hidden timetable until tab selection'
 });
 
 test('weekly table renders five dates, changed lessons, safe text and selected day',async t=>{
- const days=Array.from({length:5},(_,index)=>{const date=new Date(helpers.selectableRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'교사*',changed:index===1}]};});
+ const days=Array.from({length:5},(_,index)=>{const date=new Date(helpers.selectableRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'김민수',changed:index===1}]};});
  const {document,calls}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],items:days[0].items,days}):defaultResponse(url));
  assert(calls.some(c=>c.url.includes('view=week')));
  assert.equal(document.querySelectorAll('.weekly-table thead th').length,6);
@@ -119,7 +119,24 @@ test('weekly table renders five dates, changed lessons, safe text and selected d
  assert.equal(document.querySelector('.weekly-table img'),null);
  assert.match(document.querySelector('.weekly-table').textContent,/<img src=x>/);
  assert.equal(document.querySelectorAll('.weekly-table td.is-changed').length,1);
+ assert.equal(document.querySelectorAll('.weekly-table small').length,0);
+ assert.match(document.querySelector('.weekly-table').textContent,/김민수/);
+ assert.equal(document.querySelector('.weekly-hint'),null);
  document.querySelector('.date-trigger').click();document.querySelector('.calendar-day[tabindex="0"]').dispatchEvent(new document.defaultView.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
  clickDate(document,days[1].date);await flush();
  assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+Number(days[1].date.slice(4,6))+'.'+Number(days[1].date.slice(6,8)));
+});
+
+test('one timetable error replaces both views and retry restores them',async t=>{
+ let broken=true;
+ const {document}=await boot(t,url=>url.startsWith('/api/timetable')&&broken?Response.json({ok:false,error:'컴시간 시간표 응답을 해석하지 못했습니다.'},{status:502}):defaultResponse(url));
+ assert.equal(document.querySelector('#timetable-card').textContent,'');
+ assert.equal(document.querySelector('#weekly-timetable').textContent,'');
+ assert.equal(document.querySelector('.weekly-section').hidden,true);
+ assert.equal(document.querySelector('#timetable-status').textContent,'시간표를 불러오지 못했습니다.다시 시도');
+ assert.equal(document.querySelectorAll('#view-timetable .load-retry').length,1);
+ broken=false;document.querySelector('#timetable-status .load-retry').click();await flush();
+ assert.equal(document.querySelector('#timetable-status').hidden,true);
+ assert.equal(document.querySelector('.weekly-section').hidden,false);
+ assert.match(document.querySelector('#timetable-card').textContent,/국어/);
 });

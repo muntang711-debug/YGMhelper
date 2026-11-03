@@ -929,9 +929,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   }
 
   function normalizeTeacherName(value) {
-    const raw = String(value || "").replace(/\*/g, "").trim();
-    if (!raw) return "";
-    return `${raw.slice(0, 2)}*`;
+    return String(value || "").trim();
   }
 
   function renderTimetable(data) {
@@ -991,7 +989,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.changed ? '<small>변동</small>' : ""}${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}` : '<span aria-label="수업 없음">—</span>'}</td>`;
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}` : '<span aria-label="수업 없음">—</span>'}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>`;
   }
 
@@ -1063,8 +1061,8 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       renderMeal(data); success = true;
     } catch (error) {
       if (!token.current()) return;
-      els.cards.meal.innerHTML = '<div class="empty-state"><div><h3>급식을 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></div>';
-      setStatus("meal", error.message, "error");
+      els.cards.meal.innerHTML = "";
+      showLoadError("meal", () => loadMeal({force: true}));
     } finally { token.finish(success); }
   }
 
@@ -1074,6 +1072,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     const token = requests.begin("timetable", key, 5000, force);
     if (!token) return;
     setStatus("timetable", "");
+    document.querySelector(".weekly-section").hidden = false;
     const closedReason = getClosedReason(date);
     if (closedReason) void loadClassOptions();
     setLoading("timetable");
@@ -1092,10 +1091,21 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       renderWeeklyTimetable(data); success = true;
     } catch (error) {
       if (!token.current()) return;
-      els.cards.timetable.innerHTML = '<div class="empty-state"><div><h3>시간표를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></div>';
-      setStatus("timetable", error.message, "error");
-      document.getElementById("weekly-timetable").innerHTML = '<p class="weekly-message">주간 시간표를 불러오지 못했습니다. 날짜나 학급을 다시 선택해 주세요.</p>';
+      els.cards.timetable.innerHTML = "";
+      document.getElementById("weekly-timetable").innerHTML = "";
+      document.querySelector(".weekly-section").hidden = true;
+      showLoadError("timetable", () => loadTimetable({force: true}));
     } finally { token.finish(success); }
+  }
+
+  function showLoadError(kind, retry) {
+    setStatus(kind, (kind === "meal" ? "급식을" : "시간표를") + " 불러오지 못했습니다.", "error");
+    const button = document.createElement("button");
+    button.className = "load-retry";
+    button.type = "button";
+    button.textContent = "다시 시도";
+    button.addEventListener("click", retry);
+    els.status[kind].append(button);
   }
 
   function refreshData({force = false} = {}) {

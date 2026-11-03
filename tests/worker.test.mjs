@@ -30,7 +30,9 @@ function comciData(){
 }
 function mockComci(t,data){
   const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
-  t.mock.method(globalThis,'fetch',async url=>String(url).endsWith('/st')?new Response(iconv.encode(html,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data));
+  const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
+  const wrapped=`/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
+  t.mock.method(globalThis,'fetch',async url=>String(url).endsWith('/st')?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data));
 }
 
 test('all APIs reject impossible dates without calling upstream',async t=>{

@@ -1,5 +1,6 @@
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
+import { decodeComciganPage } from "./comcigan.js";
 
 const SCHOOL = {
   officeCode: "B10",
@@ -218,10 +219,10 @@ async function getComciganCodes() {
     return comciganCodeCache;
   }
 
-  const html = await fetchComciganText(`${COMCIGAN_URL}/st`, {
+  const html = decodeComciganPage(await fetchComciganText(`${COMCIGAN_URL}/st`, {
     eucKr: true,
     cacheTtl: 300
-  });
+  }));
 
   const routeMatch = html.match(/\.\/(\d+)\?(\d+)l/);
   const code0 = html.match(/sc_data\('([0-9]+)_/)?.[1];

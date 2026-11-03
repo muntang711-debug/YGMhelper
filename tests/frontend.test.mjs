@@ -49,7 +49,8 @@ test('calendar keyboard focus, arrow movement, Escape and return focus',async t=
   const {document,w}=await boot(t);const trigger=document.querySelector('.date-trigger');trigger.click();
   assert(document.activeElement.matches('.calendar-day'));
   const before=document.activeElement.dataset.date;
-  document.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
+  // Today may be Monday, the lower selectable bound; the next day is always valid.
+  document.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
   assert.notEqual(document.activeElement.dataset.date,before);
   document.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   assert.equal(document.querySelector('.date-picker'),null);assert.equal(document.activeElement,trigger);

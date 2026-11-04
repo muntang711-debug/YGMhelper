@@ -33,7 +33,7 @@ function mockComci(t,data){
   const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
   const wrapped=`/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
-  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));return new URL(String(url)).pathname==='/st'?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
+  t.mock.method(globalThis,'fetch',async url=>{if(new URL(String(url)).pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});calls.push(String(url));return new URL(String(url)).pathname==='/st'?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
   return calls;
 }
 
@@ -136,6 +136,7 @@ test('rotated Comcigan endpoint is rediscovered once after invalid JSON',async t
  const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
  t.mock.method(globalThis,'fetch',async url=>{
   const u=new URL(String(url));
+  if(u.pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});
   if(u.pathname==='/st'){if(u.searchParams.has('refresh'))refreshes++;return new Response(iconv.encode(html,'euc-kr'));}
   if(u.search.includes('991l'))return Response.json({학교검색:[[0,'서울','용곡중학교',12345]]});
   payloads++;return payloads===1?new Response('expired endpoint'):Response.json(comciData());
@@ -153,4 +154,38 @@ test('empty daily days and lessons never inherit the original timetable',async t
  assert.deepEqual(body.days[0].items,[]);assert.deepEqual(body.days[2].items,[]);
  assert.deepEqual(body.days[1].items.map(i=>i.period),[2]);
  assert.equal(body.days[3].items.length,2);
+});
+
+function neisPayload(service, rows) { return {[service]:[{head:[{RESULT:{CODE:'INFO-000'}}]},{row:rows}]}; }
+function weekdayDate(offset) { const d=new Date(selectableRange().minDate); d.setUTCDate(d.getUTCDate()+offset); return dateParam(d); }
+test('exam week uses NEIS only with no teachers or changed markers',async t=>{
+ quiet(t);const calls=[];const dates=Array.from({length:5},(_,i)=>weekdayDate(i));
+ t.mock.method(globalThis,'fetch',async value=>{const u=new URL(String(value));calls.push(u);
+  if(u.pathname==='/hub/SchoolSchedule')return Response.json(neisPayload('SchoolSchedule',dates.map(AA_YMD=>({AA_YMD,EVENT_NM:'2학기 기말시험',ONE_GRADE_EVENT_YN:'Y'}))));
+  if(u.pathname==='/hub/misTimetable')return Response.json(neisPayload('misTimetable',dates.map(ALL_TI_YMD=>({ALL_TI_YMD,GRADE:'1',CLASS_NM:'1',PERIO:'1',ITRT_CNTNT:'국어'}))));
+  throw Error('Comcigan must not be requested');
+ });
+ const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));
+ assert.equal(r.status,200);const b=await r.json();assert.equal(calls.length,2);
+ assert.equal(calls[0].pathname,'/hub/SchoolSchedule');assert.equal(calls[0].searchParams.get('AA_TO_YMD'),weekdayDate(6));
+ for(const d of b.days){assert.equal(d.source,'neis');assert.equal(d.items[0].subject,'국어');assert.equal(d.items[0].changed,false);assert.equal('teacher' in d.items[0],false);}
+});
+test('mixed week checks schedule first, ignores other grades, and preserves empty NEIS exam days',async t=>{
+ quiet(t);mockComci(t,comciData());const comciFetch=globalThis.fetch;const paths=[];
+ t.mock.method(globalThis,'fetch',async value=>{const u=new URL(String(value));paths.push(u.pathname);
+  if(u.pathname==='/hub/SchoolSchedule')return Response.json(neisPayload('SchoolSchedule',[
+   {AA_YMD:weekdayDate(1),EVENT_NM:'중간고사',ONE_GRADE_EVENT_YN:'Y'},
+   {AA_YMD:weekdayDate(2),EVENT_NM:'기말시험',ONE_GRADE_EVENT_YN:'N',TW_GRADE_EVENT_YN:'Y'}]));
+  if(u.pathname==='/hub/misTimetable')return Response.json({RESULT:{CODE:'INFO-200'}});
+  return comciFetch(value);
+ });
+ const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));assert.equal(r.status,200);const b=await r.json();
+ assert.equal(paths[0],'/hub/SchoolSchedule');assert.equal(paths[1],'/hub/misTimetable');
+ assert.equal(paths.filter(p=>p==='/hub/SchoolSchedule').length,1);
+ assert.equal(b.days[1].source,'neis');assert.deepEqual(b.days[1].items,[]);
+ assert.equal(b.days[2].source,'comcigan');assert.equal(b.days[2].items.length,2);
+});
+test('schedule failure is surfaced instead of silently using the wrong timetable',async t=>{
+ quiet(t);const paths=[];t.mock.method(globalThis,'fetch',async value=>{paths.push(new URL(String(value)).pathname);return Response.json({RESULT:{CODE:'ERROR-290'}});});
+ const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));assert.equal(r.status,502);assert.deepEqual(paths,['/hub/SchoolSchedule']);
 });

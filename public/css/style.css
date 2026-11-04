@@ -1583,7 +1583,7 @@ body.modal-open {
   align-items: center;
   gap: 8px;
 }
-.meal-rating-emoji {
+.meal-rating-icon {
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
@@ -1593,7 +1593,7 @@ body.modal-open {
   background: var(--surface-muted);
   font-size: 15px;
 }
-.meal-rating-option.is-selected .meal-rating-emoji {
+.meal-rating-option.is-selected .meal-rating-icon {
   background: var(--surface-solid);
 }
 .meal-rating-option-name {
@@ -1665,7 +1665,7 @@ body.modal-open {
   .meal-rating-option-label {
     gap: 7px;
   }
-  .meal-rating-emoji {
+  .meal-rating-icon {
     width: 25px;
     height: 25px;
     font-size: 14px;
@@ -1730,3 +1730,9 @@ body.modal-open {
 @media (max-width: 760px) { :root { --radius-xl: 16px; } }
 
 .weekly-table tr > * + * { border-left: 1px solid var(--line); }
+
+.meal-rating-icon, .meal-rating-option.is-selected .meal-rating-icon { background: transparent; border-radius: 0; }
+.meal-rating-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.allergen-number, .allergen-row.is-used .allergen-number { background: transparent; border-radius: 0; color: var(--text-soft); font-weight: 500; }
+.allergen-close svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.no-lesson { display: inline-block; width: 10px; height: 1px; background: var(--line); }

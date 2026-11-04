@@ -18,11 +18,11 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   };
 
   const MEAL_RATING_OPTIONS = [
-    { value: 5, label: "매우 맛있음", emoji: "🤩" },
-    { value: 4, label: "맛있음", emoji: "😋" },
-    { value: 3, label: "갈만함", emoji: "🙂" },
-    { value: 2, label: "안 가도 됨", emoji: "😐" },
-    { value: 1, label: "가지 마", emoji: "🙅" }
+    { value: 5, label: "매우 맛있음", icon: 'M8 14c2 3 6 3 8 0' },
+    { value: 4, label: "맛있음", icon: 'M8 14q4 4 8 0' },
+    { value: 3, label: "갈만함", icon: 'M8 15h8' },
+    { value: 2, label: "안 가도 됨", icon: 'M8 16q4-3 8 0' },
+    { value: 1, label: "가지 마", icon: 'M8 17q4-5 8 0' }
   ];
 
   const els = {
@@ -701,7 +701,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
             <p class="allergen-kicker">ALLERGY</p>
             <h2 id="allergen-title">알레르기 정보</h2>
           </div>
-          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
+          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
         </div>
         ${menuName ? `<p class="allergen-menu-name">${escapeHtml(menuName)}</p>` : ""}
         <div class="allergen-scroll">
@@ -740,7 +740,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
             <p class="allergen-kicker">ALLERGY</p>
             <h2 id="allergen-title">알레르기 번호 정보</h2>
           </div>
-          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기">×</button>
+          <button class="allergen-close" type="button" data-allergen-close aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="allergen-scroll">
           <div class="allergen-list">
@@ -791,7 +791,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     const total = Math.max(0, Number(data.total) || 0);
     const average = total > 0 && Number.isFinite(Number(data.average))
       ? Number(data.average).toFixed(1)
-      : "—";
+      : "집계 없음";
     const averageElement = panel.querySelector(".rating-average");
     const totalElement = panel.querySelector(".rating-count");
     if (averageElement) averageElement.textContent = average;
@@ -827,10 +827,10 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     let busy = false;
     const title = "급식 맛 평가";
     panel.innerHTML = '<div class="meal-rating-heading"><div class="meal-rating-copy"><h3 class="meal-rating-title">' + title +
-      '</h3></div><div class="meal-rating-summary" aria-live="polite"><strong class="rating-average">—</strong><span class="rating-count">집계 중</span></div></div>' +
+      '</h3></div><div class="meal-rating-summary" aria-live="polite"><strong class="rating-average">집계 중</strong><span class="rating-count">집계 중</span></div></div>' +
       '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' + MEAL_RATING_OPTIONS.map(option =>
         '<button class="meal-rating-option" type="button" data-rating="' + option.value + '" aria-pressed="false" disabled>' +
-        '<span class="meal-rating-option-label"><span class="meal-rating-emoji" aria-hidden="true">' + option.emoji + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
+        '<span class="meal-rating-option-label"><span class="meal-rating-icon" aria-hidden="true">' + '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 9h.01M16 9h.01 ' + option.icon + '"/></svg>' + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
         '</span></span><span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span><span class="meal-rating-option-count">0</span></button>'
       ).join("") + '</div><p class="meal-rating-status" role="status" hidden></p><button type="button" class="rating-retry" hidden>다시 시도</button>';
     els.cards.meal.appendChild(panel);
@@ -952,7 +952,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}</div>` : '<span aria-label="수업 없음">—</span>'}</td>`;
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong>${item.teacher ? `<span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>` : ""}${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}</div>` : '<span class="no-lesson" aria-label="수업 없음"></span>'}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>`;
   }
 

@@ -164,3 +164,11 @@ test('refresh stays busy until the request fails and then becomes usable again',
  resolve(Response.json({ok:false,error:'failed'},{status:502}));await flush();
  assert.equal(button.disabled,false);assert.equal(button.hasAttribute('aria-busy'),false);
 });
+
+test('rating choices use SVG icons and NEIS lessons omit teacher placeholders',async t=>{
+ const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),source:'neis',items:[{period:1,subject:'국어',changed:false}]};});
+ const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
+ assert.equal(document.querySelectorAll('.meal-rating-icon svg').length,5);
+ assert.equal(document.querySelectorAll('.weekly-lesson span').length,0);
+ assert.equal(document.querySelectorAll('td.is-changed').length,0);
+});

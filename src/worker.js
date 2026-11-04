@@ -536,7 +536,58 @@ async function handleClasses(url, env) {
   });
 }
 
-async function handleTimetable(url, env, sharedWeek = null) {
+// A request owns one schedule scan, one optional NEIS timetable, and one lazy Comcigan snapshot.
+async function handleTimetable(url, env) {
+  const date = url.searchParams.get("date") || "";
+  const grade = url.searchParams.get("grade") || "";
+  const className = url.searchParams.get("class") || "";
+  const weekly = url.searchParams.get("view") === "week";
+  if (!validDate(date) || !/^[1-3]$/.test(grade) || !/^\d{1,2}$/.test(className) || Number(className) < 1 || Number(className) > 99 || comciganWeekForDate(date) === null || (!weekly && getComciganDayIndex(date) === null)) {
+    return handleComciganTimetable(url, env);
+  }
+  const monday = new Date(utcDayValue(dateParts(date)));
+  const weekday = monday.getUTCDay();
+  monday.setUTCDate(monday.getUTCDate() - (weekday === 0 ? 6 : weekday - 1));
+  const sunday = new Date(monday); sunday.setUTCDate(sunday.getUTCDate() + 6);
+  const school = {ATPT_OFCDC_SC_CODE: SCHOOL.officeCode, SD_SCHUL_CODE: SCHOOL.schoolCode};
+  const schedule = extractRows(await neisRequest("SchoolSchedule", {...school, AA_FROM_YMD: dateParam(monday), AA_TO_YMD: dateParam(sunday), pSize: "1000"}, env.NEIS_API_KEY), "SchoolSchedule");
+  const gradeField = ["", "ONE_GRADE_EVENT_YN", "TW_GRADE_EVENT_YN", "THREE_GRADE_EVENT_YN"][Number(grade)];
+  const examDates = new Set(schedule.filter(row => {
+    const name = String(row.EVENT_NM || "").replace(/\s/g, "");
+    return /(?:중간|기말)(?:시험|고사|평가)/.test(name) && row[gradeField] !== "N" && validDate(row.AA_YMD);
+  }).map(row => row.AA_YMD));
+  const targetDates = weekly ? Array.from({length: 5}, (_, i) => {const d = new Date(monday); d.setUTCDate(d.getUTCDate() + i); return dateParam(d);}) : [date];
+  const needsNeis = targetDates.some(value => examDates.has(value));
+  const rows = needsNeis ? extractRows(await neisRequest("misTimetable", {...school, GRADE: grade, TI_FROM_YMD: dateParam(monday), TI_TO_YMD: dateParam(sunday), pSize: "1000"}, env.NEIS_API_KEY), "misTimetable") : [];
+  let comcigan;
+  const days = [];
+  for (const target of targetDates) {
+    if (examDates.has(target)) {
+      const classes = [...new Set(rows.filter(r => String(r.GRADE) === grade).map(r => Number(r.CLASS_NM)).filter(n => Number.isInteger(n) && n > 0 && n <= 99))].sort((a,b) => a-b);
+      const periods = new Map();
+      for (const row of rows) {
+        if (row.ALL_TI_YMD !== target || String(row.GRADE) !== grade || Number(row.CLASS_NM) !== Number(className)) continue;
+        const period = Number(row.PERIO), subject = String(row.ITRT_CNTNT || "").trim();
+        if (!Number.isInteger(period) || period < 1 || period > 16 || !subject) continue;
+        if (!periods.has(period)) periods.set(period, new Set());
+        periods.get(period).add(subject);
+      }
+      const items = [...periods].sort(([a],[b]) => a-b).map(([period, subjects]) => ({period, subject: [...subjects].join(" / "), changed: false}));
+      days.push({ok: true, date: target, grade, class: className, school: SCHOOL.name, classes, items, source: "neis", available: items.length > 0});
+    } else {
+      comcigan ||= await fetchComciganWeek(comciganWeekForDate(date));
+      const dayUrl = new URL(url); dayUrl.searchParams.delete("view"); dayUrl.searchParams.set("date", target);
+      const response = await handleComciganTimetable(dayUrl, env, comcigan);
+      if (!response.ok) return response;
+      days.push(await response.json());
+    }
+  }
+  if (!weekly) return json(days[0]);
+  const selected = days.find(day => day.date === date) || {...days[0], items: [], available: false};
+  return json({...selected, date, days, weekStart: dateParam(monday)});
+}
+
+async function handleComciganTimetable(url, env, sharedWeek = null) {
   const date = url.searchParams.get("date") || "";
   const grade = url.searchParams.get("grade") || "";
   const className = url.searchParams.get("class") || "";
@@ -568,27 +619,6 @@ async function handleTimetable(url, env, sharedWeek = null) {
     }, 200, {
       "Cache-Control": "no-store"
     });
-  }
-
-  if (url.searchParams.get("view") === "week") {
-    // One upstream snapshot supplies all five days, including daily changes.
-    const data = await fetchComciganWeek(weekNum);
-    const start = new Date(utcDayValue(dateParts(date)));
-    const weekday = start.getUTCDay();
-    start.setUTCDate(start.getUTCDate() - (weekday === 0 ? 6 : weekday - 1));
-    const days = [];
-    for (let index = 0; index < 5; index++) {
-      const day = new Date(start);
-      day.setUTCDate(day.getUTCDate() + index);
-      const dayUrl = new URL(url);
-      dayUrl.searchParams.delete("view");
-      dayUrl.searchParams.set("date", dateParam(day));
-      const result = await handleTimetable(dayUrl, env, data);
-      if (!result.ok) return result;
-      days.push(await result.json());
-    }
-    const selected = days.find(day => day.date === date) || {...days[0], items: [], available: false};
-    return json({...selected, date, days, weekStart: dateParam(start)});
   }
 
   if (getComciganDayIndex(date) === null) {

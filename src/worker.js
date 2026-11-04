@@ -1,3 +1,4 @@
+import {authHandler, memberSession} from "./auth.js";
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
@@ -538,6 +539,19 @@ async function handleClasses(url, env) {
   });
 }
 
+async function publicTimetable(url, env) {
+  const date=url.searchParams.get("date")||"", grade=url.searchParams.get("grade")||"", className=url.searchParams.get("class")||"1";
+  if(!validDate(date)||!/^[1-3]$/.test(grade)||!/^\d{1,2}$/.test(className)||Number(className)<1||Number(className)>99)return json({ok:false,error:"날짜와 학년·반을 확인해 주세요."},400);
+  if(comciganWeekForDate(date)===null)return json({ok:true,date,grade,class:className,classes:[],items:[],available:false,preview:true,source:"neis"});
+  const monday=new Date(utcDayValue(dateParts(date))),weekday=monday.getUTCDay();monday.setUTCDate(monday.getUTCDate()-(weekday===0?6:weekday-1));
+  const friday=new Date(monday);friday.setUTCDate(friday.getUTCDate()+4);
+  const rows=extractRows(await neisRequest("misTimetable",{ATPT_OFCDC_SC_CODE:SCHOOL.officeCode,SD_SCHUL_CODE:SCHOOL.schoolCode,GRADE:grade,TI_FROM_YMD:dateParam(monday),TI_TO_YMD:dateParam(friday),pSize:"1000"},env.NEIS_API_KEY),"misTimetable");
+  const classes=[...new Set(rows.filter(r=>String(r.GRADE)===grade).map(r=>Number(r.CLASS_NM)).filter(n=>Number.isInteger(n)&&n>0&&n<=99))].sort((a,b)=>a-b);
+  const days=Array.from({length:5},(_,i)=>{const day=new Date(monday);day.setUTCDate(day.getUTCDate()+i);const key=dateParam(day);return {ok:true,date:key,grade,class:className,classes,source:"neis",preview:true,items:rows.filter(r=>r.ALL_TI_YMD===key&&String(r.GRADE)===grade&&Number(r.CLASS_NM)===Number(className)&&Number(r.PERIO)===1).map(r=>({period:1,subject:String(r.ITRT_CNTNT||"").trim(),changed:false})),available:true};});
+  const selected=days.find(d=>d.date===date)||{...days[0],date,items:[],available:false};
+  return json({...selected,...url.pathname==="/api/timetable"&&url.searchParams.get("view")==="week"?{days,weekStart:dateParam(monday)}:{}});
+}
+
 // A request owns one schedule scan, one optional NEIS timetable, and one lazy Comcigan snapshot.
 async function handleTimetable(url, env) {
   const date = url.searchParams.get("date") || "";
@@ -891,6 +905,8 @@ export default {
         url.protocol = "https:";
         url.hostname = "ygmhelper.xyz";
         response = new Response(null, {status: 308, headers: {Location: url.href, ...SECURITY_HEADERS}});
+      } else if (isApi && url.pathname.startsWith("/api/auth/")) {
+        response = await authHandler(request, env);
       } else if (isApi) {
         const rating = url.pathname === "/api/meal-rating";
         const paths = ["/api/meal", "/api/classes", "/api/timetable", "/api/meal-rating"];
@@ -903,6 +919,7 @@ export default {
           const effectiveRequest = request.method === "HEAD" ? new Request(request, {method: "GET"}) : request;
           if (rating) response = await handleMealRating(effectiveRequest, url, env);
           else if (url.pathname === "/api/meal") response = await handleMeal(url, env);
+          else if (env.MEMBERSHIP_ENABLED === "true" && !await memberSession(request, env)) response = await publicTimetable(url, env);
           else if (url.pathname === "/api/classes") response = await handleClasses(url, env);
           else response = await handleTimetable(url, env);
         }

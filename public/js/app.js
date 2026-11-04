@@ -935,6 +935,10 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     const container = document.getElementById("weekly-timetable");
 
     const days = Array.isArray(data.days) ? data.days : [];
+    const gate = data.preview ? '<div class="membership-gate"><h3>전체 시간표는 회원에게 공개됩니다</h3><p>로그인하면 컴시간의 최신 시간표를 볼 수 있습니다.</p><a class="primary-link" href="/login.html">로그인</a><a href="/signup.html">회원가입</a></div>' : "";
+    if (data.preview && !days.some(day => day.items?.length)) {
+      container.innerHTML = '<p class="weekly-message">NEIS 미리보기 자료가 없습니다.</p>' + gate; return;
+    }
     if (days.length !== 5) {
 
       container.innerHTML = '<p class="weekly-message">주간 시간표가 없습니다.</p>';
@@ -953,7 +957,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
         return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong>${item.teacher ? `<span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>` : ""}${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}</div>` : '<span class="no-lesson" aria-label="수업 없음"></span>'}</td>`;
-      }).join("")}</tr>`).join("")}</tbody></table>`;
+      }).join("")}</tr>`).join("")}</tbody></table>` + gate;
   }
 
   let classSelect = null;

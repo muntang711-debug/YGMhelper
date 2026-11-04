@@ -183,3 +183,12 @@ test('changing a date within the loaded week only updates the selection',async t
  document.querySelector('#refresh-timetable').click();await flush();
  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before+1);
 });
+
+test('guest preview shows signup links without adding hidden timetable rows',async t=>{
+ const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'NEIS 미리보기'}]};});
+ const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,preview:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
+ assert.equal(document.querySelectorAll('.weekly-table tbody tr').length,1);
+ assert.equal(document.querySelector('.membership-gate a').getAttribute('href'),'/login.html');
+ assert.equal(document.querySelectorAll('.weekly-table td').length,5);
+ assert.equal(document.querySelector('.weekly-table').textContent.includes('교사'),false);
+});

@@ -50,7 +50,7 @@
   --today-bg: #e8e8eb;
   --today-text: #3f4148;
   --shadow: 0 18px 58px rgba(18, 25, 38, .075);
-  --radius-xl: 26px;
+  --radius-xl: 18px;
   --radius-lg: 19px;
   --radius-md: 14px;
   --scrollbar-thumb: rgba(21, 24, 29, .20);
@@ -1447,7 +1447,7 @@ body.modal-open {
   overflow: visible;
 }
 .weekly-section { margin-top: 0; }
-.weekly-scroll { max-width: 100%; overflow-x: auto; border: 0; border-radius: 0; background: var(--surface-solid); }
+.weekly-scroll { max-width: 100%; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--surface-solid); }
 .weekly-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; text-align: center; }
 .weekly-table caption { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .weekly-table th, .weekly-table td { border-bottom: 1px solid var(--line); }
@@ -1476,7 +1476,7 @@ body.modal-open {
 .weekly-table td > span { color: var(--line); font-size: 14px; }
 .weekly-message { margin: 0; padding: 40px 24px; color: var(--text-soft); font-size: 13px; line-height: 1.6; text-align: center; }
 @media (max-width: 480px) {
-  .weekly-scroll { border-radius: 0; }
+
   .weekly-table th:first-child { width: 27px; }
   .weekly-table thead th { padding: 9px 2px; font-size: 12px; }
   .weekly-table td { height: 50px; padding: 2px; }
@@ -1704,12 +1704,12 @@ body.modal-open {
 
 
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
-#refresh-data:disabled { opacity: .45; cursor: wait; }
+
 
 .section-heading { display: grid; grid-template-columns: 1fr auto; align-items: end; }
 .section-heading:has(.control-row) { grid-template-columns: 1fr auto auto; }
 .data-refresh { align-self: end; flex-shrink: 0; }
-.data-refresh:disabled { cursor: wait; }
+.data-refresh:disabled { opacity: 1; cursor: progress; color: var(--text); }
 .data-refresh[aria-busy="true"] svg { animation: refresh-spin .8s linear infinite; }
 @keyframes refresh-spin { to { transform: rotate(360deg); } }
 @media (max-width: 760px) {
@@ -1723,3 +1723,10 @@ body.modal-open {
 [data-theme="dark"] .weekly-table thead th { background: #0b1018; color: #edf2fc; }
 [data-theme="dark"] .weekly-table thead .is-selected { background: color-mix(in srgb, #0b1018 78%, white); }
 [data-theme="dark"] .weekly-table tbody .is-selected { background: color-mix(in srgb, var(--surface-solid) 88%, white); }
+
+/* Shared surfaces and button states for both panels. */
+.meal-card, .weekly-scroll { box-shadow: 0 4px 18px rgba(18, 25, 38, .035); }
+.data-refresh { color: var(--text); transition: background-color .15s ease, border-color .15s ease; }
+.data-refresh:hover:not(:disabled) { background: var(--surface-muted); border-color: var(--text-soft); }
+.data-refresh:disabled { background: var(--surface-solid); border-color: var(--line); }
+@media (max-width: 760px) { :root { --radius-xl: 16px; } }

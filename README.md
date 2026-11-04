@@ -106,7 +106,7 @@ Cloudflare Workers Builds는 main 변경을 받아 `npm run deploy`를 실행합
 
 HTTPS 강제는 Cloudflare Zone의 Always Use HTTPS에서 관리합니다. 정적 파일 `_headers`와 Worker 응답에는 CSP·nosniff·referrer·frame 제한과 1일 HSTS를 설정합니다. HSTS의 includeSubDomains/preload는 설정하지 않습니다. Worker Routes·Zone 정책·workers.dev/preview 설정은 Cloudflare에 별도로 존재합니다.
 
-Workers Logs는 활성화하고 쿼리 문자열을 가립니다. 앱 로그에는 경로·오류 코드·상태·지연·request ID를 남기며 원문 UUID·IP·Secret·SQL 오류 내용을 기록하지 않습니다. 외부 시간표의 ‘일일 값 0’ 의미는 원본 자료 계약 확인 전 임의로 변경하지 않습니다.
+Workers Logs는 활성화하고 쿼리 문자열을 가립니다. 앱 로그에는 경로·오류 코드·상태·지연·request ID를 남기며 원문 UUID·IP·Secret·SQL 오류 내용을 기록하지 않습니다. 시간표는 컴시간 일일 자료를 기준으로 표시합니다. 일일 자료의 빈 날짜·교시·누락값은 기본 시간표로 채우지 않습니다. 기본 시간표는 변경 비교에만 사용합니다.
 
 ## 구조
 

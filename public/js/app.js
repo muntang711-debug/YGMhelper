@@ -825,7 +825,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     let canVote = ratingDate === dateParam(kstToday());
     let loaded = false;
     let busy = false;
-    const title = canVote ? "오늘의 급식 맛 평가" : "선택한 날의 급식 맛 평가";
+    const title = "급식 맛 평가";
     panel.innerHTML = '<div class="meal-rating-heading"><div class="meal-rating-copy"><h3 class="meal-rating-title">' + title +
       '</h3></div><div class="meal-rating-summary" aria-live="polite"><strong class="rating-average">—</strong><span class="rating-count">집계 중</span></div></div>' +
       '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' + MEAL_RATING_OPTIONS.map(option =>
@@ -952,7 +952,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}">${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}${item.changed ? '<i class="weekly-change">변경</i>' : ""}</div>` : '<span aria-label="수업 없음">—</span>'}</td>`;
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong><span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>${item.location ? `<span class="weekly-location">${escapeHtml(item.location)}</span>` : ""}</div>` : '<span aria-label="수업 없음">—</span>'}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>`;
   }
 

@@ -143,3 +143,14 @@ test('rotated Comcigan endpoint is rediscovered once after invalid JSON',async t
  const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));
  assert.equal(r.status,200);assert.equal((await r.json()).days.length,5);assert.equal(payloads,2);assert.equal(refreshes,1);
 });
+
+test('empty daily days and lessons never inherit the original timetable',async t=>{
+ quiet(t);const d=comciData();
+ d.자료104[1][1][1]=[0];d.자료104[1][1][2]=[2,0,2002];delete d.자료104[1][1][3];
+ mockComci(t,d);const env=environment(t);
+ const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),env);
+ const body=await r.json();assert.equal(r.status,200);
+ assert.deepEqual(body.days[0].items,[]);assert.deepEqual(body.days[2].items,[]);
+ assert.deepEqual(body.days[1].items.map(i=>i.period),[2]);
+ assert.equal(body.days[3].items.length,2);
+});

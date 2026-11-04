@@ -635,11 +635,8 @@ async function handleTimetable(url, env, sharedWeek = null) {
   const dayData = data.dailyTimetable?.[gradeNumber]?.[classNumber]?.[dayIndex];
   const originalDayData = data.originalTimetable?.[gradeNumber]?.[classNumber]?.[dayIndex];
 
-  const maxPeriod = Math.max(
-    asPositiveNumber(originalDayData?.[0]),
-    asPositiveNumber(dayData?.[0]),
-    0
-  );
+  // Daily data is authoritative: an empty day must stay empty.
+  const maxPeriod = asPositiveNumber(dayData?.[0]);
 
   for (const day of [originalDayData, dayData]) {
     if (day && (!Array.isArray(day) || !Number.isInteger(Number(day[0])) || Number(day[0]) < 0 || Number(day[0]) > 16 || day.length > 17)) {
@@ -651,19 +648,19 @@ async function handleTimetable(url, env, sharedWeek = null) {
 
   for (let period = 1; period <= maxPeriod; period += 1) {
     const originalValue = originalDayData?.[period] ?? 0;
-    const dailyValue = dayData?.[period] ?? originalValue;
+    const dailyValue = dayData?.[period] ?? 0;
     const lesson = decodeComciganLesson(dailyValue, data.subjects, data.teachers);
     const originalLesson = decodeComciganLesson(originalValue, data.subjects, data.teachers);
 
-    if (!lesson.subject && !originalLesson.subject) continue;
+    if (!lesson.subject) continue;
 
     const locationValue = data.locationMatrix?.[gradeNumber]?.[classNumber]?.[dayIndex]?.[period];
     const location = decodeComciganLocation(locationValue);
 
     items.push({
       period,
-      subject: lesson.subject || originalLesson.subject || "",
-      teacher: lesson.teacher || originalLesson.teacher || "",
+      subject: lesson.subject,
+      teacher: lesson.teacher,
       location,
       changed: Boolean(lesson.changed || dailyValue !== originalValue),
       originalSubject: originalLesson.subject || ""

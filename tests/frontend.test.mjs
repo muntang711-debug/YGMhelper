@@ -98,7 +98,7 @@ test('future meal panel allows viewing but disables voting',async t=>{
   const {document}=await boot(t);
   const nextMonday=new Date(helpers.selectableRange().minDate);nextMonday.setUTCDate(nextMonday.getUTCDate()+7);
   clickDate(document,helpers.dateParam(nextMonday));await flush();
-  assert.match(document.querySelector('.meal-rating-title').textContent,/선택한 날/);
+  assert.equal(document.querySelector('.meal-rating-title').textContent,'급식 맛 평가');
   assert([...document.querySelectorAll('.meal-rating-option')].every(b=>b.disabled));
   assert.match(document.querySelector('.meal-rating-status').textContent,/오늘 급식/);
 });
@@ -122,7 +122,8 @@ test('weekly table renders five dates, changed lessons, safe text and selected d
  assert.equal(document.querySelector('.weekly-table img'),null);
  assert.match(document.querySelector('.weekly-table').textContent,/<img src=x>/);
  assert.equal(document.querySelectorAll('.weekly-table td.is-changed').length,1);
- assert.equal(document.querySelectorAll('.weekly-table small').length,0);
+ assert.equal(document.querySelectorAll('.weekly-change').length,0);
+ assert.equal(document.querySelector('.weekly-table td.is-changed').getAttribute('aria-label'),'변경된 수업');
  assert.match(document.querySelector('.weekly-table').textContent,/김민수/);
  assert.equal(document.querySelector('.weekly-hint'),null);
  document.querySelector('.date-trigger').click();document.querySelector('.calendar-day[tabindex="0"]').dispatchEvent(new document.defaultView.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));

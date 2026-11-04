@@ -1,3 +1,4 @@
+import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
 import { decodeComciganPage } from "./comcigan.js";
@@ -385,6 +386,7 @@ function decodeComciganLesson(value, subjects, teachers) {
   return {
     subject: subjects[subjectIndex] || "",
     teacher: teachers[teacherIndex] || "",
+    teacherId: teacherIndex,
     changed,
     raw: value
   };
@@ -674,6 +676,7 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
     }
   }
 
+  const names = readTeacherNames(env.TEACHER_NAME_MAP, date, data.school.code);
   const items = [];
 
   for (let period = 1; period <= maxPeriod; period += 1) {
@@ -690,7 +693,7 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
     items.push({
       period,
       subject: lesson.subject,
-      teacher: lesson.teacher,
+      teacher: teacherDisplayName(lesson.teacher, lesson.teacherId, names),
       location,
       changed: Boolean(lesson.changed || dailyValue !== originalValue),
       originalSubject: originalLesson.subject || ""

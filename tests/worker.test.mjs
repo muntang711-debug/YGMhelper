@@ -189,3 +189,16 @@ test('schedule failure is surfaced instead of silently using the wrong timetable
  quiet(t);const paths=[];t.mock.method(globalThis,'fetch',async value=>{paths.push(new URL(String(value)).pathname);return Response.json({RESULT:{CODE:'ERROR-290'}});});
  const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));assert.equal(r.status,502);assert.deepEqual(paths,['/hub/SchoolSchedule']);
 });
+
+test('temporary names stay server-side and only match the correct school, term and masked teacher',async t=>{
+ const {readTeacherNames,teacherDisplayName}=await import('../src/teacher-names.js');
+ const secret=JSON.stringify({schoolCode:40807,year:2026,semester:2,teachers:{1:{masked:'교사*',full:'교사명'}}});
+ const names=readTeacherNames(secret,'20261104',40807);
+ assert.equal(teacherDisplayName('교사*',1,names),'교사명');
+ assert.equal(teacherDisplayName('다른*',1,names),'다른*');
+ assert.equal(teacherDisplayName('교사*',2,names),'교사*');
+ assert.equal(readTeacherNames(secret,'20270302',40807),null);
+ assert.equal(readTeacherNames(secret,'20261104',123),null);
+ assert.equal(readTeacherNames('invalid','20261104',40807),null);
+ assert.equal(teacherDisplayName('교사*',1,{1:{masked:'교사*',full:'엉뚱함'}}),'교사*');
+});

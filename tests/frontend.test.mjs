@@ -79,8 +79,8 @@ test('rating POST failure preserves previous summary and shows recovery message'
   assert.equal(document.querySelector('.meal-rating-option').disabled,false);
 });
 test('late weekend class response cannot overwrite another grade cache',async t=>{
-  let resolveOld;
-  const {document,w}=await boot(t,url=>url.startsWith('/api/classes')&&url.includes('grade=1')?new Promise(resolve=>{resolveOld=resolve;}):defaultResponse(url));
+  let resolveOld;let initial=true;
+  const {document,w}=await boot(t,url=>url.startsWith('/api/timetable')&&initial?(initial=false,Response.json({ok:false},{status:502})):url.startsWith('/api/classes')&&url.includes('grade=1')?new Promise(resolve=>{resolveOld=resolve;}):defaultResponse(url));
   const saturday=new Date(helpers.selectableRange().minDate);saturday.setUTCDate(saturday.getUTCDate()+5);
   clickDate(document,helpers.dateParam(saturday));await flush();assert(resolveOld);
   document.querySelector('[data-select="grade"] .select-trigger').click();document.querySelector('[data-select="grade"] [data-value="2"]').click();await flush();
@@ -171,4 +171,15 @@ test('rating choices use SVG icons and NEIS lessons omit teacher placeholders',a
  assert.equal(document.querySelectorAll('.meal-rating-icon svg').length,5);
  assert.equal(document.querySelectorAll('.weekly-lesson span').length,0);
  assert.equal(document.querySelectorAll('td.is-changed').length,0);
+});
+
+test('changing a date within the loaded week only updates the selection',async t=>{
+ const {document,calls}=await boot(t);
+ const before=calls.filter(c=>c.url.startsWith('/api/timetable')).length;
+ const monday=new Date(helpers.selectableRange().minDate);monday.setUTCDate(monday.getUTCDate()+1);
+ clickDate(document,helpers.dateParam(monday));await flush();
+ assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before);
+ assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+(monday.getUTCMonth()+1)+'.'+monday.getUTCDate());
+ document.querySelector('#refresh-timetable').click();await flush();
+ assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before+1);
 });

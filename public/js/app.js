@@ -1029,9 +1029,20 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     } finally { token.finish(success); }
   }
 
+  let displayedTimetable = null;
+
   async function loadTimetable({force = false, retry = false} = {}) {
     const date = new Date(state.date), grade = state.grade, className = state.className;
     const key = formatDateParam(date) + "-" + grade + "-" + className;
+    const weekKey = classOptionsCacheKey(date, grade) + "-" + className;
+    if (!force && displayedTimetable?.key === weekKey) {
+      requests.cancel("timetable");
+      setStatus("timetable", "");
+      document.querySelector(".weekly-section").hidden = false;
+      renderWeeklyTimetable(displayedTimetable.data);
+      return;
+    }
+
     const token = requests.begin("timetable", key, 5000, force);
     if (!token) return;
     setStatus("timetable", "");
@@ -1050,6 +1061,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
         token.finish(true); await loadTimetable({retry: true}); return;
       }
 
+      displayedTimetable = {key: weekKey, data};
       renderWeeklyTimetable(data); success = true;
     } catch (error) {
       if (!token.current()) return;

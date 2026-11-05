@@ -1,7 +1,7 @@
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
-import { decodeComciganPage } from "./comcigan.js";
+import { decodeComciganPage, comciganTransport, decodeComciganPayload } from "./comcigan.js";
 
 const SCHOOL = {
   officeCode: "B10",
@@ -237,7 +237,9 @@ async function getComciganCodes(refresh = false) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간 데이터 형식을 확인하지 못했습니다.");
   }
 
+  if (refresh) comciganSchoolCache = null;
   comciganCodeCache = {
+    ...comciganTransport(html),
     endpoint: routeMatch[1],
     searchPrefix: routeMatch[2],
     code0,
@@ -278,8 +280,10 @@ async function resolveComciganSchool(codes) {
   );
 
   const match = exactMatches[0];
+  const codeIndex = codes.schoolDivisor ? Math.floor(Number(match?.[0]) / codes.schoolDivisor) + codes.schoolOffset : 3;
+  const resolvedCode = match?.[codeIndex];
 
-  if (!match || !Number.isInteger(Number(match[3])) || Number(match[3]) <= 0) {
+  if (!match || !Number.isInteger(Number(resolvedCode)) || Number(resolvedCode) <= 0) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간에 용곡중학교 시간표가 등록되어 있지 않거나 학교를 찾지 못했습니다.");
   }
 
@@ -287,7 +291,7 @@ async function resolveComciganSchool(codes) {
     localCode: Number(match[0]) || 0,
     region: String(match[1] || ""),
     name: String(match[2] || SCHOOL.name),
-    code: Number(match[3])
+    code: Number(resolvedCode)
   };
   comciganSchoolCacheExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
 
@@ -426,7 +430,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
   const codes = await getComciganCodes(refresh);
   const school = await resolveComciganSchool(codes);
 
-  const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}`;
+  const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}${codes.encryptionKey ? "_enc2" : ""}`;
   const encoded = btoa(payload);
   const upstream = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${encoded}`,
@@ -435,7 +439,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
 
   let response;
   try {
-    response = JSON.parse(cleanComciganJson(upstream));
+    response = JSON.parse(cleanComciganJson(await decodeComciganPayload(upstream, codes.encryptionKey)));
   } catch (error) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간 시간표 응답을 해석하지 못했습니다.");
   }

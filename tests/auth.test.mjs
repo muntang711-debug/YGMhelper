@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import {authHandler,memberSession} from '../src/auth.js';
 import worker from '../src/worker.js';
-const schema=await fs.readFile(new URL('../migrations/0002_members.sql',import.meta.url),'utf8');
+const schema=await fs.readFile(new URL('../auth-migrations/0001_members.sql',import.meta.url),'utf8');
 const password='a-long-local-test-password';
 function setup(t){
  const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);t.after(()=>db.close());
@@ -18,7 +18,7 @@ function setup(t){
  return {db,env,get bots(){return bots;}};
 }
 function req(action,body={},extra={}){return new Request('https://localhost/api/auth/'+action,{method:'POST',headers:{Origin:'https://localhost','Content-Type':'application/json',...extra},body:JSON.stringify(body)});}
-const signup=(token='signup-1')=>({username:'student_1',password,age14:true,privacy:true,consentVersion:'2026-11-04-draft',turnstile:token});
+const signup=(token='signup-1')=>({username:'student_1',password,age14:true,privacy:true,betaReset:true,consentVersion:'2026-11-05-beta',turnstile:token});
 test('signup hashes passwords and sessions, logout invalidates session with CSRF protection',async t=>{
  const {db,env}=setup(t);const r=await authHandler(req('signup',signup()),env);assert.equal(r.status,200);const b=await r.json(),cookie=r.headers.get('Set-Cookie');assert.match(cookie,/HttpOnly; Secure; SameSite=Strict/);
  const token=cookie.split(';')[0];const member=db.prepare('SELECT * FROM members').get(),session=db.prepare('SELECT * FROM member_sessions').get();assert.notEqual(member.password_hash,password);assert.equal(member.password_hash.length,64);assert(!token.includes(session.token_hash));assert.equal((await memberSession(new Request('https://localhost',{headers:{Cookie:token}}),env)).username,'student_1');

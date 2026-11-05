@@ -1738,3 +1738,5 @@ body.modal-open {
 .no-lesson { display: inline-block; width: 10px; height: 1px; background: var(--line); }
 
 .member-link{font-size:13px;color:var(--text-soft);text-decoration:none;padding:8px}.membership-gate{text-align:center;padding:40px 20px 32px;border-top:1px solid var(--line);background:linear-gradient(transparent,var(--surface-muted))}.membership-gate h3{font-size:17px;margin:12px 0}.membership-gate p{font-size:13px;color:var(--text-soft);line-height:1.7}.membership-gate a{display:inline-block;padding:10px 16px;margin:8px 4px;text-decoration:none;color:var(--text);font-size:13px}.membership-gate .primary-link{background:var(--text);color:var(--surface-solid);border-radius:9px}
+
+.beta-banner { margin:0; padding:9px 18px; color:var(--text-soft); background:var(--surface-muted); text-align:center; font-size:12px; line-height:1.6; }

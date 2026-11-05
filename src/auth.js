@@ -7,7 +7,7 @@ const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).joi
 const random = () => hex(crypto.getRandomValues(new Uint8Array(32)));
 const digest = value => hex(sha256(encoder.encode(value)));
 const cookieName = '__Host-ygm_session';
-const consentVersion = '2026-11-04-draft';
+const consentVersion = '2026-11-05-beta';
 const reply = (body, status = 200, extra = {}) => Response.json(body, {status, headers: {...SECURITY_HEADERS, 'Cache-Control': 'no-store', ...extra}});
 const fail = (message, status = 400) => reply({ok:false, error:message}, status);
 const cookie = token => `${cookieName}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${token ? 86400 : 0}`;
@@ -16,6 +16,7 @@ export const passwordHash = async (password, salt) => hex(await pbkdf2Async(sha2
 function equal(a,b) { if(typeof a !== 'string' || a.length !== b.length)return false; let diff=0; for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i); return diff===0; }
 
 export async function memberSession(request, env) {
+  env={...env,DB:env.AUTH_DB||env.DB};
   if(env.MEMBERSHIP_ENABLED !== 'true')return null;
   const token = request.headers.get('Cookie')?.split(';').map(s=>s.trim()).find(s=>s.startsWith(cookieName+'='))?.slice(cookieName.length+1);
   if(!token || !/^[a-f0-9]{64}$/.test(token))return null;
@@ -42,6 +43,7 @@ async function verifyBot(body, request, env, action) {
   }catch{return false;}
 }
 export async function authHandler(request,env) {
+  env={...env,DB:env.AUTH_DB||env.DB};
   const url=new URL(request.url), action=url.pathname.split('/').pop();
   if(env.MEMBERSHIP_ENABLED!=='true')return fail('회원 기능을 준비 중입니다.',503);
   if(action==='config'&&request.method==='GET')return reply({ok:true,sitekey:env.TURNSTILE_SITEKEY||'',consentVersion,registrationOpen:env.REGISTRATION_OPEN==='true'});
@@ -76,7 +78,7 @@ export async function authHandler(request,env) {
   let row;
   if(action==='signup') {
     if(env.REGISTRATION_OPEN!=='true')return fail('회원가입을 준비 중입니다.',503);
-    if(body.age14!==true||body.privacy!==true||body.consentVersion!==consentVersion)return fail('필수 동의 항목을 확인해 주세요.');
+    if(body.age14!==true||body.privacy!==true||body.consentVersion!==consentVersion||body.betaReset!==true)return fail('필수 동의 항목을 확인해 주세요.');
     if(!await limit(env,'signup:'+ip,5))return fail('잠시 후 다시 시도해 주세요.',429);
     const salt=random(), id=crypto.randomUUID(), hash=await passwordHash(body.password,salt);
     const inserted=await env.DB.prepare('INSERT OR IGNORE INTO members (id,username,password_hash,salt,consent_version,created_at) VALUES (?,?,?,?,?,?)').bind(id,username,hash,salt,consentVersion,Date.now()).run();

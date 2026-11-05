@@ -23,7 +23,7 @@ async function main(){
  const fields=new FormData(form);if(action==='signup'&&fields.get('password')!==fields.get('confirm')){message('비밀번호 확인이 일치하지 않습니다.');return;}
  if(action!=='delete'&&!turnstileReady){message('로봇 확인을 완료해 주세요.');return;}
  button.disabled=true;button.setAttribute('aria-busy','true');message('처리 중입니다.');
- try{await api(action,{username:fields.get('username'),password:fields.get('password'),age14:fields.has('age14'),privacy:fields.has('privacy'),consentVersion:config.consentVersion,turnstile:action==='delete'?'':window.turnstile.getResponse(widget)});form.reset();location.replace('/');}
+ try{await api(action,{username:fields.get('username'),password:fields.get('password'),age14:fields.has('age14'),privacy:fields.has('privacy'),betaReset:fields.has('betaReset'),consentVersion:config.consentVersion,turnstile:action==='delete'?'':window.turnstile.getResponse(widget)});form.reset();location.replace('/');}
  catch(e){message(e.message);}finally{button.removeAttribute('aria-busy');if(action!=='delete'){turnstileReady=false;window.turnstile.reset(widget);}else button.disabled=false;}
  });
 }

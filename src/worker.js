@@ -898,6 +898,10 @@ async function handleMealRating(request, url, env) {
 }
 
 export default {
+  async scheduled(event,env) {
+    const db=env.AUTH_DB; if(!db)return; const now=Date.now();
+    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR last_seen<=?").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now)]);
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     const requestId = crypto.randomUUID();

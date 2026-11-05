@@ -9,22 +9,62 @@
       "database_name": "ygmhelper-meal-ratings",
       "database_id": "55933f3b-ba4a-4589-a8ca-c31fc94273d4",
       "migrations_dir": "migrations"
+    },
+    {
+      "binding": "AUTH_DB",
+      "database_name": "ygmhelper-members-beta",
+      "database_id": "2f11da21-4cea-4449-9335-63a469ae74e4",
+      "migrations_dir": "auth-migrations"
     }
   ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "none",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "ratelimits": [
-    {"name": "RATING_IP_LIMITER", "namespace_id": "2771001", "simple": {"limit": 120, "period": 60}},
-    {"name": "RATING_VOTER_LIMITER", "namespace_id": "2771002", "simple": {"limit": 5, "period": 60}}
+    {
+      "name": "RATING_IP_LIMITER",
+      "namespace_id": "2771001",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "RATING_VOTER_LIMITER",
+      "namespace_id": "2771002",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
   ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
     "redact_query_string": true,
-    "logs": {"enabled": true, "invocation_logs": true}
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "vars": {
+    "MEMBERSHIP_ENABLED": "true",
+    "REGISTRATION_OPEN": "true",
+    "TURNSTILE_HOSTNAMES": "ygmhelper.xyz",
+    "TURNSTILE_SITEKEY": "0x4AAAAAAF0-h1DAmgP8y7tt",
+    "BETA_MODE": "true"
+  },
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "limits": {
+    "cpu_ms": 30000
   }
 }

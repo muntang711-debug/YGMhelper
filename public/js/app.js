@@ -18,11 +18,11 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   };
 
   const MEAL_RATING_OPTIONS = [
-    { value: 5, label: "매우 맛있음", icon: 'M8 14c2 3 6 3 8 0' },
-    { value: 4, label: "맛있음", icon: 'M8 14q4 4 8 0' },
-    { value: 3, label: "갈만함", icon: 'M8 15h8' },
-    { value: 2, label: "안 가도 됨", icon: 'M8 16q4-3 8 0' },
-    { value: 1, label: "가지 마", icon: 'M8 17q4-5 8 0' }
+    { value: 5, label: "매우 맛있음", icon: '<path d="M6.5 9.5 8.5 7.5l2 2M13.5 9.5l2-2 2 2"/><path class="rating-mouth" d="M7.5 13h9a4.5 4.5 0 0 1-9 0Z"/>' },
+    { value: 4, label: "맛있음", icon: '<circle class="rating-eye" cx="8.5" cy="9" r="1"/><circle class="rating-eye" cx="15.5" cy="9" r="1"/><path d="M7.5 13.5c1.5 4 7.5 4 9 0"/>' },
+    { value: 3, label: "갈만함", icon: '<circle class="rating-eye" cx="8.5" cy="9" r="1"/><circle class="rating-eye" cx="15.5" cy="9" r="1"/><path d="M8 15h8"/>' },
+    { value: 2, label: "안 가도 됨", icon: '<path d="m6.5 8 4 2m3-2 4 2M8 16l8-2"/>' },
+    { value: 1, label: "가지 마", icon: '<path d="m7 7 3 3m0-3-3 3m7-3 3 3m0-3-3 3"/><path class="rating-mouth" d="M7.5 17a4.5 4.5 0 0 1 9 0Z"/>' }
   ];
 
   const els = {
@@ -830,7 +830,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       '</h3></div><div class="meal-rating-summary" aria-live="polite"><strong class="rating-average">집계 중</strong><span class="rating-count">집계 중</span></div></div>' +
       '<div class="meal-rating-options" role="group" aria-label="맛 평가 등급">' + MEAL_RATING_OPTIONS.map(option =>
         '<button class="meal-rating-option" type="button" data-rating="' + option.value + '" aria-pressed="false" disabled>' +
-        '<span class="meal-rating-option-label"><span class="meal-rating-icon" aria-hidden="true">' + '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 9h.01M16 9h.01 ' + option.icon + '"/></svg>' + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
+        '<span class="meal-rating-option-label"><span class="meal-rating-icon" aria-hidden="true">' + '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9.5"/>' + option.icon + '</svg>' + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
         '</span></span><span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span><span class="meal-rating-option-count">0</span></button>'
       ).join("") + '</div><p class="meal-rating-status" role="status" hidden></p><button type="button" class="rating-retry" hidden>다시 시도</button>';
     els.cards.meal.appendChild(panel);

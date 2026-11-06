@@ -1574,8 +1574,8 @@ body.modal-open {
   outline-offset: 2px;
 }
 .meal-rating-option:disabled {
-  cursor: wait;
-  opacity: .68;
+  cursor: default;
+  opacity: 1;
 }
 .meal-rating-option-label {
   display: flex;
@@ -1731,8 +1731,9 @@ body.modal-open {
 
 .weekly-table tr > * + * { border-left: 1px solid var(--line); }
 
-.meal-rating-icon, .meal-rating-option.is-selected .meal-rating-icon { background: transparent; border-radius: 0; }
-.meal-rating-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.meal-rating-icon, .meal-rating-option.is-selected .meal-rating-icon { width: 28px; height: 28px; background: transparent; border-radius: 0; }
+.meal-rating-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.meal-rating-icon .rating-eye, .meal-rating-icon .rating-mouth { fill: currentColor; stroke: none; }
 .allergen-number, .allergen-row.is-used .allergen-number { background: transparent; border-radius: 0; color: var(--text-soft); font-weight: 500; }
 .allergen-close svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 .no-lesson { display: inline-block; width: 10px; height: 1px; background: var(--line); }

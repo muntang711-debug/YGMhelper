@@ -54,11 +54,11 @@
   },
   "vars": {
     "MEMBERSHIP_ENABLED": "true",
-    "REGISTRATION_OPEN": "true",
+    "REGISTRATION_OPEN": "false",
     "TURNSTILE_HOSTNAMES": "ygmhelper.xyz",
     "TURNSTILE_SITEKEY": "0x4AAAAAAF0-h1DAmgP8y7tt",
     "BETA_MODE": "true",
-    "PASSWORD_AUTH_AVAILABLE": "true"
+    "PASSWORD_AUTH_AVAILABLE": "false"
   },
   "triggers": {
     "crons": [

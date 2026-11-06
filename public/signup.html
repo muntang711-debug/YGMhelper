@@ -29,15 +29,16 @@
     <main class="page-shell auth-shell">
       <div class="auth-content">
 <h1>회원가입</h1>
-<form data-action="signup" method="post" action="/api/auth/signup">
+<form novalidate data-action="signup" method="post" action="/api/auth/signup">
 <label class="auth-field"><input name="username" id="username" type="text" autocomplete="username" pattern="[A-Za-z0-9_]{4,24}" minlength="4" maxlength="24" placeholder=" " required><span>아이디</span></label><p class="field-note">영문, 숫자, 밑줄 4~24자</p>
-<label class="auth-field"><input name="password" id="password" type="password" autocomplete="new-password" minlength="10" maxlength="64" placeholder=" " required><span>비밀번호</span></label><p class="field-note">10~64자 · 다른 사이트와 다른 비밀번호를 사용하세요.</p>
+<label class="auth-field"><input name="email" id="email" type="email" autocomplete="email" maxlength="254" placeholder=" " required><span>이메일</span></label><p class="field-note">인증과 비밀번호 찾기에 사용합니다.</p>
+<label class="auth-field"><input name="password" id="password" type="password" autocomplete="new-password" minlength="10" maxlength="64" placeholder=" " required><span>비밀번호</span></label><p class="field-note">10자 이상. 다른 사이트와 다른 비밀번호를 사용하세요.</p>
 <label class="auth-field"><input name="confirm" id="confirm" type="password" autocomplete="new-password" minlength="10" maxlength="64" placeholder=" " required><span>비밀번호 확인</span></label>
 <div class="auth-consents"><label class="check-label"><input type="checkbox" name="age14" required><span class="check-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span><span>만 14세 이상입니다. <small>필수</small></span></label><label class="check-label"><input type="checkbox" name="privacy" required><span class="check-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span><span><a href="/privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다. <small>필수</small></span></label><label class="check-label"><input type="checkbox" name="betaReset" required><span class="check-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span><span>정식 출시 시 베타 계정과 데이터가 초기화됩니다. <small>필수</small></span></label></div>
 <div id="robot-check"></div><p id="form-status" role="status"></p><button class="auth-submit" type="submit" disabled>회원가입</button>
 </form>
 <p class="auth-bottom">이미 계정이 있나요? <a href="/login.html">로그인</a></p>
-<p class="field-note recovery-note">현재 비밀번호 찾기는 지원하지 않습니다.</p>
+
       </div>
     </main>
   </div>

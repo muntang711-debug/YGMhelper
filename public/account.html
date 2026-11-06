@@ -28,7 +28,7 @@
     </header>
     <main class="page-shell auth-shell">
       <div class="auth-content">
-<h1>계정 관리</h1><p id="account-user"></p><button id="logout" type="button" class="auth-submit">로그아웃</button><section class="delete-section"><h2>회원 탈퇴</h2><p>계정과 로그인 세션을 삭제합니다. 탈퇴 후 복구할 수 없습니다.</p><form data-action="delete" method="post" action="/api/auth/delete"><label class="auth-field"><input name="password" id="password" type="password" autocomplete="current-password" maxlength="128" placeholder=" " required><span>현재 비밀번호</span></label><label class="check-label"><input type="checkbox" name="deleteConfirm" required><span class="check-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span><span>계정 삭제에 동의합니다.</span></label><p id="form-status" role="status"></p><button class="auth-submit danger" type="submit" disabled>계정 삭제</button></form></section>
+<h1>계정 관리</h1><p id="account-user"></p><button id="logout" type="button" class="auth-submit">로그아웃</button><section class="delete-section"><h2>회원 탈퇴</h2><p>계정과 로그인 세션을 삭제합니다. 탈퇴 후 복구할 수 없습니다.</p><form novalidate data-action="delete" method="post" action="/api/auth/delete"><label class="auth-field"><input name="password" id="password" type="password" autocomplete="current-password" maxlength="128" placeholder=" " required><span>현재 비밀번호</span></label><label class="check-label"><input type="checkbox" name="deleteConfirm" required><span class="check-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span><span>계정 삭제에 동의합니다.</span></label><p id="form-status" role="status"></p><button class="auth-submit danger" type="submit" disabled>계정 삭제</button></form></section>
       </div>
     </main>
   </div>

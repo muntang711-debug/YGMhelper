@@ -54,11 +54,12 @@
   },
   "vars": {
     "MEMBERSHIP_ENABLED": "true",
-    "REGISTRATION_OPEN": "false",
+    "REGISTRATION_OPEN": "true",
     "TURNSTILE_HOSTNAMES": "ygmhelper.xyz",
     "TURNSTILE_SITEKEY": "0x4AAAAAAF0-h1DAmgP8y7tt",
     "BETA_MODE": "true",
-    "PASSWORD_AUTH_AVAILABLE": "false"
+    "PASSWORD_AUTH_AVAILABLE": "true",
+    "AUTH_ORIGIN": "https://ygmhelper.xyz"
   },
   "triggers": {
     "crons": [
@@ -67,5 +68,13 @@
   },
   "limits": {
     "cpu_ms": 5000
-  }
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": [
+        "noreply@ygmhelper.xyz"
+      ]
+    }
+  ]
 }

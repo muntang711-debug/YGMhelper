@@ -900,9 +900,9 @@ async function handleMealRating(request, url, env) {
 export default {
   async scheduled(event,env) {
     const db=env.AUTH_DB; if(!db)return; const now=Date.now();
-    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR last_seen<=?").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now)]);
+    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR last_seen<=?").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM auth_tokens WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM members WHERE email_verified=0 AND created_at<=?").bind(now-86400000)]);
   },
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const requestId = crypto.randomUUID();
     const started = Date.now();
@@ -914,7 +914,7 @@ export default {
         url.hostname = "ygmhelper.xyz";
         response = new Response(null, {status: 308, headers: {Location: url.href, ...SECURITY_HEADERS}});
       } else if (isApi && url.pathname.startsWith("/api/auth/")) {
-        response = await authHandler(request, env);
+        response = await authHandler(request, env, ctx);
       } else if (isApi) {
         const rating = url.pathname === "/api/meal-rating";
         const paths = ["/api/meal", "/api/classes", "/api/timetable", "/api/meal-rating"];

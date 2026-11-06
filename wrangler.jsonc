@@ -57,7 +57,8 @@
     "REGISTRATION_OPEN": "true",
     "TURNSTILE_HOSTNAMES": "ygmhelper.xyz",
     "TURNSTILE_SITEKEY": "0x4AAAAAAF0-h1DAmgP8y7tt",
-    "BETA_MODE": "true"
+    "BETA_MODE": "true",
+    "PASSWORD_AUTH_AVAILABLE": "true"
   },
   "triggers": {
     "crons": [
@@ -65,6 +66,6 @@
     ]
   },
   "limits": {
-    "cpu_ms": 30000
+    "cpu_ms": 5000
   }
 }

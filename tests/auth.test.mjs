@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
-import {authHandler,memberSession} from '../src/auth.js';
+import {authHandler,memberSession,passwordHash} from '../src/auth.js';
 import worker from '../src/worker.js';
 const schema=await fs.readFile(new URL('../auth-migrations/0001_members.sql',import.meta.url),'utf8');
 const password='a-long-local-test-password';
@@ -32,6 +32,18 @@ test('signup rejects absent consent, cross-origin posts and reused bot tokens',a
  assert.equal((await authHandler(req('signup',signup()),env)).status,403);
  assert.equal((await authHandler(req('signup',{...signup('signup-2'),privacy:false}),env)).status,400);
  assert.equal((await authHandler(req('signup',{...signup('signup-3'),password:'short'}),env)).status,400);
+});
+
+test('new passwords allow 10–64 characters and existing 128-character passwords still sign in',async t=>{
+ const {db,env}=setup(t);
+ for(const [length,token] of [[9,'signup-short'],[65,'signup-long']]){
+  assert.equal((await authHandler(req('signup',{...signup(token),password:'a'.repeat(length)}),env)).status,400);
+ }
+ assert.equal((await authHandler(req('signup',{...signup('signup-ten'),password:'a'.repeat(10)}),env)).status,200);
+ assert.equal((await authHandler(req('signup',{...signup('signup-sixtyfour'),username:'student_2',password:'b'.repeat(64)}),env)).status,200);
+ const legacy='c'.repeat(128), salt='test-salt';
+ db.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at) VALUES (?,?,?,?,?,?)').run('legacy','legacy_user',await passwordHash(legacy,salt),salt,'2026-11-05-beta',Date.now());
+ assert.equal((await authHandler(req('login',{username:'legacy_user',password:legacy,turnstile:'login-legacy'}),env)).status,200);
 });
 test('login errors are generic; account deletion requires password and removes all sessions',async t=>{
  const {db,env}=setup(t);await authHandler(req('signup',signup()),env);

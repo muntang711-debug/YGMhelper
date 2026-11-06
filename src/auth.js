@@ -11,7 +11,8 @@ const consentVersion = '2026-11-05-beta';
 const reply = (body, status = 200, extra = {}) => Response.json(body, {status, headers: {...SECURITY_HEADERS, 'Cache-Control': 'no-store', ...extra}});
 const fail = (message, status = 400) => reply({ok:false, error:message}, status);
 const cookie = token => `${cookieName}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${token ? 86400 : 0}`;
-const validPassword = value => typeof value === 'string' && Array.from(value).length >= 15 && Array.from(value).length <= 128 && encoder.encode(value).length <= 512;
+const validPassword = value => typeof value === 'string' && Array.from(value).length >= 1 && Array.from(value).length <= 128 && encoder.encode(value).length <= 512;
+const validNewPassword = value => validPassword(value) && Array.from(value).length >= 10 && Array.from(value).length <= 64;
 export const passwordHash = async (password, salt) => hex(await pbkdf2Async(sha256, password, salt, {c:600000, dkLen:32}));
 function equal(a,b) { if(typeof a !== 'string' || a.length !== b.length)return false; let diff=0; for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i); return diff===0; }
 
@@ -79,6 +80,7 @@ export async function authHandler(request,env) {
   let row;
   if(action==='signup') {
     if(env.REGISTRATION_OPEN!=='true')return fail('회원가입을 준비 중입니다.',503);
+    if(!validNewPassword(body.password))return fail('비밀번호는 10~64자로 입력해 주세요.');
     if(body.age14!==true||body.privacy!==true||body.consentVersion!==consentVersion||body.betaReset!==true)return fail('필수 동의 항목을 확인해 주세요.');
     if(!await limit(env,'signup:'+ip,5))return fail('잠시 후 다시 시도해 주세요.',429);
     const salt=random(), id=crypto.randomUUID(), hash=await passwordHash(body.password,salt);

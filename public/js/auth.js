@@ -1,6 +1,3 @@
-import {createSafeStorage} from './common.js';
-const savedTheme=createSafeStorage(()=>localStorage).getItem('ygmhelper-theme');
-document.documentElement.dataset.theme=savedTheme==='dark'||savedTheme!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
 let config,widget,csrf,turnstileReady=false;
 const form=document.querySelector('form'), status=document.querySelector('#form-status');
 const action=form?.dataset.action;

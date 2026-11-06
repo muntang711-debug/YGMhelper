@@ -30,6 +30,8 @@ test('transport reads rotating school selector and public encryption key without
  const key='12'.repeat(32);const data=comciganTransport("var r=Math.floor(학교[0]/6347)+2;CryptoJS.enc.Hex.parse('"+key+"')");
  assert.equal(Math.floor(19041/data.schoolDivisor)+data.schoolOffset,5);assert.equal(data.encryptionKey,key);
  assert.equal(comciganTransport('legacy').schoolOffset,3);
+ assert.equal(comciganTransport('legacy').schoolSearchSuffix,'');
+ assert.equal(comciganTransport("function school_ra(sc){$.ajax({ url:'./837738?101593l'+sc+'_enc2', dataType:'text' });}").schoolSearchSuffix,'_enc2');
 });
 test('enc2 payload authenticates before AES decoding and rejects tampering',async()=>{
  const {decodeComciganPayload}=await import('../src/comcigan.js');

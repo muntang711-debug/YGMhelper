@@ -31,7 +31,8 @@ export function decodeComciganPage(html) {
 export function comciganTransport(html) {
  const selector=html.match(/Math\.floor\([^;]*?\[0\]\/(\d+)\)\+(\d+)/);
  const key=html.match(/CryptoJS\.enc\.Hex\.parse\(['"]([a-f0-9]{64})['"]\)/i)?.[1];
- return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null};
+ const encryptedSchoolSearch=/function\s+school_ra\([^)]*\)\s*\{[\s\S]*?url\s*:\s*['"][^'"]+['"]\s*\+\s*\w+\s*\+\s*['"]_enc2['"]/.test(html);
+ return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null,schoolSearchSuffix:encryptedSchoolSearch?'_enc2':''};
 }
 export async function decodeComciganPayload(text, keyHex) {
  text=text.replace(/\0+$/g,'');

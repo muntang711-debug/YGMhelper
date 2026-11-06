@@ -262,11 +262,11 @@ async function resolveComciganSchool(codes) {
 
   const encodedName = SCHOOL.encodedName;
   const responseText = await fetchComciganText(
-    `${COMCIGAN_URL}/${codes.endpoint}?${codes.searchPrefix}l${encodedName}`,
+    `${COMCIGAN_URL}/${codes.endpoint}?${codes.searchPrefix}l${encodedName}${codes.schoolSearchSuffix}`,
     { cacheTtl: 3600 }
   );
 
-  const cleaned = responseText.replace(/\0/g, "").trim();
+  const cleaned = (await decodeComciganPayload(responseText, codes.encryptionKey)).replace(/\0/g, "").trim();
 
   let payload;
   try {

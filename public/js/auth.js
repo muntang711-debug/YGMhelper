@@ -2,6 +2,14 @@ let config,widget,csrf,turnstileReady=false,busy=false,finished=false;
 const form=document.querySelector('form'),status=document.querySelector('#form-status'),action=form?.dataset.action;
 const button=form?.querySelector('[type=submit]');
 const usesBot=['signup','login','forgot','resend'].includes(action);
+document.querySelectorAll('.password-toggle').forEach(toggle=>{
+ const input=document.getElementById(toggle.getAttribute('aria-controls'));
+ const label=toggle.closest('.auth-field').querySelector('label').textContent;
+ const setVisible=visible=>{input.type=visible?'text':'password';toggle.setAttribute('aria-pressed',String(visible));toggle.setAttribute('aria-label',label+(visible?' 숨기기':' 표시'));};
+ toggle.addEventListener('pointerdown',event=>event.preventDefault());
+ toggle.addEventListener('click',()=>setVisible(input.type==='password'));
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)setVisible(false);});
+});
 let linkToken=new URLSearchParams(location.hash.slice(1)).get('token')||'';
 if(['verify','reset'].includes(action)&&location.hash)history.replaceState(null,'',location.pathname);
 const message=(text,tone='')=>{if(status){status.textContent=text;status.className=tone?'is-'+tone:'';}};
@@ -42,6 +50,7 @@ form?.addEventListener('submit',async event=>{
  if(!validate())return;
  if(!config||config.passwordAuthAvailable===false){message('회원 기능을 준비 중입니다. 잠시 후 다시 시도해 주세요.','error');return;}
  if(usesBot&&!turnstileReady){message('로봇 확인을 완료해 주세요.','error');return;}
+ document.querySelectorAll('.password-toggle[aria-pressed="true"]').forEach(toggle=>toggle.click());
  const fields=new FormData(form);busy=true;enable();button.setAttribute('aria-busy','true');message('처리 중입니다.');
  try{
   const data=await api(action,{username:fields.get('username'),email:fields.get('email'),password:fields.get('password'),age14:fields.has('age14'),privacy:fields.has('privacy'),betaReset:fields.has('betaReset'),consentVersion:config.consentVersion,token:linkToken,remember:fields.has('remember'),turnstile:usesBot?window.turnstile.getResponse(widget):''});

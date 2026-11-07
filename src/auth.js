@@ -1,6 +1,7 @@
 import {pbkdf2Async} from '@noble/hashes/pbkdf2.js';
 import {sha256} from '@noble/hashes/sha2.js';
 import {readBounded, SECURITY_HEADERS} from './http.js';
+import {renderAuthEmail} from './auth-email.js';
 
 const encoder = new TextEncoder();
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -48,8 +49,7 @@ async function authMail(env,member,kind) {
  const origin=env.AUTH_ORIGIN||'https://ygmhelper.xyz';
  const link=`${origin}/${kind==='verify'?'verify':'reset'}#token=${token}`;
  const title=kind==='verify'?'이메일 인증':'비밀번호 재설정';
- const text=`YGMhelper ${title}\n\n아래 링크에서 ${title}을 진행해 주세요.\n${link}\n\n이 링크는 ${ttl/60000}분 동안 한 번만 사용할 수 있습니다. 직접 요청하지 않았다면 이 메일을 무시해 주세요.\n문의: support@ygmhelper.xyz`;
- try{await env.EMAIL.send({from:{email:'noreply@ygmhelper.xyz',name:'YGMhelper'},to:member.email,replyTo:'support@ygmhelper.xyz',subject:`YGMhelper ${title}`,text,html:`<h2>${title}</h2><p>아래 링크에서 진행해 주세요.</p><p><a href="${link}">${title}</a></p><p>${ttl/60000}분 동안 한 번만 사용할 수 있습니다. 직접 요청하지 않았다면 무시해 주세요.</p><p>문의: support@ygmhelper.xyz</p>`});}catch{await env.DB.prepare('DELETE FROM auth_tokens WHERE token_hash=?').bind(hash).run();throw Error('EMAIL_FAILED');}
+ try{await env.EMAIL.send({from:{email:'noreply@ygmhelper.xyz',name:'YGMhelper'},to:member.email,replyTo:'support@ygmhelper.xyz',subject:`YGMhelper ${title}`,...renderAuthEmail(kind,link,ttl/60000)});}catch{await env.DB.prepare('DELETE FROM auth_tokens WHERE token_hash=?').bind(hash).run();throw Error('EMAIL_FAILED');}
 }
 function defer(ctx,promise) {if(ctx?.waitUntil){ctx.waitUntil(promise.catch(()=>console.error(JSON.stringify({event:'auth_mail_error'}))));return Promise.resolve();}return promise;}
 export async function authHandler(request,env,ctx) {
@@ -97,7 +97,7 @@ export async function authHandler(request,env,ctx) {
   const salt=random(),hash=await passwordHash(body.password,salt);
   const member=await env.DB.prepare('SELECT email FROM members WHERE id=?').bind(row.member_id).first();
   await env.DB.batch([env.DB.prepare('UPDATE members SET password_hash=?,salt=? WHERE id=? AND email_verified=1').bind(hash,salt,row.member_id),env.DB.prepare('DELETE FROM member_sessions WHERE member_id=?').bind(row.member_id),env.DB.prepare('DELETE FROM auth_tokens WHERE member_id=?').bind(row.member_id)]);
-  if(member?.email&&env.EMAIL?.send)await defer(ctx,env.EMAIL.send({from:{email:'noreply@ygmhelper.xyz',name:'YGMhelper'},to:member.email,replyTo:'support@ygmhelper.xyz',subject:'YGMhelper 비밀번호 변경 알림',text:'비밀번호가 변경되었으며 기존 로그인은 모두 해제되었습니다. 직접 변경하지 않았다면 비밀번호 찾기를 진행하고 support@ygmhelper.xyz로 문의해 주세요.',html:'<p>비밀번호가 변경되었으며 기존 로그인은 모두 해제되었습니다.</p><p>직접 변경하지 않았다면 비밀번호 찾기를 진행하고 support@ygmhelper.xyz로 문의해 주세요.</p>'}).catch(()=>console.error(JSON.stringify({event:'auth_notification_error'}))));
+  if(member?.email&&env.EMAIL?.send)await defer(ctx,env.EMAIL.send({from:{email:'noreply@ygmhelper.xyz',name:'YGMhelper'},to:member.email,replyTo:'support@ygmhelper.xyz',subject:'YGMhelper 비밀번호 변경 알림',...renderAuthEmail('changed',(env.AUTH_ORIGIN||'https://ygmhelper.xyz')+'/forgot')}).catch(()=>console.error(JSON.stringify({event:'auth_notification_error'}))));
   return reply({ok:true,reset:true},200,{'Set-Cookie':cookie('')});
  }
  if(action==='forgot'||action==='resend'){

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>인증 메일 다시 받기 | YGMhelper</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/auth.css?v=20261107-outline">
 </head>
 <body class="auth-page">
   <div id="app">
@@ -28,12 +28,12 @@
     </header>
     <main class="page-shell auth-shell">
       <div class="auth-content">
-<h1>인증 메일 다시 받기</h1><form novalidate data-action="resend" method="post" action="/api/auth/resend"><label class="auth-field"><input name="email" id="email" type="email" autocomplete="email" maxlength="254" placeholder=" " required><span>이메일</span></label><div id="robot-check"></div><p id="form-status" role="status"></p><button class="auth-submit" type="submit" disabled>메일 보내기</button></form><p class="auth-bottom"><a href="/login.html">로그인</a></p>
+<h1>인증 메일 다시 받기</h1><form id="resend-form" name="resend-form" novalidate data-action="resend" method="post" action="/api/auth/resend"><div class="auth-field"><input name="email" id="email" type="email" autocapitalize="none" spellcheck="false" autocomplete="email" maxlength="254" placeholder=" " required><label for="email">이메일</label><fieldset aria-hidden="true"><legend><span>이메일</span></legend></fieldset></div><div id="robot-check"></div><p id="form-status" role="status"></p><button class="auth-submit" type="submit" disabled>메일 보내기</button></form><p class="auth-bottom"><a href="/login.html">로그인</a></p>
       </div>
     </main>
   </div>
   <script src="/js/site-theme.js" type="module"></script>
-  <script src="/js/auth.js" type="module"></script>
+  <script src="/js/auth.js?v=20261107-outline" type="module"></script>
   <script src="/js/membership.js" type="module"></script>
 </body>
 </html>

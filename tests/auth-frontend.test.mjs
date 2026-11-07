@@ -40,10 +40,37 @@ test('custom validation marks fields and suppresses browser validation popups',a
  form.dispatchEvent(new w.Event('submit',{cancelable:true}));
  assert.equal(w.document.querySelector('#username').getAttribute('aria-invalid'),'true');
  assert.match(w.document.querySelector('#username-error').textContent,/아이디/);
- assert.equal(w.document.activeElement.id,'username');
+ assert.equal(w.document.activeElement.id,'email');
  assert(w.document.querySelector('.auth-field').classList.contains('auth-shake'));
  const input=w.document.querySelector('#username');input.value='valid_user';input.dispatchEvent(new w.Event('input'));
  assert.equal(input.hasAttribute('aria-invalid'),false);assert.equal(w.document.querySelector('#username-error'),null);
+});
+
+test('signup separates contact autofill from account credentials and places username before password',async()=>{
+ const html=await fs.readFile(new URL('../public/signup.html',import.meta.url),'utf8');const dom=new JSDOM(html),d=dom.window.document;
+ const fields=[...d.querySelectorAll('input:not([type=checkbox])')];assert.deepEqual(fields.map(f=>f.name),['email','username','password','confirm']);
+ assert.equal(d.querySelector('#email').autocomplete,'section-contact email');assert.equal(d.querySelector('#username').autocomplete,'section-account username');
+ assert.equal(d.querySelector('#password').autocomplete,'section-account new-password');
+ assert.equal(d.querySelector('label[for=username]').textContent,'아이디');assert.equal(d.querySelector('#username').closest('.auth-field').querySelector('fieldset').getAttribute('aria-hidden'),'true');
+ dom.window.close();
+});
+
+test('password visibility buttons preserve values and never submit the form',async t=>{
+ const html=await fs.readFile(new URL('../public/login.html',import.meta.url),'utf8');const dom=new JSDOM(html,{url:'https://ygmhelper.xyz/login',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window;
+ w.fetch=()=>new Promise(()=>{});w.eval(script);const input=w.document.querySelector('#password'),toggle=w.document.querySelector('.password-toggle');
+ let submissions=0;w.document.querySelector('form').addEventListener('submit',()=>submissions++);input.value='visibility-test-value';
+ toggle.click();assert.equal(input.type,'text');assert.equal(input.value,'visibility-test-value');assert.equal(toggle.getAttribute('aria-pressed'),'true');assert.match(toggle.getAttribute('aria-label'),/숨기기/);
+ toggle.click();assert.equal(input.type,'password');assert.equal(input.value,'visibility-test-value');assert.equal(toggle.getAttribute('aria-pressed'),'false');assert.equal(submissions,0);
+});
+
+test('submitting a visible password restores its password type before the API request',async t=>{
+ const html=await fs.readFile(new URL('../public/login.html',import.meta.url),'utf8');const dom=new JSDOM(html,{url:'https://ygmhelper.xyz/login',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,calls=[];
+ w.fetch=async(url,options)=>{calls.push({url,options,passwordType:w.document.querySelector('#password').type});return url.endsWith('/config')?Response.json({ok:true,passwordAuthAvailable:true,sitekey:'fixture'}):Response.json({ok:false,error:'fixture login rejected'},{status:401});};
+ w.turnstile={render(selector,options){options.callback();return 1;},getResponse(){return 'fixture';},reset(){}};
+ w.eval(script);await new Promise(r=>setTimeout(r,0));w.document.querySelector('script[src*=challenges]').dispatchEvent(new w.Event('load'));
+ w.document.querySelector('#username').value='test_user';w.document.querySelector('#password').value='a-long-test-password';w.document.querySelector('.password-toggle').click();
+ w.document.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,0));
+ assert.equal(calls[1].passwordType,'password');assert.equal(JSON.parse(calls[1].options.body).password,'a-long-test-password');
 });
 
 test('recovery token is removed from the URL and is not sent on page load',async t=>{

@@ -46,3 +46,10 @@
 .auth-shake { animation: auth-shake .28s ease-out; }
 @keyframes auth-shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-4px); } 40%,80% { transform: translateX(4px); } }
 @media (prefers-reduced-motion: reduce) { .auth-shake { animation: none; } }
+.remember-choice { margin: 20px 0 0; }
+.remember-choice > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.remember-choice small { margin: 0; }
+.auth-flow-copy { font-size: 15px; line-height: 1.8; margin: 0 0 28px; }
+.flow-primary { color: var(--surface-solid) !important; text-decoration: none; text-align: center; }
+.mail-help { margin-top: 24px; color: var(--text-soft); font-size: 13px; line-height: 1.7; }
+.mail-help summary { cursor: pointer; }

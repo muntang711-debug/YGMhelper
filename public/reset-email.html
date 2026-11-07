@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>메일을 확인해 주세요 | YGMhelper</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="auth-page">
+  <div id="app">
+    <p class="beta-banner">베타 서비스 · 정식 출시 시 베타 계정과 데이터가 초기화됩니다.</p>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="YGMhelper 홈">YGMhelper</a>
+
+      <div class="topbar-actions">
+        <a id="member-link" class="member-link" href="/login.html" hidden>로그인</a>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
+        </svg>
+      </button>
+      </div>
+    </header>
+    <main class="page-shell auth-shell">
+      <div class="auth-content">
+<h1>메일을 확인해 주세요</h1><p class="auth-flow-copy">가입한 이메일이면 비밀번호 재설정 링크가 발송됩니다. 받은편지함과 스팸함을 확인해 주세요.</p><a class="auth-submit flow-primary" href="/login.html">로그인</a>
+      </div>
+    </main>
+  </div>
+  <script src="/js/site-theme.js" type="module"></script>
+  <script src="/js/membership.js" type="module"></script>
+</body>
+</html>

@@ -186,12 +186,14 @@ test('changing a date within the loaded week only updates the selection',async t
  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before+1);
 });
 
-test('guest preview shows signup links without adding hidden timetable rows',async t=>{
+test('guest preview renders NEIS table geometry with obscured lower rows and overlay signup links',async t=>{
  const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'NEIS 미리보기'}]};});
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,preview:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
- assert.equal(document.querySelectorAll('.weekly-table tbody tr').length,1);
+ assert.equal(document.querySelectorAll('.weekly-table tbody tr').length,7);
+ assert(document.querySelector('#weekly-timetable').classList.contains('is-preview'));
+ assert.equal(document.querySelectorAll('.preview-obscured[aria-hidden="true"]').length,6);
  assert.equal(document.querySelector('.membership-gate a').getAttribute('href'),'/login.html');
- assert.equal(document.querySelectorAll('.weekly-table td').length,5);
+ assert.equal(document.querySelectorAll('.weekly-table td').length,35);
  assert.equal(document.querySelector('.weekly-table').textContent.includes('교사'),false);
 });
 
@@ -200,4 +202,10 @@ test('weekend meal does not request or render rating controls',async t=>{
  assert.equal(calls.filter(c=>c.url.startsWith('/api/meal?')).length,0);
  assert.equal(document.querySelector('.meal-rating-option'),null);
  assert(calls.some(c=>c.url.startsWith('/api/timetable')));
+});
+
+test('lesson locations have a custom map-pin icon and accessible label',async t=>{
+ const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'과학',location:'과학실'}]};});
+ const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],days}):defaultResponse(url));
+ assert.equal(document.querySelectorAll('.weekly-location svg').length,5);assert.match(document.querySelector('.weekly-location').textContent,/수업 위치: 과학실/);
 });

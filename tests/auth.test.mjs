@@ -5,9 +5,10 @@ import {DatabaseSync} from 'node:sqlite';
 import {authHandler,memberSession,passwordHash} from '../src/auth.js';
 import worker from '../src/worker.js';
 const schema=(await fs.readFile(new URL('../auth-migrations/0001_members.sql',import.meta.url),'utf8'))+(await fs.readFile(new URL('../auth-migrations/0002_email_auth.sql',import.meta.url),'utf8'));
+const sessionSchema=await fs.readFile(new URL('../auth-migrations/0003_session_preferences.sql',import.meta.url),'utf8');
 const password='a-long-local-test-password';
 function setup(t){
- const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);t.after(()=>db.close());
+ const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);t.after(()=>db.close());
  const DB={prepare(sql){const args=[];const s={bind(...a){args.push(...a);return s;},async first(){return db.prepare(sql).get(...args)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...args).changes}};}};return s;},async batch(stmts){db.exec('BEGIN');try{const r=await Promise.all(stmts.map(s=>s.run()));db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const used=new Set(),mails=[];let bots=0;
  t.mock.method(globalThis,'fetch',async(url,opts)=>{if(!String(url).includes('siteverify'))throw Error('unexpected upstream');bots++;const token=new URLSearchParams(opts.body).get('response');if(used.has(token))return Response.json({success:false});used.add(token);return Response.json({success:true,hostname:'localhost',action:token.split(':')[0]});});
@@ -20,7 +21,7 @@ const tokenOf=mail=>mail.text.match(/#token=([a-f0-9]{64})/)[1];
 async function register(ctx){assert.equal((await authHandler(req('signup',signup()),ctx.env)).status,200);assert.equal((await authHandler(req('verify',{token:tokenOf(ctx.mails[0])}),ctx.env)).status,200);return authHandler(req('login',{username:'student_1',password,turnstile:'login:first'}),ctx.env);}
 
 test('signup requires email proof, stores token hashes only, and verification cannot be replayed',async t=>{
- const c=setup(t);const r=await authHandler(req('signup',signup()),c.env);assert.equal(r.status,200);assert.equal(r.headers.get('Set-Cookie'),null);assert.equal((await r.json()).verificationRequired,true);
+ const c=setup(t);const r=await authHandler(req('signup',signup()),c.env);assert.equal(r.status,200);assert.match(r.headers.get('Set-Cookie'),/^__Host-ygm_verify=/);assert.equal((await r.json()).verificationRequired,true);
  const member=c.db.prepare('SELECT * FROM members').get();assert.notEqual(member.password_hash,password);assert.equal(member.email_verified,0);
  assert.equal((await authHandler(req('login',{username:'student_1',password,turnstile:'login:unverified'}),c.env)).status,403);
  const token=tokenOf(c.mails[0]);assert.notEqual(c.db.prepare('SELECT token_hash FROM auth_tokens').get().token_hash,token);assert(!c.mails[0].text.includes(password));
@@ -75,9 +76,30 @@ test('session expiry and account rate limits are enforced',async t=>{
  for(let i=0;i<10;i++)await authHandler(req('login',{username:'target',password,turnstile:'login:limit'+i}),c.env);
  const before=c.bots;assert.equal((await authHandler(req('login',{username:'target',password,turnstile:'login:last'}),c.env)).status,429);assert.equal(c.bots,before);
 });
-test('guest timetable sends only NEIS first periods; Comcigan and teacher names never leave the server',async t=>{
+test('guest preview contains full public NEIS week but no Comcigan or teacher names',async t=>{
  const {env}=setup(t);const {dateParam,selectableRange}=await import('../public/js/common.js');const date=dateParam(selectableRange().minDate);let calls=[];
  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));assert.equal(new URL(url).pathname,'/hub/misTimetable');return Response.json({misTimetable:[{head:[{RESULT:{CODE:'INFO-000'}}]},{row:[{ALL_TI_YMD:date,GRADE:'1',CLASS_NM:'1',PERIO:'1',ITRT_CNTNT:'국어'},{ALL_TI_YMD:date,GRADE:'1',CLASS_NM:'1',PERIO:'2',ITRT_CNTNT:'수학'}]}]});});
- t.mock.method(console,'log',()=>{});const r=await worker.fetch(new Request('https://localhost/api/timetable?date='+date+'&grade=1&class=1&view=week'),env);const b=await r.json();assert.equal(r.status,200);assert.equal(b.preview,true);assert.equal(b.days[0].items.length,1);assert.equal(b.days[0].items[0].subject,'국어');assert.equal(b.days[0].items[0].teacher,undefined);assert.equal(calls.length,1);
+ t.mock.method(console,'log',()=>{});const r=await worker.fetch(new Request('https://localhost/api/timetable?date='+date+'&grade=1&class=1&view=week'),env);const b=await r.json();assert.equal(r.status,200);assert.equal(b.preview,true);assert.equal(b.days[0].items.length,2);assert.equal(b.days[0].items[0].subject,'국어');assert.equal(b.days[0].items[0].teacher,undefined);assert.equal(calls.length,1);
 });
 
+
+test('verification auto signs in only the browser that started signup',async t=>{
+ const c=setup(t);const signupResponse=await authHandler(req('signup',signup()),c.env);const browser=signupResponse.headers.get('Set-Cookie').split(';')[0];
+ const r=await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:browser}),c.env);const b=await r.json();assert.equal(b.autoLogin,true);
+ const sessionCookie=r.headers.getSetCookie().find(v=>v.startsWith('__Host-ygm_session='));assert(sessionCookie);assert(!sessionCookie.includes('Max-Age='));
+ assert.equal((await memberSession(new Request('https://localhost',{headers:{Cookie:sessionCookie.split(';')[0]}}),c.env)).username,'student_1');
+ assert.equal((await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:browser}),c.env)).status,400);
+});
+test('a different browser verifies email but never receives an automatic session',async t=>{
+ const c=setup(t);await authHandler(req('signup',signup()),c.env);const r=await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:'__Host-ygm_verify='+'f'.repeat(64)}),c.env);
+ assert.equal((await r.json()).autoLogin,false);assert(!r.headers.get('Set-Cookie').includes('__Host-ygm_session'));
+ assert.equal(c.db.prepare('SELECT count(*) n FROM member_sessions').get().n,0);
+});
+test('remember choice controls cookie and server lifetime without extending default sessions',async t=>{
+ const c=setup(t);const normal=await register(c);assert(!normal.headers.get('Set-Cookie').includes('Max-Age='));
+ const r=await authHandler(req('login',{username:'student_1',password,turnstile:'login:remember',remember:true}),c.env);assert.match(r.headers.get('Set-Cookie'),/Max-Age=2592000/);
+ const cookie=r.headers.get('Set-Cookie').split(';')[0];c.db.exec('UPDATE member_sessions SET last_seen=last_seen-10800000');
+ assert(await memberSession(new Request('https://localhost',{headers:{Cookie:cookie}}),c.env));
+ assert.equal(await memberSession(new Request('https://localhost',{headers:{Cookie:normal.headers.get('Set-Cookie').split(';')[0]}}),c.env),null);
+ c.db.exec('UPDATE member_sessions SET expires_at=0');assert.equal(await memberSession(new Request('https://localhost',{headers:{Cookie:cookie}}),c.env),null);
+});

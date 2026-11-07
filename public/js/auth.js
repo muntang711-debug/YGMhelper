@@ -35,7 +35,7 @@ function validate(){
 }
 async function api(path,body){
  const r=await fetch('/api/auth/'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})},...(body?{body:JSON.stringify(body)}:{})});
- const b=await r.json();if(!r.ok||!b.ok){const error=Error(b.error||'요청을 처리하지 못했습니다.');error.field=b.field;throw error;}return b;
+ const b=await r.json();if(!r.ok||!b.ok){const error=Error(b.error||'요청을 처리하지 못했습니다.');error.field=b.field;error.code=b.code;throw error;}return b;
 }
 form?.addEventListener('submit',async event=>{
  event.preventDefault();if(busy||finished)return;
@@ -44,13 +44,14 @@ form?.addEventListener('submit',async event=>{
  if(usesBot&&!turnstileReady){message('로봇 확인을 완료해 주세요.','error');return;}
  const fields=new FormData(form);busy=true;enable();button.setAttribute('aria-busy','true');message('처리 중입니다.');
  try{
-  const data=await api(action,{username:fields.get('username'),email:fields.get('email'),password:fields.get('password'),age14:fields.has('age14'),privacy:fields.has('privacy'),betaReset:fields.has('betaReset'),consentVersion:config.consentVersion,token:linkToken,turnstile:usesBot?window.turnstile.getResponse(widget):''});
-  if(data.verificationRequired){form.reset();message('인증 메일을 보냈습니다. 메일의 링크에서 인증한 뒤 로그인해 주세요.','success');finished=true;button.textContent='인증 메일 발송 완료';}
-  else if(action==='forgot'||action==='resend'){message('해당 이메일로 진행할 수 있는 계정이 있으면 메일이 발송됩니다. 받은편지함과 스팸함을 확인해 주세요.','success');finished=true;button.textContent='메일 요청 완료';}
-  else if(data.verified){message('이메일 인증이 완료됐습니다. 아래 로그인 링크로 이동해 주세요.','success');finished=true;button.textContent='인증 완료';linkToken='';}
-  else if(data.reset){form.reset();message('비밀번호가 변경됐습니다. 새 비밀번호로 로그인해 주세요.','success');finished=true;button.textContent='변경 완료';linkToken='';}
+  const data=await api(action,{username:fields.get('username'),email:fields.get('email'),password:fields.get('password'),age14:fields.has('age14'),privacy:fields.has('privacy'),betaReset:fields.has('betaReset'),consentVersion:config.consentVersion,token:linkToken,remember:fields.has('remember'),turnstile:usesBot?window.turnstile.getResponse(widget):''});
+  finished=true;linkToken='';
+  if(data.verificationRequired||action==='resend')location.replace('/check-email');
+  else if(action==='forgot')location.replace('/reset-email');
+  else if(data.verified)location.replace(data.autoLogin?'/':'/email-verified');
+  else if(data.reset){form.reset();location.replace('/password-changed');}
   else{form.reset();location.replace('/');}
- }catch(e){if(e.field&&form.elements.namedItem(e.field)){const input=form.elements.namedItem(e.field);fieldError(input,e.message);input.focus();}message(e.message,'error');}
+ }catch(e){if(e.code==='EMAIL_UNVERIFIED'){location.replace('/check-email');return;}if(e.field&&form.elements.namedItem(e.field)){const input=form.elements.namedItem(e.field);fieldError(input,e.message);input.focus();}message(e.message,'error');}
  finally{busy=false;button.removeAttribute('aria-busy');if(usesBot){turnstileReady=false;window.turnstile.reset(widget);}enable();}
 });
 form?.querySelectorAll('input').forEach(input=>{if(!input.id)input.id='consent-'+input.name;input.addEventListener('input',()=>clearError(input));input.addEventListener('change',()=>clearError(input));});
@@ -71,5 +72,6 @@ async function main(){
   script.addEventListener('error',()=>message('로봇 확인을 불러오지 못했습니다.','error'));document.head.append(script);
  }
  enable();
+ if(action==='verify')form.requestSubmit();
 }
 main().catch(e=>message(e.message,'error'));

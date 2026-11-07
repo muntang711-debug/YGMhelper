@@ -554,7 +554,7 @@ async function publicTimetable(url, env) {
   const friday=new Date(monday);friday.setUTCDate(friday.getUTCDate()+4);
   const rows=extractRows(await neisRequest("misTimetable",{ATPT_OFCDC_SC_CODE:SCHOOL.officeCode,SD_SCHUL_CODE:SCHOOL.schoolCode,GRADE:grade,TI_FROM_YMD:dateParam(monday),TI_TO_YMD:dateParam(friday),pSize:"1000"},env.NEIS_API_KEY),"misTimetable");
   const classes=[...new Set(rows.filter(r=>String(r.GRADE)===grade).map(r=>Number(r.CLASS_NM)).filter(n=>Number.isInteger(n)&&n>0&&n<=99))].sort((a,b)=>a-b);
-  const days=Array.from({length:5},(_,i)=>{const day=new Date(monday);day.setUTCDate(day.getUTCDate()+i);const key=dateParam(day);return {ok:true,date:key,grade,class:className,classes,source:"neis",preview:true,items:rows.filter(r=>r.ALL_TI_YMD===key&&String(r.GRADE)===grade&&Number(r.CLASS_NM)===Number(className)&&Number(r.PERIO)===1).map(r=>({period:1,subject:String(r.ITRT_CNTNT||"").trim(),changed:false})),available:true};});
+  const days=Array.from({length:5},(_,i)=>{const day=new Date(monday);day.setUTCDate(day.getUTCDate()+i);const key=dateParam(day);return {ok:true,date:key,grade,class:className,classes,source:"neis",preview:true,items:rows.filter(r=>r.ALL_TI_YMD===key&&String(r.GRADE)===grade&&Number(r.CLASS_NM)===Number(className)&&Number(r.PERIO)>=1&&Number(r.PERIO)<=16).map(r=>({period:Number(r.PERIO),subject:String(r.ITRT_CNTNT||"").trim(),changed:false})),available:true};});
   const selected=days.find(d=>d.date===date)||{...days[0],date,items:[],available:false};
   return json({...selected,...url.pathname==="/api/timetable"&&url.searchParams.get("view")==="week"?{days,weekStart:dateParam(monday)}:{}});
 }
@@ -903,7 +903,7 @@ async function handleMealRating(request, url, env) {
 export default {
   async scheduled(event,env) {
     const db=env.AUTH_DB; if(!db)return; const now=Date.now();
-    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR last_seen<=?").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM auth_tokens WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM members WHERE email_verified=0 AND created_at<=?").bind(now-86400000)]);
+    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR (persistent=0 AND last_seen<=?)").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM auth_tokens WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM members WHERE email_verified=0 AND created_at<=?").bind(now-86400000)]);
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);

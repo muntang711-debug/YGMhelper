@@ -6,8 +6,10 @@ import * as helpers from '../public/js/common.js';
 
 const html=await fs.readFile(new URL('../public/index.html',import.meta.url),'utf8');
 const script=(await fs.readFile(new URL('../public/js/app.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
+const fixtureRange=()=>helpers.selectableRange(helpers.civilDate(2026,10,5));
 const flush=()=>new Promise(resolve=>setTimeout(resolve,20));
-async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1',width=1024}={}){
+async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1',width=1024,today='2026-11-05T03:00:00Z'}={}){
+  t.mock.timers.enable({apis:['Date'],now:new Date(today)});
   const dom=new JSDOM(html,{url:'https://ygmhelper.xyz/',runScripts:'outside-only',pretendToBeVisual:true});
   t.after(()=>dom.window.close());const w=dom.window;
   Object.assign(w,helpers);
@@ -23,7 +25,7 @@ function defaultResponse(url){
   if(url.startsWith('/api/meal-rating'))return Response.json({ok:true,total:0,counts:{},myRating:null,average:null,canVote:true});
   if(url.startsWith('/api/meal?'))return Response.json({ok:true,date:new URL(url,'https://test').searchParams.get('date'),items:['비타민C100음료 (12)','우유 (선택)'],calories:'100 Kcal'});
   if(url.startsWith('/api/classes'))return Response.json({ok:true,classes:[1,2]});
-  const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'국어',teacher:'교사*'}]};});
+  const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'국어',teacher:'교사*'}]};});
   return Response.json({ok:true,classes:[1,2],items:days[0].items,days,available:true});
 }
 function clickDate(document,param){document.querySelector('.date-trigger').click();let button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);if(!button){document.querySelector('[data-cal-nav="1"]').click();button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);}assert(button,'selectable date exists');button.click();}
@@ -81,7 +83,7 @@ test('rating POST failure preserves previous summary and shows recovery message'
 test('late weekend class response cannot overwrite another grade cache',async t=>{
   let resolveOld;let initial=true;
   const {document,w}=await boot(t,url=>url.startsWith('/api/timetable')&&initial?(initial=false,Response.json({ok:false},{status:502})):url.startsWith('/api/classes')&&url.includes('grade=1')?new Promise(resolve=>{resolveOld=resolve;}):defaultResponse(url));
-  const saturday=new Date(helpers.selectableRange().minDate);saturday.setUTCDate(saturday.getUTCDate()+5);
+  const saturday=new Date(fixtureRange().minDate);saturday.setUTCDate(saturday.getUTCDate()+5);
   clickDate(document,helpers.dateParam(saturday));await flush();assert(resolveOld);
   document.querySelector('[data-select="grade"] .select-trigger').click();document.querySelector('[data-select="grade"] [data-value="2"]').click();await flush();
   resolveOld(Response.json({ok:true,classes:[1,2,3,4,5,6,7,8]}));await flush();
@@ -96,7 +98,7 @@ test('repeated viewport/tab triggers deduplicate fresh requests',async t=>{
 
 test('future meal panel allows viewing but disables voting',async t=>{
   const {document}=await boot(t);
-  const nextMonday=new Date(helpers.selectableRange().minDate);nextMonday.setUTCDate(nextMonday.getUTCDate()+7);
+  const nextMonday=new Date(fixtureRange().minDate);nextMonday.setUTCDate(nextMonday.getUTCDate()+7);
   clickDate(document,helpers.dateParam(nextMonday));await flush();
   assert.equal(document.querySelector('.meal-rating-title').textContent,'급식 맛 평가');
   assert([...document.querySelectorAll('.meal-rating-option')].every(b=>b.disabled));
@@ -112,7 +114,7 @@ test('mobile initial load waits to request hidden timetable until tab selection'
 });
 
 test('weekly table renders five dates, changed lessons, safe text and selected day',async t=>{
- const days=Array.from({length:5},(_,index)=>{const date=new Date(helpers.selectableRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'김민수',changed:index===1}]};});
+ const days=Array.from({length:5},(_,index)=>{const date=new Date(fixtureRange().minDate);date.setUTCDate(date.getUTCDate()+index);return {date:helpers.dateParam(date),items:[{period:1,subject:index===0?'<img src=x>':'국어',teacher:'김민수',changed:index===1}]};});
  const {document,calls}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],items:days[0].items,days}):defaultResponse(url));
  assert(calls.some(c=>c.url.includes('view=week')));
  assert.equal(document.querySelector('#timetable-card'),null);
@@ -166,7 +168,7 @@ test('refresh stays busy until the request fails and then becomes usable again',
 });
 
 test('rating choices use SVG icons and NEIS lessons omit teacher placeholders',async t=>{
- const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),source:'neis',items:[{period:1,subject:'국어',changed:false}]};});
+ const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),source:'neis',items:[{period:1,subject:'국어',changed:false}]};});
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
  assert.equal(document.querySelectorAll('.meal-rating-icon svg').length,5);
  assert.equal(document.querySelectorAll('.weekly-lesson span').length,0);
@@ -176,7 +178,7 @@ test('rating choices use SVG icons and NEIS lessons omit teacher placeholders',a
 test('changing a date within the loaded week only updates the selection',async t=>{
  const {document,calls}=await boot(t);
  const before=calls.filter(c=>c.url.startsWith('/api/timetable')).length;
- const monday=new Date(helpers.selectableRange().minDate);monday.setUTCDate(monday.getUTCDate()+1);
+ const monday=new Date(fixtureRange().minDate);monday.setUTCDate(monday.getUTCDate()+1);
  clickDate(document,helpers.dateParam(monday));await flush();
  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before);
  assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+(monday.getUTCMonth()+1)+'.'+monday.getUTCDate());
@@ -185,10 +187,17 @@ test('changing a date within the loaded week only updates the selection',async t
 });
 
 test('guest preview shows signup links without adding hidden timetable rows',async t=>{
- const days=Array.from({length:5},(_,i)=>{const d=new Date(helpers.selectableRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'NEIS 미리보기'}]};});
+ const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'NEIS 미리보기'}]};});
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,preview:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
  assert.equal(document.querySelectorAll('.weekly-table tbody tr').length,1);
  assert.equal(document.querySelector('.membership-gate a').getAttribute('href'),'/login.html');
  assert.equal(document.querySelectorAll('.weekly-table td').length,5);
  assert.equal(document.querySelector('.weekly-table').textContent.includes('교사'),false);
+});
+
+test('weekend meal does not request or render rating controls',async t=>{
+ const {document,calls}=await boot(t,null,{today:'2026-11-07T03:00:00Z'});
+ assert.equal(calls.filter(c=>c.url.startsWith('/api/meal?')).length,0);
+ assert.equal(document.querySelector('.meal-rating-option'),null);
+ assert(calls.some(c=>c.url.startsWith('/api/timetable')));
 });

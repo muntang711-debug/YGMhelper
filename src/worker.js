@@ -226,7 +226,8 @@ async function getComciganCodes(refresh = false) {
     cacheTtl: refresh ? 0 : 300
   }));
 
-  const routeMatch = html.match(/\.\/(\d+)\?(\d+)l/);
+  const transport = comciganTransport(html);
+  const routeMatch = html.match(/\.\/(\d+)\?(\d+)l/) || (transport.endpoint ? [null,transport.endpoint,transport.searchPrefix] : null);
   const code0 = html.match(/sc_data\('([0-9]+)_/)?.[1];
   const teacherCode = html.match(/Q성명\(자료\.자료(\d+)/)?.[1];
   const subjectCode = html.match(/자료\.자료(\d+)\[sb\]/)?.[1];
@@ -240,7 +241,8 @@ async function getComciganCodes(refresh = false) {
 
   if (refresh) comciganSchoolCache = null;
   comciganCodeCache = {
-    ...comciganTransport(html),
+    ...transport,
+    locationCode: html.match(/var m3=자료\.자료(\d+)\[학년\]\[반\]\[요일\]\[교시\]/)?.[1] || '245',
     endpoint: routeMatch[1],
     searchPrefix: routeMatch[2],
     code0,
@@ -261,8 +263,9 @@ async function resolveComciganSchool(codes) {
   }
 
   const encodedName = SCHOOL.encodedName;
+  const search = codes.packedSchoolSearch ? encodeURIComponent(btoa(`${codes.searchPrefix}l${encodeURIComponent(SCHOOL.name)}${codes.schoolSearchSuffix}`)) : `${codes.searchPrefix}l${encodedName}${codes.schoolSearchSuffix}`;
   const responseText = await fetchComciganText(
-    `${COMCIGAN_URL}/${codes.endpoint}?${codes.searchPrefix}l${encodedName}${codes.schoolSearchSuffix}`,
+    `${COMCIGAN_URL}/${codes.endpoint}?${search}`,
     { cacheTtl: 3600 }
   );
 
@@ -431,7 +434,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
   const codes = await getComciganCodes(refresh);
   const school = await resolveComciganSchool(codes);
 
-  const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}${codes.encryptionKey ? "_enc2" : ""}`;
+  const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}${codes.payloadSuffix}`;
   const encoded = btoa(payload);
   const upstream = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${encoded}`,
@@ -449,7 +452,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
   const subjects = response[`자료${codes.subjectCode}`];
   const dailyTimetable = response[`자료${codes.changedCode}`];
   const originalTimetable = response[`자료${codes.originalCode}`];
-  const locationMatrix = response.자료245;
+  const locationMatrix = response[`자료${codes.locationCode}`];
 
   if (!Array.isArray(teachers) || !teachers.length || teachers.length > 1000 ||
       !Array.isArray(subjects) || !subjects.length || subjects.length > 1000 ||

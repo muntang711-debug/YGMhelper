@@ -25,6 +25,21 @@ test('decoded JavaScript is returned only as data and is never executed', () => 
   assert.equal(decodeComciganPage(wrap([[0,encode(code,100)]])), code);
 });
 
+test('nested AJAX wrappers decode independently while preserving surrounding source',()=>{
+ const inner=wrap([[0,encode('function QAjaxSchool(){}',93)]],93).replace('hour-obfuscated-v2','hour-ajax-obfuscated-v1');
+ const second=wrap([[1,'throw new Error("never run")']],42).replace('hour-obfuscated-v2','hour-ajax-obfuscated-v1');
+ const text=inner+'\nplain source\n'+second;
+ assert.equal(decodeComciganPage(wrap([[0,encode(text,78)]],78)),'function QAjaxSchool(){}\nplain source\nthrow new Error("never run")');
+ assert.throws(()=>decodeComciganPage('/* hour-ajax-obfuscated-v1 */ broken'));
+});
+
+test('enc5 packed transport extracts only literal key pieces and index concatenation',async()=>{
+ const {comciganTransport}=await import('../src/comcigan.js');
+ const source="function QAjaxSchool(sc,success){return $.ajax({url:'./952563?'+encodeURIComponent(btoa('21326l'+encodeURIComponent(sc)+'_enc5'))});}function QAjaxTimetable(){return btoa(s7+'_'+r+'_enc5');}CryptoJS.enc.Hex.parse((function(a){return a[2]+a[1]+a[3]+a[0];})(['aaaaaaaaaaaaaaaa','bbbbbbbbbbbbbbbb','cccccccccccccccc','dddddddddddddddd']));";
+ const t=comciganTransport(source);assert.equal(t.encryptionKey,'c'.repeat(16)+'b'.repeat(16)+'d'.repeat(16)+'a'.repeat(16));assert.equal(t.endpoint,'952563');assert.equal(t.searchPrefix,'21326');assert.equal(t.payloadSuffix,'_enc5');assert.equal(t.schoolSearchSuffix,'_enc5');assert.equal(t.packedSchoolSearch,true);
+ assert.equal(comciganTransport(source.replace('return a[2]+','return evil()+')).encryptionKey,null);
+});
+
 test('transport reads rotating school selector and public encryption key without executing code',async()=>{
  const {comciganTransport}=await import('../src/comcigan.js');
  const key='12'.repeat(32);const data=comciganTransport("var r=Math.floor(학교[0]/6347)+2;CryptoJS.enc.Hex.parse('"+key+"')");
@@ -43,6 +58,10 @@ test('enc2 payload authenticates before AES decoding and rejects tampering',asyn
  const tag=new Uint8Array(await crypto.subtle.sign('HMAC',hmac,new TextEncoder().encode(prefix)));
  const hex=Array.from(key,b=>b.toString(16).padStart(2,'0')).join('');
  assert.equal(await decodeComciganPayload(prefix+':'+base64(tag),hex),'{"학교":"용곡중학교"}');
+ const enc5=prefix.replace('enc2:','enc5:');const tag5=new Uint8Array(await crypto.subtle.sign('HMAC',hmac,new TextEncoder().encode(enc5)));
+ assert.equal(await decodeComciganPayload(enc5+':'+base64(tag5),hex),'{"학교":"용곡중학교"}');
+ await assert.rejects(()=>decodeComciganPayload(enc5+':'+base64(tag),hex));
+ await assert.rejects(()=>decodeComciganPayload('enc99:a:b:c',hex));
  tag[0]^=1;await assert.rejects(()=>decodeComciganPayload(prefix+':'+base64(tag),hex),e=>e.code==='COMCIGAN_ERROR');
  await assert.rejects(()=>decodeComciganPayload(prefix+':invalid',hex));
  assert.equal(await decodeComciganPayload('{}',null),'{}');

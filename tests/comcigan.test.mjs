@@ -14,6 +14,14 @@ test('plain Comcigan pages remain supported', () => {
   const page = "sc_data('123_ ./36179?991l";
   assert.equal(decodeComciganPage(page), page);
 });
+test('request token is read only from a bounded literal assignment', async () => {
+  const {comciganTransport}=await import('../src/comcigan.js');
+  const token='a1'.repeat(32);
+  assert.equal(comciganTransport(`<script>window.__HourRequestToken="${token}";</script>`).requestToken,token);
+  for(const source of ['legacy', 'window.__HourRequestToken=getToken()', 'window.__HourRequestToken="short"', `window.__HourRequestToken="${'a'.repeat(257)}"`, `window.__HourRequestToken="${token}\r\nInjected"`]) {
+    assert.equal(comciganTransport(source).requestToken,null);
+  }
+});
 test('malformed Comcigan wrappers fail closed', () => {
   for (const page of [
     '/* hour-obfuscated-v2 */ broken', wrap([[0,'bad']]), wrap([[0,'zzzz']]),

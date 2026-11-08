@@ -38,7 +38,8 @@ export function comciganTransport(html) {
  const packed=html.match(/url:\s*['"]\.\/(\d+)\?['"]\+encodeURIComponent\(btoa\(['"](\d+)l['"]/);
  const version=html.match(/function\s+QAjaxTimetable\b[\s\S]*?['"]_(enc[25])['"]/)?.[1]||'enc2';
  const encryptedSchoolSearch=/function\s+school_ra\([^)]*\)\s*\{[\s\S]*?url\s*:\s*['"][^'"]+['"]\s*\+\s*\w+\s*\+\s*['"]_enc2['"]/.test(html);
- return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null,schoolSearchSuffix:packed?'_'+version:encryptedSchoolSearch?'_enc2':'',packedSchoolSearch:!!packed,endpoint:packed?.[1],searchPrefix:packed?.[2],payloadSuffix:key?'_'+version:''};
+ const requestToken=html.match(/window\.__HourRequestToken\s*=\s*['"]([A-Za-z0-9_-]{32,256})['"]/)?.[1]||null;
+ return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null,schoolSearchSuffix:packed?'_'+version:encryptedSchoolSearch?'_enc2':'',packedSchoolSearch:!!packed,endpoint:packed?.[1],searchPrefix:packed?.[2],payloadSuffix:key?'_'+version:'',requestToken};
 }
 export async function decodeComciganPayload(text, keyHex) {
  text=text.replace(/\0+$/g,'');

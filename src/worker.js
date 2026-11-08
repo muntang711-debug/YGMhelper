@@ -172,7 +172,7 @@ let comciganSchoolCache = null;
 let comciganSchoolCacheExpiresAt = 0;
 const comciganWeekCache = new Map();
 
-async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE_TTL } = {}) {
+async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE_TTL, requestToken = null } = {}) {
   let response;
 
   const fetchOptions = {
@@ -184,7 +184,8 @@ async function fetchComciganText(url, { eucKr = false, cacheTtl = COMCIGAN_CACHE
       "Pragma": "no-cache",
       "Referer": `${COMCIGAN_URL}/st`,
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36",
-      "X-Requested-With": "XMLHttpRequest"
+      "X-Requested-With": "XMLHttpRequest",
+      ...(requestToken ? { "X-Hour-Token": requestToken } : {})
     },
     signal: AbortSignal.timeout(10000)
   };
@@ -266,7 +267,7 @@ async function resolveComciganSchool(codes) {
   const search = codes.packedSchoolSearch ? encodeURIComponent(btoa(`${codes.searchPrefix}l${encodeURIComponent(SCHOOL.name)}${codes.schoolSearchSuffix}`)) : `${codes.searchPrefix}l${encodedName}${codes.schoolSearchSuffix}`;
   const responseText = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${search}`,
-    { cacheTtl: 3600 }
+    { cacheTtl: codes.requestToken ? 0 : 3600, requestToken: codes.requestToken }
   );
 
   const cleaned = (await decodeComciganPayload(responseText, codes.encryptionKey)).replace(/\0/g, "").trim();
@@ -438,7 +439,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
   const encoded = btoa(payload);
   const upstream = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${encoded}`,
-    { cacheTtl: weekNum === 0 ? 0 : COMCIGAN_CACHE_TTL }
+    { cacheTtl: codes.requestToken || weekNum === 0 ? 0 : COMCIGAN_CACHE_TTL, requestToken: codes.requestToken }
   );
 
   let response;

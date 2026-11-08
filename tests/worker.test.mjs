@@ -32,8 +32,9 @@ function mockComci(t,data){
   const calls=[];
   const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
-  const wrapped=`/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
-  t.mock.method(globalThis,'fetch',async url=>{if(new URL(String(url)).pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});calls.push(String(url));return new URL(String(url)).pathname==='/st'?new Response(iconv.encode(wrapped,'euc-kr')):String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
+  const token='a1'.repeat(32);
+  const wrapped=`<script>window.__HourRequestToken="${token}";</script>/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
+  t.mock.method(globalThis,'fetch',async (url,options)=>{if(new URL(String(url)).pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});calls.push(String(url));if(new URL(String(url)).pathname==='/st')return new Response(iconv.encode(wrapped,'euc-kr'));assert.equal(options.headers['X-Hour-Token'],token);assert.equal(options.cf.cacheTtl,0);return String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
   return calls;
 }
 
@@ -172,12 +173,12 @@ test('exam week uses NEIS only with no teachers or changed markers',async t=>{
 });
 test('mixed week checks schedule first, ignores other grades, and preserves empty NEIS exam days',async t=>{
  quiet(t);mockComci(t,comciData());const comciFetch=globalThis.fetch;const paths=[];
- t.mock.method(globalThis,'fetch',async value=>{const u=new URL(String(value));paths.push(u.pathname);
+ t.mock.method(globalThis,'fetch',async (value,options)=>{const u=new URL(String(value));paths.push(u.pathname);
   if(u.pathname==='/hub/SchoolSchedule')return Response.json(neisPayload('SchoolSchedule',[
    {AA_YMD:weekdayDate(1),EVENT_NM:'중간고사',ONE_GRADE_EVENT_YN:'Y'},
    {AA_YMD:weekdayDate(2),EVENT_NM:'기말시험',ONE_GRADE_EVENT_YN:'N',TW_GRADE_EVENT_YN:'Y'}]));
   if(u.pathname==='/hub/misTimetable')return Response.json({RESULT:{CODE:'INFO-200'}});
-  return comciFetch(value);
+  return comciFetch(value,options);
  });
  const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1&view=week'),environment(t));assert.equal(r.status,200);const b=await r.json();
  assert.equal(paths[0],'/hub/SchoolSchedule');assert.equal(paths[1],'/hub/misTimetable');

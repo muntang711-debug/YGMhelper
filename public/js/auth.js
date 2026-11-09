@@ -73,7 +73,7 @@ async function main(){
  if(action==='delete'){
   const session=await api('session');if(!session.user){location.replace('/login.html');return;}csrf=session.csrf;
   document.querySelector('#account-user').textContent=session.user.username+'님';
-  const studentStatus=document.querySelector('#student-status');if(studentStatus)studentStatus.textContent=session.user.studentVerified?'학생 인증 완료':session.user.studentVerificationBlocked?'학생 인증 시도가 차단되었습니다.':'학생 인증 후 급식 평가와 선생님 전체 이름을 확인할 수 있습니다.';
+  const studentStatus=document.querySelector('#student-status');if(studentStatus)studentStatus.textContent=session.user.studentVerified?'학생 인증 완료':session.user.studentVerificationBlocked?'학생 인증 시도가 차단되었습니다.':'미인증';
   const studentLink=document.querySelector('#student-verify-link');if(studentLink)studentLink.hidden=!!session.user.studentVerified||!!session.user.studentVerificationBlocked;
   document.querySelector('#logout').addEventListener('click',async()=>{try{await api('logout',{});location.replace('/');}catch(e){message(e.message,'error');}});
  }else if(usesBot){

@@ -4,11 +4,10 @@ const error=document.querySelector('#student-error');
 const loading=document.querySelector('#student-loading');
 const submit=form.querySelector('[type="submit"]');
 let order=[1,2,3],csrf=null,busy=false,locked=false,dragged=null;
-const arrow=direction=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${direction<0?'m14 6-6 6 6 6':'m10 6 6 6-6 6'}"/></svg>`;
 function lockForm(){locked=true;form.querySelectorAll('input,button').forEach(el=>el.disabled=true);cards.querySelectorAll('.grade-card').forEach(el=>el.draggable=false);cards.querySelectorAll('.grade-grip').forEach(el=>{el.tabIndex=-1;el.setAttribute('aria-disabled','true');});}
 function clearError(){error.hidden=true;form.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid'));}
 function render(){
- cards.innerHTML=order.map((grade,index)=>`<div class="grade-card" draggable="true" data-grade="${grade}"><div class="grade-grip" tabindex="0" role="button" aria-label="${grade}학년 카드 이동. 좌우 방향키로 이동"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/></svg><strong>${grade}학년</strong></div><div class="grade-moves"><button type="button" data-move="-1" aria-label="${grade}학년을 앞으로" ${index===0?'disabled':''}>${arrow(-1)}</button><button type="button" data-move="1" aria-label="${grade}학년을 뒤로" ${index===2?'disabled':''}>${arrow(1)}</button></div></div>`).join('');
+ cards.innerHTML=order.map((grade,index)=>`<div class="grade-card" draggable="true" data-grade="${grade}"><div class="grade-grip" tabindex="0" role="button" aria-label="${grade}학년 카드 이동. 좌우 방향키로 이동"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/></svg><strong>${grade}학년</strong></div></div>`).join('');
 }
 function move(grade,index){
  if(busy||locked)return;

@@ -13,7 +13,7 @@ test('school quiz uses reorderable cards, custom choices, CSRF and inline errors
  const {w,d,calls}=await boot(t);
  assert.equal(d.querySelector('[type="submit"]').disabled,false);
  assert.equal(d.querySelectorAll('[name="building"]').length,3);assert.equal(d.querySelectorAll('[name="floor"]').length,5);
- d.querySelector('[data-grade="1"] [data-move="1"]').click();
+ d.querySelector('[data-grade="1"] .grade-grip').dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));
  assert.deepEqual([...d.querySelectorAll('[data-grade]')].map(el=>Number(el.dataset.grade)),[2,1,3]);
  d.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));assert.equal(calls.length,1);assert.match(d.querySelector('#student-error').textContent,/모두 선택/);
  d.querySelector('[name="building"][value="east"]').click();d.querySelector('[name="floor"][value="4"]').click();

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>학생 인증 | YGMhelper</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/auth.css?v=20261109-student">
-  <link rel="stylesheet" href="/css/student-verification.css?v=20261109">
+  <link rel="stylesheet" href="/css/style.css?v=20261109-layout">
+  <link rel="stylesheet" href="/css/auth.css?v=20261109-layout">
+  <link rel="stylesheet" href="/css/student-verification.css?v=20261109-layout">
 </head>
 <body class="auth-page">
   <div id="app">
@@ -30,14 +30,12 @@
     <main class="page-shell auth-shell">
       <div class="auth-content student-content">
         <h1>학생 인증</h1>
-        <p class="student-intro">두 문제를 모두 맞히면 급식 평가와 선생님 전체 이름을 확인할 수 있습니다.</p>
-        <p class="student-note">학교 퀴즈를 이용한 확인이며, 실제 재학 여부를 증명하지는 않습니다.</p>
         <form id="student-form" novalidate>
           <section class="quiz-question" id="meal-question" aria-labelledby="meal-question-title">
             <h2 id="meal-question-title">급식실에 들어가는 학년 순서</h2>
             <p>먼저 들어가는 학년부터 카드를 배열해 주세요.</p>
             <div id="meal-order" class="meal-order" role="group" aria-label="급식실 학년 순서"></div>
-            <p class="quiz-hint">카드를 끌거나 좌우 버튼으로 순서를 바꿀 수 있습니다.</p>
+            <p class="quiz-hint">카드를 끌어 순서를 바꿔 주세요. 키보드에서는 좌우 방향키를 사용할 수 있습니다.</p>
           </section>
           <section class="quiz-question" id="nurse-question" aria-labelledby="nurse-question-title">
             <h2 id="nurse-question-title">보건실의 위치</h2>
@@ -65,6 +63,6 @@
   </div>
   <script src="/js/site-theme.js" type="module"></script>
   <script src="/js/membership.js" type="module"></script>
-  <script src="/js/student-verification.js?v=20261109" type="module"></script>
+  <script src="/js/student-verification.js?v=20261109-layout" type="module"></script>
 </body>
 </html>

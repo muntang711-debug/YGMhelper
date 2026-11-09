@@ -16,6 +16,8 @@
 .grade-moves button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .grade-moves button:disabled { color: var(--text-soft); opacity: .3; cursor: default; }
 .grade-card.is-dragging { opacity: .5; }
+.grade-grip { min-height: 112px; justify-content: center; gap: 14px; }
+.grade-grip:active { cursor: grabbing; }
 .grade-card.is-drop-target { border-color: var(--text); }
 .quiz-choices { border: 0; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; min-width: 0; }
 .quiz-choices.floors { grid-template-columns: repeat(5,minmax(0,1fr)); }

@@ -1,4 +1,5 @@
 import {authHandler, memberSession, sessionCsrfValid, memberRatingKey, isVerifiedStudent} from "./auth.js";
+import {adminHandler} from "./admin.js";
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
@@ -897,7 +898,7 @@ async function handleMealRating(request, url, env) {
 export default {
   async scheduled(event,env) {
     const db=env.AUTH_DB; if(!db)return; const now=Date.now();
-    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR (persistent=0 AND last_seen<=?)").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM auth_tokens WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM members WHERE email_verified=0 AND created_at<=?").bind(now-86400000)]);
+    await db.batch([db.prepare("DELETE FROM member_sessions WHERE expires_at<=? OR (persistent=0 AND last_seen<=?)").bind(now,now-7200000),db.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM auth_tokens WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM members WHERE email_verified=0 AND created_at<=?").bind(now-86400000),db.prepare("DELETE FROM admin_sessions WHERE expires_at<=? OR last_seen<=?").bind(now,now-900000),db.prepare("DELETE FROM admin_key_tickets WHERE expires_at<=?").bind(now),db.prepare("DELETE FROM admin_audit WHERE created_at<?").bind(now-7776000000)]);
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -910,6 +911,8 @@ export default {
         url.protocol = "https:";
         url.hostname = "ygmhelper.xyz";
         response = new Response(null, {status: 308, headers: {Location: url.href, ...SECURITY_HEADERS}});
+      } else if (isApi && url.pathname.startsWith("/api/admin/")) {
+        response = await adminHandler(request, env);
       } else if (isApi && url.pathname.startsWith("/api/auth/")) {
         response = await authHandler(request, env, ctx);
       } else if (isApi) {

@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS admin_used_keys (key_hash TEXT PRIMARY KEY, used_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS admin_issued_keys (key_hash TEXT PRIMARY KEY, issued_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS admin_key_tickets (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token_hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, last_seen INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS admin_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, target TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS admin_totp_state (
+  id INTEGER PRIMARY KEY CHECK(id=1), secret_hash TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 0, last_step INTEGER NOT NULL DEFAULT -1
+);
+ALTER TABLE student_quiz_ip_blocks ADD COLUMN member_id TEXT REFERENCES members(id) ON DELETE SET NULL;

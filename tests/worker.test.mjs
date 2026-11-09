@@ -21,7 +21,7 @@ function environment(t){
     DB:{prepare(sql){return {bind(...args){return {async all(){return {results:db.prepare(sql).all(...args)};},async first(){return db.prepare(sql).get(...args)||null;},async run(){return db.prepare(sql).run(...args);}};}};}},
     ASSETS:{async fetch(){return new Response('not found',{status:404});}}};
 }
-const authSchema=(await Promise.all(['0001_members.sql','0002_email_auth.sql','0003_session_preferences.sql','0004_student_verification.sql','0005_student_quiz_limits.sql'].map(name=>fs.readFile(new URL('../auth-migrations/'+name,import.meta.url),'utf8')))).join('\n');
+const authSchema=(await Promise.all(['0001_members.sql','0002_email_auth.sql','0003_session_preferences.sql','0004_student_verification.sql','0005_student_quiz_limits.sql','0006_admin.sql'].map(name=>fs.readFile(new URL('../auth-migrations/'+name,import.meta.url),'utf8')))).join('\n');
 const sessionToken='a'.repeat(64),csrf='c'.repeat(64);
 function ratingEnvironment(t){
  const env=environment(t);env.sqlite.exec(authSchema);

@@ -9,9 +9,10 @@ const schema=(await fs.readFile(new URL('../auth-migrations/0001_members.sql',im
 const sessionSchema=await fs.readFile(new URL('../auth-migrations/0003_session_preferences.sql',import.meta.url),'utf8');
 const awaitStudentSchema=await fs.readFile(new URL('../auth-migrations/0004_student_verification.sql',import.meta.url),'utf8');
 const quizLimitsSchema=await fs.readFile(new URL('../auth-migrations/0005_student_quiz_limits.sql',import.meta.url),'utf8');
+const adminSchema=await fs.readFile(new URL('../auth-migrations/0006_admin.sql',import.meta.url),'utf8');
 const password='a-long-local-test-password';
 function setup(t){
- const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);db.exec(awaitStudentSchema);db.exec(quizLimitsSchema);t.after(()=>db.close());
+ const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);db.exec(awaitStudentSchema);db.exec(quizLimitsSchema);db.exec(adminSchema);t.after(()=>db.close());
  const DB={prepare(sql){const args=[];const s={bind(...a){args.push(...a);return s;},async first(){return db.prepare(sql).get(...args)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...args).changes}};}};return s;},async batch(stmts){db.exec('BEGIN');try{const r=await Promise.all(stmts.map(s=>s.run()));db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const used=new Set(),mails=[];let bots=0;
  t.mock.method(globalThis,'fetch',async(url,opts)=>{if(!String(url).includes('siteverify'))throw Error('unexpected upstream');bots++;const token=new URLSearchParams(opts.body).get('response');if(used.has(token))return Response.json({success:false});used.add(token);return Response.json({success:true,hostname:'localhost',action:token.split(':')[0]});});

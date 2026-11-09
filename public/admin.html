@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>관리자 | YGMhelper</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/auth.css?v=20261109-student">
+  <link rel="stylesheet" href="/css/admin.css?v=20261109">
+</head>
+<body class="auth-page">
+  <div id="app">
+    <p class="beta-banner">베타 서비스 · 정식 출시 시 베타 계정과 데이터가 초기화됩니다.</p>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="YGMhelper 홈">YGMhelper</a>
+
+      <div class="topbar-actions">
+        <a id="member-link" class="member-link" href="/login.html" hidden>로그인</a>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
+        </svg>
+      </button>
+      </div>
+    </header>
+    <main class="page-shell admin-shell">
+      <div class="admin-content">
+        <div class="admin-title"><h1>관리자</h1><button id="admin-logout" type="button" hidden>로그아웃</button></div>
+        <section id="admin-login" class="admin-login" hidden>
+          <div class="admin-methods" role="group" aria-label="관리자 로그인 방식"><button type="button" data-method="otp" aria-pressed="false">OTP</button><button type="button" data-method="key" aria-pressed="true">일회용 키</button></div>
+          <form id="admin-login-form" novalidate>
+            <div id="admin-key-field"><div class="auth-field"><input id="admin-key" name="admin-key" type="password" placeholder=" " autocomplete="off" spellcheck="false" maxlength="64"><label for="admin-key">일회용 키</label><fieldset aria-hidden="true"><legend><span>일회용 키</span></legend></fieldset></div></div>
+            <div id="admin-otp-field" hidden><div class="auth-field"><input id="admin-otp" name="admin-otp" type="text" placeholder=" " inputmode="numeric" autocomplete="one-time-code" maxlength="6"><label for="admin-otp">OTP 6자리</label><fieldset aria-hidden="true"><legend><span>OTP 6자리</span></legend></fieldset></div></div>
+            <p id="admin-login-status" class="admin-status" role="status"></p>
+            <button class="auth-submit" type="submit">로그인</button>
+          </form>
+          <p class="admin-note">일회용 키는 한 번만 사용할 수 있습니다. OTP는 첫 로그인 후 등록할 수 있습니다.</p>
+        </section>
+        <section id="admin-workspace" hidden>
+          <nav class="admin-tabs" aria-label="관리 항목"><button type="button" data-section="members" aria-pressed="true">회원</button><button type="button" data-section="ip-blocks" aria-pressed="false">IP 차단</button><button type="button" data-section="audit" aria-pressed="false">작업 기록</button><button type="button" data-section="otp" aria-pressed="false">OTP 등록</button></nav>
+          <p id="admin-status" class="admin-status" role="status"></p>
+          <div id="admin-list"></div>
+          <div class="admin-pagination"><button id="admin-refresh" type="button">새로고침</button><button id="admin-next" type="button" hidden>다음 페이지</button></div>
+          <section id="admin-otp-setup" hidden>
+            <p id="admin-otp-state"></p><button id="otp-reveal" type="button">등록 QR 코드 보기</button>
+            <div id="otp-enrollment" hidden><div id="otp-qr"></div><label class="admin-seed-label" for="otp-seed">수동 등록 키</label><input id="otp-seed" type="text" readonly autocomplete="off" spellcheck="false"><form id="otp-confirm-form" novalidate><div class="auth-field"><input id="otp-confirm-code" name="otp-confirm-code" type="text" placeholder=" " inputmode="numeric" autocomplete="one-time-code" maxlength="6"><label for="otp-confirm-code">인증 앱의 OTP 6자리</label><fieldset aria-hidden="true"><legend><span>인증 앱의 OTP 6자리</span></legend></fieldset></div><button class="auth-submit" type="submit">OTP 등록 완료</button></form></div>
+          </section>
+        </section>
+        <p id="admin-loading" role="status">관리자 인증 상태를 확인하고 있습니다.</p>
+      </div>
+    </main>
+  </div>
+  <script src="/js/site-theme.js" type="module"></script>
+  <script src="/js/admin.js?v=20261109" type="module"></script>
+</body>
+</html>

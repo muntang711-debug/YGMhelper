@@ -8,7 +8,7 @@
     "dev": "wrangler dev",
     "check": "wrangler deploy --dry-run",
     "test": "node --test tests/*.test.mjs",
-    "verify": "node --check src/auth-email.js && node --check src/auth.js && node --check public/js/site-theme.js && node --check public/js/student-verification.js && node --check public/js/auth.js && node --check public/js/membership.js && node --check src/worker.js && node --check src/http.js && node --check src/comcigan.js && node --check public/js/app.js && node --check public/js/common.js && npm test && npm run check",
+    "verify": "node --check src/auth-email.js && node --check src/totp.js && node --check src/admin.js && node --check public/js/admin.js && node --check src/auth.js && node --check public/js/site-theme.js && node --check public/js/student-verification.js && node --check public/js/auth.js && node --check public/js/membership.js && node --check src/worker.js && node --check src/http.js && node --check src/comcigan.js && node --check public/js/app.js && node --check public/js/common.js && npm test && npm run check",
     "db:init": "wrangler d1 migrations apply DB --local && wrangler d1 migrations apply AUTH_DB --local",
     "types": "wrangler types"
   },
@@ -21,6 +21,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@noble/hashes": "2.0.1"
+    "@noble/hashes": "2.0.1",
+    "qrcode": "1.5.4"
   }
 }

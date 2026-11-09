@@ -4,11 +4,14 @@ import fs from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import {authHandler,memberSession,passwordHash,memberRatingKey} from '../src/auth.js';
 import worker from '../src/worker.js';
+import {createHash} from 'node:crypto';
 const schema=(await fs.readFile(new URL('../auth-migrations/0001_members.sql',import.meta.url),'utf8'))+(await fs.readFile(new URL('../auth-migrations/0002_email_auth.sql',import.meta.url),'utf8'));
 const sessionSchema=await fs.readFile(new URL('../auth-migrations/0003_session_preferences.sql',import.meta.url),'utf8');
+const awaitStudentSchema=await fs.readFile(new URL('../auth-migrations/0004_student_verification.sql',import.meta.url),'utf8');
+const quizLimitsSchema=await fs.readFile(new URL('../auth-migrations/0005_student_quiz_limits.sql',import.meta.url),'utf8');
 const password='a-long-local-test-password';
 function setup(t){
- const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);t.after(()=>db.close());
+ const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);db.exec(awaitStudentSchema);db.exec(quizLimitsSchema);t.after(()=>db.close());
  const DB={prepare(sql){const args=[];const s={bind(...a){args.push(...a);return s;},async first(){return db.prepare(sql).get(...args)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...args).changes}};}};return s;},async batch(stmts){db.exec('BEGIN');try{const r=await Promise.all(stmts.map(s=>s.run()));db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const used=new Set(),mails=[];let bots=0;
  t.mock.method(globalThis,'fetch',async(url,opts)=>{if(!String(url).includes('siteverify'))throw Error('unexpected upstream');bots++;const token=new URLSearchParams(opts.body).get('response');if(used.has(token))return Response.json({success:false});used.add(token);return Response.json({success:true,hostname:'localhost',action:token.split(':')[0]});});
@@ -85,6 +88,65 @@ test('guest preview contains full public NEIS week but no Comcigan or teacher na
  const {env}=setup(t);const {dateParam,selectableRange}=await import('../public/js/common.js');const date=dateParam(selectableRange().minDate);let calls=[];
  t.mock.method(globalThis,'fetch',async url=>{calls.push(String(url));assert.equal(new URL(url).pathname,'/hub/misTimetable');return Response.json({misTimetable:[{head:[{RESULT:{CODE:'INFO-000'}}]},{row:[{ALL_TI_YMD:date,GRADE:'1',CLASS_NM:'1',PERIO:'1',ITRT_CNTNT:'국어'},{ALL_TI_YMD:date,GRADE:'1',CLASS_NM:'1',PERIO:'2',ITRT_CNTNT:'수학'}]}]});});
  t.mock.method(console,'log',()=>{});const r=await worker.fetch(new Request('https://localhost/api/timetable?date='+date+'&grade=1&class=1&view=week'),env);const b=await r.json();assert.equal(r.status,200);assert.equal(b.preview,true);assert.equal(b.days[0].items.length,2);assert.equal(b.days[0].items[0].subject,'국어');assert.equal(b.days[0].items[0].teacher,undefined);assert.equal(calls.length,1);
+});
+
+function quizSession(c){
+ const token='d'.repeat(64),csrf='e'.repeat(64),now=Date.now();
+ c.db.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at,email,email_verified) VALUES (?,?,?,?,?,?,?,?)').run('quiz-member','quiz_student','unused','unused','test',now,'quiz@example.com',1);
+ c.db.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen) VALUES (?,?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'quiz-member',csrf,now+3600000,now);
+ c.env.STUDENT_QUIZ_ANSWERS=JSON.stringify({mealOrder:[2,1,3],building:'east',floor:4});
+ return {Cookie:'__Host-ygm_session='+token,'X-CSRF-Token':csrf};
+}
+const quizAnswer=()=>({mealOrder:[2,1,3],building:'east',floor:4});
+test('student verification requires a session, CSRF, configured secret and both correct answers',async t=>{
+ const c=setup(t),headers=quizSession(c);
+ assert.equal((await authHandler(req('student-verify',quizAnswer()),c.env)).status,401);
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),{...headers,'X-CSRF-Token':'wrong'}),c.env)).status,403);
+ const secret=c.env.STUDENT_QUIZ_ANSWERS;delete c.env.STUDENT_QUIZ_ANSWERS;
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),headers),c.env)).status,503);c.env.STUDENT_QUIZ_ANSWERS=secret;
+ assert.equal((await authHandler(req('student-verify',{...quizAnswer(),mealOrder:[2,2,3]},headers),c.env)).status,400);
+ const first=await authHandler(req('student-verify',{...quizAnswer(),mealOrder:[1,2,3],studentVerified:true},headers),c.env);
+ const second=await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env);
+ assert.equal(first.status,400);assert.deepEqual(await first.json(),await second.json());
+ assert.equal(c.db.prepare('SELECT student_verified_at FROM members').get().student_verified_at,null);
+ const result=await authHandler(req('student-verify',quizAnswer(),headers),c.env);assert.equal(result.status,200);
+ assert(c.db.prepare('SELECT student_verified_at FROM members').get().student_verified_at>0);
+ const session=await authHandler(new Request('https://localhost/api/auth/session',{headers}),c.env);assert.equal((await session.json()).user.studentVerified,true);
+ assert.equal((await authHandler(req('student-verify',{},headers),c.env)).status,200);
+});
+test('student quiz attempts cannot be bypassed by changing session or returning the right answer after the limit',async t=>{
+ const c=setup(t),headers=quizSession(c);
+ for(let i=0;i<4;i++)assert.equal((await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)).status,400);
+ assert.equal((await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)).status,429);
+ c.db.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen) VALUES (?,?,?,?,?)').run(createHash('sha256').update('f'.repeat(64)).digest('hex'),'quiz-member','e'.repeat(64),Date.now()+3600000,Date.now());
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),{...headers,Cookie:'__Host-ygm_session='+'f'.repeat(64)}),c.env)).status,429);
+ assert.equal(c.db.prepare('SELECT student_verified_at FROM members').get().student_verified_at,null);
+ assert.equal(c.db.prepare('SELECT student_quiz_attempts FROM members').get().student_quiz_attempts,5);
+ assert.equal(c.db.prepare('SELECT COUNT(*) AS n FROM student_quiz_ip_blocks').get().n,1);
+ const botCalls=c.bots;
+ assert.equal((await authHandler(req('signup',signup()),c.env)).status,403);assert.equal(c.bots,botCalls);
+ assert.equal((await authHandler(req('signup',{}, {'CF-Connecting-IP':'192.0.2.99'}),c.env)).status,400);
+ const session=await authHandler(new Request('https://localhost/api/auth/session',{headers}),c.env);assert.equal((await session.json()).user.studentVerified,false);
+});
+
+test('a correct fifth answer succeeds without blocking the network',async t=>{
+ const c=setup(t),headers=quizSession(c);
+ for(let i=0;i<4;i++)await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env);
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),headers),c.env)).status,200);
+ assert.equal(c.db.prepare('SELECT student_quiz_attempts FROM members').get().student_quiz_attempts,5);
+ assert.equal(c.db.prepare('SELECT COUNT(*) AS n FROM student_quiz_ip_blocks').get().n,0);
+});
+test('parallel quiz guesses stop at five and the network block also applies to another existing account',async t=>{
+ const c=setup(t),headers=quizSession(c);
+ await Promise.all(Array.from({length:12},()=>authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)));
+ assert.equal(c.db.prepare('SELECT student_quiz_attempts FROM members').get().student_quiz_attempts,5);
+ const token='8'.repeat(64),now=Date.now();
+ c.db.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at,email,email_verified) VALUES (?,?,?,?,?,?,?,?)').run('other-member','other_student','unused','unused','test',now,'other@example.com',1);
+ c.db.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen) VALUES (?,?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'other-member','e'.repeat(64),now+3600000,now);
+ const otherHeaders={...headers,Cookie:'__Host-ygm_session='+token};
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),otherHeaders),c.env)).status,429);
+ const s=await (await authHandler(new Request('https://localhost/api/auth/session',{headers:otherHeaders}),c.env)).json();assert.equal(s.user.studentVerificationBlocked,true);
+ assert.equal(c.db.prepare("SELECT student_quiz_attempts FROM members WHERE id='other-member'").get().student_quiz_attempts,0);
 });
 
 

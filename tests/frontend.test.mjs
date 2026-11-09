@@ -51,6 +51,13 @@ test('guests see rating counts and a login link without being able to submit',as
  for(const button of document.querySelectorAll('.meal-rating-option')){assert.equal(button.disabled,true);button.click();}
  await flush();assert.equal(calls.some(c=>c.options.method==='POST'),false);
 });
+
+test('unverified members see a student verification link and cannot submit a meal rating',async t=>{
+ const {document,calls}=await boot(t,url=>url.startsWith('/api/meal-rating')?Response.json({ok:true,total:1,counts:{4:1},average:4,canVote:false,requiresLogin:false,requiresStudentVerification:true,csrf:'fixture-csrf'}):defaultResponse(url));
+ const link=document.querySelector('.rating-login');assert.equal(link.hidden,false);assert.equal(link.getAttribute('href'),'/student-verification.html');
+ for(const button of document.querySelectorAll('.meal-rating-option')){assert.equal(button.disabled,true);button.click();}
+ await flush();assert.equal(calls.some(c=>c.options.method==='POST'),false);
+});
 test('invalid class switches to a valid class and retries only once',async t=>{
   const {calls}=await boot(t,url=>url.startsWith('/api/timetable')&&url.includes('class=99')?Response.json({ok:true,classes:[1,2],items:[],invalidClass:true}):defaultResponse(url),{savedClass:'99'});
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,2);

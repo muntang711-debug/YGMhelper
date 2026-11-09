@@ -1,4 +1,8 @@
 .auth-content { width: min(100%, 420px); margin: 8px auto 0; }
+.student-account { margin: 24px 0; padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.student-account h2 { font-size: 18px; margin: 0 0 10px; }
+.student-account p { color: var(--text-soft); font-size: 14px; line-height: 1.6; }
+.student-account [hidden] { display: none; }
 .auth-content h1 { margin: 0 0 32px; font-size: 32px; font-weight: 800; letter-spacing: -.04em; line-height: 1.25; }
 .auth-field { display: block; position: relative; margin: 18px 0 0; cursor: text; }
 .auth-field input { width: 100%; min-height: 58px; padding: 16px 15px; border: 0; border-radius: 10px; background: var(--surface-solid); color: var(--text); font: inherit; font-size: 15px; outline: none; }

@@ -1,4 +1,4 @@
-import {authHandler, memberSession, sessionCsrfValid, memberRatingKey} from "./auth.js";
+import {authHandler, memberSession, sessionCsrfValid, memberRatingKey, isVerifiedStudent} from "./auth.js";
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
@@ -698,7 +698,7 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
     }
   }
 
-  const names = readTeacherNames(env.TEACHER_NAME_MAP, date, data.school.code);
+  const names = env.TEACHER_NAMES_VERIFIED ? readTeacherNames(env.TEACHER_NAME_MAP, date, data.school.code) : null;
   const items = [];
 
   for (let period = 1; period <= maxPeriod; period += 1) {
@@ -715,7 +715,7 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
     items.push({
       period,
       subject: lesson.subject,
-      teacher: teacherDisplayName(lesson.teacher, lesson.teacherId, names),
+      teacher: env.TEACHER_NAMES_VERIFIED ? teacherDisplayName(lesson.teacher, lesson.teacherId, names) : lesson.teacher.replace(/[^*]$/, '*'),
       location,
       changed: Boolean(lesson.changed || dailyValue !== originalValue),
       originalSubject: originalLesson.subject || ""
@@ -816,8 +816,9 @@ async function readMealRatingSummary(date, voterKey, env, session) {
     total,
     average: total ? Math.round((weightedTotal / total) * 10) / 10 : null,
     myRating,
-    canVote: !!session && date === dateParam(kstToday()),
+    canVote: isVerifiedStudent(session) && date === dateParam(kstToday()),
     requiresLogin: !session,
+    requiresStudentVerification: !!session && !isVerifiedStudent(session),
     csrf: session?.csrf || null
   });
 }
@@ -842,6 +843,7 @@ async function handleMealRating(request, url, env) {
     const session = await memberSession(request, env);
     if (!session) return json({ok: false, error: "로그인 후 평가할 수 있습니다."}, 401);
     if (!sessionCsrfValid(request, session)) return json({ok: false, error: "페이지를 새로고침한 후 다시 평가해 주세요."}, 403);
+    if (!isVerifiedStudent(session)) return json({ok: false, error: "학생 인증 후 평가할 수 있습니다.", code: "STUDENT_VERIFICATION_REQUIRED"}, 403);
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin) return json({ok: false, error: "허용되지 않은 요청 출처입니다."}, 403);
     if (request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
@@ -922,9 +924,13 @@ export default {
           const effectiveRequest = request.method === "HEAD" ? new Request(request, {method: "GET"}) : request;
           if (rating) response = await handleMealRating(effectiveRequest, url, env);
           else if (url.pathname === "/api/meal") response = await handleMeal(url, env);
-          else if (env.MEMBERSHIP_ENABLED === "true" && !await memberSession(request, env)) response = await publicTimetable(url, env);
-          else if (url.pathname === "/api/classes") response = await handleClasses(url, env);
-          else response = await handleTimetable(url, env);
+          else {
+            const session = await memberSession(request, env);
+            const timetableEnv = {...env, TEACHER_NAMES_VERIFIED: isVerifiedStudent(session)};
+            if (env.MEMBERSHIP_ENABLED === "true" && !session) response = await publicTimetable(url, env);
+            else if (url.pathname === "/api/classes") response = await handleClasses(url, timetableEnv);
+            else response = await handleTimetable(url, timetableEnv);
+          }
         }
       } else {
         response = await env.ASSETS.fetch(request);

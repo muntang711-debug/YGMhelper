@@ -21,12 +21,13 @@ function environment(t){
     DB:{prepare(sql){return {bind(...args){return {async all(){return {results:db.prepare(sql).all(...args)};},async first(){return db.prepare(sql).get(...args)||null;},async run(){return db.prepare(sql).run(...args);}};}};}},
     ASSETS:{async fetch(){return new Response('not found',{status:404});}}};
 }
-const authSchema=(await Promise.all(['0001_members.sql','0002_email_auth.sql','0003_session_preferences.sql'].map(name=>fs.readFile(new URL('../auth-migrations/'+name,import.meta.url),'utf8')))).join('\n');
+const authSchema=(await Promise.all(['0001_members.sql','0002_email_auth.sql','0003_session_preferences.sql','0004_student_verification.sql','0005_student_quiz_limits.sql'].map(name=>fs.readFile(new URL('../auth-migrations/'+name,import.meta.url),'utf8')))).join('\n');
 const sessionToken='a'.repeat(64),csrf='c'.repeat(64);
 function ratingEnvironment(t){
  const env=environment(t);env.sqlite.exec(authSchema);
  env.sqlite.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at,email,email_verified) VALUES (?,?,?,?,?,?,?,?)').run('member-1','student','unused','unused','test',Date.now(),'student@example.com',1);
  for(const token of [sessionToken,'b'.repeat(64)])env.sqlite.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen,persistent) VALUES (?,?,?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'member-1',csrf,Date.now()+3600000,Date.now(),0);
+ env.sqlite.prepare('UPDATE members SET student_verified_at=?').run(Date.now());
  return {...env,AUTH_DB:env.DB,MEMBERSHIP_ENABLED:'true'};
 }
 function request(route,body,headers={}){return new Request('https://ygmhelper.xyz'+route,body===undefined?{headers:{Cookie:'__Host-ygm_session='+sessionToken,...headers}}:{method:'POST',headers:{Cookie:'__Host-ygm_session='+sessionToken,'X-CSRF-Token':csrf,'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.1',...headers},body:JSON.stringify(body)});}
@@ -94,6 +95,27 @@ test('guests can read aggregates but cannot vote or obtain personal ratings',asy
  env.sqlite.exec('UPDATE member_sessions SET expires_at=0');
  assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,401);
  assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,1);
+});
+
+test('unverified members can read ratings but only verified students can submit',async t=>{
+ quiet(t);mockMeal(t);const env=ratingEnvironment(t);env.sqlite.exec('UPDATE members SET student_verified_at=NULL');
+ const summary=await (await worker.fetch(request('/api/meal-rating?date='+today),env)).json();
+ assert.equal(summary.requiresLogin,false);assert.equal(summary.requiresStudentVerification,true);assert.equal(summary.canVote,false);
+ const denied=await worker.fetch(request('/api/meal-rating',vote()),env);assert.equal(denied.status,403);assert.equal((await denied.json()).code,'STUDENT_VERIFICATION_REQUIRED');
+ assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,0);
+ env.sqlite.prepare('UPDATE members SET student_verified_at=?').run(Date.now());
+ assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,200);
+});
+
+test('full teacher names are filtered on the server until student verification, including weekly responses',async t=>{
+ quiet(t);const env=ratingEnvironment(t),data=comciData();data.자료101=['','교사*','실명교'];mockComci(t,data);
+ const month=Number(monday.slice(4,6));env.TEACHER_NAME_MAP=JSON.stringify({schoolCode:12345,year:Number(monday.slice(0,4))-(month<3?1:0),semester:month>=3&&month<=7?1:2,teachers:{1:{masked:'교사*',full:'교사명'}}});
+ env.sqlite.exec('UPDATE members SET student_verified_at=NULL');
+ const route='/api/timetable?date='+monday+'&grade=1&class=1&view=week';
+ const masked=await (await worker.fetch(request(route),env)).json();
+ assert.equal(masked.days[0].items[0].teacher,'교사*');assert.equal(masked.days[0].items[1].teacher,'실명*');assert(!JSON.stringify(masked).includes('교사명'));assert(!JSON.stringify(masked).includes('실명교'));
+ env.sqlite.prepare('UPDATE members SET student_verified_at=?').run(Date.now());
+ const full=await (await worker.fetch(request(route),env)).json();assert.equal(full.days[0].items[0].teacher,'교사명');assert.equal(full.days[0].items[1].teacher,'실명교');
 });
 test('future and missing meals cannot be rated',async t=>{
   quiet(t);const env=ratingEnvironment(t);mockMeal(t,{RESULT:{CODE:'INFO-200'}});

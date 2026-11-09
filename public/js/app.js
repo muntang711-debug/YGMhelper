@@ -831,9 +831,12 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
         const data = await fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate), {signal: token.signal});
         if (!live()) return;
         loaded = true; csrf = data.csrf; canVote = ratingDate === dateParam(kstToday()) && data.canVote === true && !!csrf;
-        panel.querySelector(".rating-login").hidden = !data.requiresLogin;
+        const accessLink = panel.querySelector(".rating-login");
+        accessLink.hidden = !data.requiresLogin && !data.requiresStudentVerification;
+        accessLink.href = data.requiresLogin ? "/login.html" : "/student-verification.html";
+        accessLink.textContent = data.requiresLogin ? "로그인하고 평가하기" : "학생 인증하고 평가하기";
         updateMealRatingPanel(panel, data);
-        showStatus(data.requiresLogin || canVote ? "" : "평가는 오늘 급식에만 등록할 수 있습니다.");
+        showStatus(data.requiresLogin || data.requiresStudentVerification || canVote ? "" : "평가는 오늘 급식에만 등록할 수 있습니다.");
       } catch (error) {
         if (!live()) return;
         panel.querySelector(".rating-count").textContent = "집계 실패";

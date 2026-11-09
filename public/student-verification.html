@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>학생 인증 | YGMhelper</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/auth.css?v=20261109-student">
+  <link rel="stylesheet" href="/css/student-verification.css?v=20261109">
+</head>
+<body class="auth-page">
+  <div id="app">
+    <p class="beta-banner">베타 서비스 · 정식 출시 시 베타 계정과 데이터가 초기화됩니다.</p>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="YGMhelper 홈">YGMhelper</a>
+
+      <div class="topbar-actions">
+        <a id="member-link" class="member-link" href="/login.html" hidden>로그인</a>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="테마 변경" title="테마 변경">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.6 15.2A8.5 8.5 0 0 1 8.8 3.4 8.5 8.5 0 1 0 20.6 15.2Z"></path>
+        </svg>
+      </button>
+      </div>
+    </header>
+    <main class="page-shell auth-shell">
+      <div class="auth-content student-content">
+        <h1>학생 인증</h1>
+        <p class="student-intro">두 문제를 모두 맞히면 급식 평가와 선생님 전체 이름을 확인할 수 있습니다.</p>
+        <p class="student-note">학교 퀴즈를 이용한 확인이며, 실제 재학 여부를 증명하지는 않습니다.</p>
+        <form id="student-form" novalidate>
+          <section class="quiz-question" id="meal-question" aria-labelledby="meal-question-title">
+            <h2 id="meal-question-title">급식실에 들어가는 학년 순서</h2>
+            <p>먼저 들어가는 학년부터 카드를 배열해 주세요.</p>
+            <div id="meal-order" class="meal-order" role="group" aria-label="급식실 학년 순서"></div>
+            <p class="quiz-hint">카드를 끌거나 좌우 버튼으로 순서를 바꿀 수 있습니다.</p>
+          </section>
+          <section class="quiz-question" id="nurse-question" aria-labelledby="nurse-question-title">
+            <h2 id="nurse-question-title">보건실의 위치</h2>
+            <fieldset class="quiz-choices"><legend>건물</legend>
+              <label><input type="radio" name="building" value="main"><span>본관</span></label>
+              <label><input type="radio" name="building" value="east"><span>동관</span></label>
+              <label><input type="radio" name="building" value="cheongsol"><span>청솔관</span></label>
+            </fieldset>
+            <fieldset class="quiz-choices floors"><legend>층</legend>
+              <label><input type="radio" name="floor" value="1"><span>1층</span></label>
+              <label><input type="radio" name="floor" value="2"><span>2층</span></label>
+              <label><input type="radio" name="floor" value="3"><span>3층</span></label>
+              <label><input type="radio" name="floor" value="4"><span>4층</span></label>
+              <label><input type="radio" name="floor" value="5"><span>5층</span></label>
+            </fieldset>
+          </section>
+          <p id="student-error" class="quiz-error" role="alert" hidden></p>
+          <p class="quiz-hint">계정당 총 5회 시도할 수 있습니다. 모두 틀리면 이 네트워크에서 추가 인증과 회원가입이 차단됩니다.</p>
+          <button class="auth-submit" type="submit" disabled>인증하기</button>
+        </form>
+        <p id="student-loading" role="status">로그인 상태를 확인하고 있습니다.</p>
+        <a class="student-back" href="/account.html">계정 관리</a>
+      </div>
+    </main>
+  </div>
+  <script src="/js/site-theme.js" type="module"></script>
+  <script src="/js/membership.js" type="module"></script>
+  <script src="/js/student-verification.js?v=20261109" type="module"></script>
+</body>
+</html>

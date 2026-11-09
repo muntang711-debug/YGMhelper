@@ -22,6 +22,11 @@ export const passwordHash = async (password,salt) => hex(await pbkdf2Async(sha25
 function equal(a,b) { if(typeof a!=='string'||a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);return diff===0; }
 export const sessionCsrfValid = (request,session) => !!session && equal(request.headers.get('X-CSRF-Token'),session.csrf);
 export const memberRatingKey = id => digest(`member:${id}`);
+export const isVerifiedStudent = session => Number(session?.student_verified_at) > 0;
+const studentIpKey = request => digest('student-quiz-ip:'+(request.headers.get('CF-Connecting-IP')||'local'));
+const studentIpBlocked = async (request,env) => !!await env.DB.prepare('SELECT ip_hash FROM student_quiz_ip_blocks WHERE ip_hash=?').bind(studentIpKey(request)).first();
+const blockStudentIp = async (request,env) => env.DB.prepare('INSERT OR IGNORE INTO student_quiz_ip_blocks (ip_hash,blocked_at) VALUES (?,?)').bind(studentIpKey(request),Date.now()).run();
+const studentLocked = () => reply({ok:false,error:'학생 인증 기회를 모두 사용했습니다. 이 네트워크에서는 추가 인증과 회원가입을 할 수 없습니다.',code:'STUDENT_VERIFICATION_LOCKED'},429);
 async function limit(env,key,max,period=900000) {
  const now=Date.now(),bucket=Math.floor(now/period);
  const row=await env.DB.prepare('INSERT INTO auth_attempts (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(digest(key+':'+bucket),now+period).first();
@@ -32,7 +37,7 @@ export async function memberSession(request,env) {
  const token=request.headers.get('Cookie')?.split(';').map(s=>s.trim()).find(s=>s.startsWith(cookieName+'='))?.slice(cookieName.length+1);
  if(!validToken(token))return null;
  const now=Date.now();
- const session=await env.DB.prepare('SELECT s.token_hash,s.csrf,s.last_seen,m.id,m.username FROM member_sessions s JOIN members m ON m.id=s.member_id WHERE s.token_hash=? AND s.expires_at>? AND (s.persistent=1 OR s.last_seen>?) AND m.email_verified=1').bind(digest(token),now,now-7200000).first();
+ const session=await env.DB.prepare('SELECT s.token_hash,s.csrf,s.last_seen,m.id,m.username,m.student_verified_at,m.student_quiz_attempts FROM member_sessions s JOIN members m ON m.id=s.member_id WHERE s.token_hash=? AND s.expires_at>? AND (s.persistent=1 OR s.last_seen>?) AND m.email_verified=1').bind(digest(token),now,now-7200000).first();
  if(session&&now-session.last_seen>60000)await env.DB.prepare('UPDATE member_sessions SET last_seen=? WHERE token_hash=?').bind(now,session.token_hash).run();return session;
 }
 async function verifyBot(body,request,env,action) {
@@ -59,14 +64,32 @@ export async function authHandler(request,env,ctx) {
  env={...env,DB:env.AUTH_DB||env.DB};const url=new URL(request.url),action=url.pathname.split('/').pop();
  if(env.MEMBERSHIP_ENABLED!=='true')return fail('회원 기능을 준비 중입니다.',503);
  if(action==='config'&&request.method==='GET')return reply({ok:true,sitekey:env.TURNSTILE_SITEKEY||'',consentVersion,registrationOpen:env.REGISTRATION_OPEN==='true',passwordAuthAvailable:env.PASSWORD_AUTH_AVAILABLE!=='false'});
- if(action==='session'&&request.method==='GET'){const s=await memberSession(request,env);return reply({ok:true,user:s?{username:s.username}:null,csrf:s?.csrf||null});}
- if(!['signup','login','logout','delete','verify','forgot','reset','resend'].includes(action))return fail('경로를 찾을 수 없습니다.',404);
+ if(action==='session'&&request.method==='GET'){const s=await memberSession(request,env);return reply({ok:true,user:s?{username:s.username,studentVerified:isVerifiedStudent(s),studentVerificationAttemptsRemaining:Math.max(0,5-s.student_quiz_attempts),studentVerificationBlocked:!isVerifiedStudent(s)&&(s.student_quiz_attempts>=5||await studentIpBlocked(request,env))}:null,csrf:s?.csrf||null});}
+ if(!['signup','login','logout','delete','verify','forgot','reset','resend','student-verify'].includes(action))return fail('경로를 찾을 수 없습니다.',404);
  if(request.method!=='POST')return fail('지원하지 않는 요청 방식입니다.',405);
  if(request.headers.get('Origin')!==url.origin||request.headers.get('Sec-Fetch-Site')==='cross-site')return fail('허용되지 않은 요청 출처입니다.',403);
  if(request.headers.get('Content-Type')?.split(';')[0]!=='application/json')return fail('JSON 요청이 필요합니다.',415);
  let body;try{body=JSON.parse(new TextDecoder().decode(await readBounded(request,4096,{request:true})));}catch{return fail('요청을 확인해 주세요.');}
  if(!body||typeof body!=='object'||Array.isArray(body))return fail('요청을 확인해 주세요.');
  const ip=request.headers.get('CF-Connecting-IP')||'local';
+ if(action==='student-verify'){
+  const session=await memberSession(request,env);
+  if(!session)return fail('로그인 후 학생 인증을 진행해 주세요.',401);
+  if(!sessionCsrfValid(request,session))return fail('페이지를 새로고침한 후 다시 시도해 주세요.',403);
+  if(isVerifiedStudent(session))return reply({ok:true,studentVerified:true});
+  if(await studentIpBlocked(request,env))return studentLocked();
+  if(session.student_quiz_attempts>=5){await blockStudentIp(request,env);return studentLocked();}
+  let answers;try{answers=JSON.parse(env.STUDENT_QUIZ_ANSWERS);}catch{return fail('학생 인증을 준비 중입니다. 잠시 후 다시 시도해 주세요.',503);}
+  if(!Array.isArray(answers.mealOrder)||answers.mealOrder.length!==3||[...answers.mealOrder].sort().join(',')!=='1,2,3'||!['main','east','cheongsol'].includes(answers.building)||!Number.isInteger(answers.floor)||answers.floor<1||answers.floor>5)return fail('학생 인증을 준비 중입니다.',503);
+  if(!Array.isArray(body.mealOrder)||body.mealOrder.length!==3||[...body.mealOrder].sort().join(',')!=='1,2,3'||!body.mealOrder.every(Number.isInteger)||!['main','east','cheongsol'].includes(body.building)||!Number.isInteger(body.floor)||body.floor<1||body.floor>5)return fail('두 문제의 답을 모두 선택해 주세요.');
+  if(!await limit(env,'student-ip:'+ip,60,3600000))return fail('인증 요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
+  const correct=equal(JSON.stringify(body.mealOrder),JSON.stringify(answers.mealOrder))&&body.building===answers.building&&body.floor===answers.floor;
+  const result=await env.DB.prepare('UPDATE members SET student_quiz_attempts=student_quiz_attempts+1,student_verified_at=CASE WHEN ? THEN ? ELSE student_verified_at END WHERE id=? AND email_verified=1 AND student_quiz_attempts<5 AND student_verified_at IS NULL RETURNING student_quiz_attempts,student_verified_at').bind(correct?1:0,Date.now(),session.id).first();
+  if(!result){const current=await env.DB.prepare('SELECT student_verified_at FROM members WHERE id=?').bind(session.id).first();if(isVerifiedStudent(current))return reply({ok:true,studentVerified:true});await blockStudentIp(request,env);return studentLocked();}
+  if(!correct){if(result.student_quiz_attempts>=5){await blockStudentIp(request,env);return studentLocked();}return fail('정답이 일치하지 않습니다. 두 문제의 답을 다시 확인해 주세요.');}
+  return reply({ok:true,studentVerified:true});
+ }
+ if(action==='signup'&&await studentIpBlocked(request,env))return reply({ok:false,error:'현재 네트워크에서는 회원가입을 할 수 없습니다. 문의: support@ygmhelper.xyz',code:'STUDENT_VERIFICATION_LOCKED'},403);
  if(!await limit(env,'ip:'+ip,20))return fail('요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
  if(action!=='logout'&&env.PASSWORD_AUTH_AVAILABLE==='false')return fail('회원 기능을 점검 중입니다. 잠시 후 다시 이용해 주세요.',503);
  if(action==='logout'||action==='delete') {

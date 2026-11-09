@@ -20,6 +20,8 @@ const validEmail = value => typeof value==='string' && value.length<=254 && /^[a
 const validToken = value => typeof value==='string' && /^[a-f0-9]{64}$/.test(value);
 export const passwordHash = async (password,salt) => hex(await pbkdf2Async(sha256,password,salt,{c:600000,dkLen:32}));
 function equal(a,b) { if(typeof a!=='string'||a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);return diff===0; }
+export const sessionCsrfValid = (request,session) => !!session && equal(request.headers.get('X-CSRF-Token'),session.csrf);
+export const memberRatingKey = id => digest(`member:${id}`);
 async function limit(env,key,max,period=900000) {
  const now=Date.now(),bucket=Math.floor(now/period);
  const row=await env.DB.prepare('INSERT INTO auth_attempts (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(digest(key+':'+bucket),now+period).first();
@@ -53,6 +55,7 @@ async function authMail(env,member,kind) {
 }
 function defer(ctx,promise) {if(ctx?.waitUntil){ctx.waitUntil(promise.catch(()=>console.error(JSON.stringify({event:'auth_mail_error'}))));return Promise.resolve();}return promise;}
 export async function authHandler(request,env,ctx) {
+ const ratingDB=env.AUTH_DB?env.DB:null;
  env={...env,DB:env.AUTH_DB||env.DB};const url=new URL(request.url),action=url.pathname.split('/').pop();
  if(env.MEMBERSHIP_ENABLED!=='true')return fail('회원 기능을 준비 중입니다.',503);
  if(action==='config'&&request.method==='GET')return reply({ok:true,sitekey:env.TURNSTILE_SITEKEY||'',consentVersion,registrationOpen:env.REGISTRATION_OPEN==='true',passwordAuthAvailable:env.PASSWORD_AUTH_AVAILABLE!=='false'});
@@ -72,6 +75,7 @@ export async function authHandler(request,env,ctx) {
    if(!validPassword(body.password))return fail('비밀번호를 입력해 주세요.',400,'password');
    const row=await env.DB.prepare('SELECT password_hash,salt FROM members WHERE id=?').bind(session.id).first();
    if(!equal(await passwordHash(body.password,row.salt),row.password_hash))return fail('비밀번호가 일치하지 않습니다.',403,'password');
+   if(ratingDB)await ratingDB.prepare('DELETE FROM meal_ratings WHERE voter_key=?').bind(memberRatingKey(session.id)).run();
    await env.DB.batch([env.DB.prepare('DELETE FROM auth_tokens WHERE member_id=?').bind(session.id),env.DB.prepare('DELETE FROM member_sessions WHERE member_id=?').bind(session.id),env.DB.prepare('DELETE FROM members WHERE id=?').bind(session.id)]);
   }else await env.DB.prepare('DELETE FROM member_sessions WHERE token_hash=?').bind(session.token_hash).run();
   return reply({ok:true},200,{'Set-Cookie':cookie('')});

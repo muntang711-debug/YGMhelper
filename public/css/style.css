@@ -1751,3 +1751,5 @@ body.modal-open {
 .is-preview .membership-gate { position: absolute; inset: 145px 0 auto; z-index: 2; padding: 25px 14px; border: 0; background: transparent; }
 .weekly-location { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
 .weekly-location svg { flex: 0 0 12px; width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.rating-login { display: inline-block; margin-top: 12px; color: var(--accent); font-size: 13px; text-underline-offset: 3px; }
+.rating-login[hidden] { display: none; }

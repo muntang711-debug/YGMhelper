@@ -766,24 +766,6 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     activateAllergenModal(modal, originElement);
   }
 
-  function createMealVoterId() {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
-    return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" +
-      hex.slice(16, 20) + "-" + hex.slice(20);
-  }
-
-  function getMealVoterId() {
-    const key = "ygmhelper-meal-voter-v1";
-    const saved = storage.getItem(key);
-    const value = saved && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved) ? saved.toLowerCase() : createMealVoterId();
-    storage.setItem(key, value);
-    return value;
-  }
-
   function updateMealRatingPanel(panel, data) {
     if (!panel?.isConnected) return;
 
@@ -817,12 +799,12 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   function setupMealRating(date) {
     const ratingDate = String(date || formatDateParam(state.date));
     const token = requests.begin("rating", ratingDate, 0, true);
-    const voterId = getMealVoterId();
+    let csrf = null;
     const panel = document.createElement("section");
     panel.className = "meal-rating-panel";
     panel.setAttribute("aria-label", "급식 맛 평가");
     panel.dataset.date = ratingDate;
-    let canVote = ratingDate === dateParam(kstToday());
+    let canVote = false;
     let loaded = false;
     let busy = false;
     const title = "급식 맛 평가";
@@ -832,7 +814,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
         '<button class="meal-rating-option" type="button" data-rating="' + option.value + '" aria-pressed="false" disabled>' +
         '<span class="meal-rating-option-label"><span class="meal-rating-icon" aria-hidden="true">' + '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9.5"/>' + option.icon + '</svg>' + '</span><span class="meal-rating-option-name">' + escapeHtml(option.label) +
         '</span></span><span class="meal-rating-option-meter" aria-hidden="true"><span class="meal-rating-option-fill"></span></span><span class="meal-rating-option-count">0</span></button>'
-      ).join("") + '</div><p class="meal-rating-status" role="status" hidden></p><button type="button" class="rating-retry" hidden>다시 시도</button>';
+      ).join("") + '</div><p class="meal-rating-status" role="status" hidden></p><button type="button" class="rating-retry" hidden>다시 시도</button><a class="rating-login" href="/login.html" hidden>로그인하고 평가하기</a>';
     els.cards.meal.appendChild(panel);
     const status = panel.querySelector(".meal-rating-status");
     const retry = panel.querySelector(".rating-retry");
@@ -846,11 +828,12 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       if (busy || !live()) return;
       busy = true; retry.hidden = true; syncButtons();
       try {
-        const data = await fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate), {headers: {"X-Meal-Voter": voterId}, signal: token.signal});
+        const data = await fetchJson("/api/meal-rating?date=" + encodeURIComponent(ratingDate), {signal: token.signal});
         if (!live()) return;
-        loaded = true; canVote = canVote && data.canVote !== false;
+        loaded = true; csrf = data.csrf; canVote = ratingDate === dateParam(kstToday()) && data.canVote === true && !!csrf;
+        panel.querySelector(".rating-login").hidden = !data.requiresLogin;
         updateMealRatingPanel(panel, data);
-        showStatus(canVote ? "" : "평가는 오늘 급식에만 등록할 수 있습니다.");
+        showStatus(data.requiresLogin || canVote ? "" : "평가는 오늘 급식에만 등록할 수 있습니다.");
       } catch (error) {
         if (!live()) return;
         panel.querySelector(".rating-count").textContent = "집계 실패";
@@ -863,8 +846,8 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
         if (button.disabled || !live()) return;
         busy = true; syncButtons();
         try {
-          const data = await fetchJson("/api/meal-rating", {method: "POST", headers: {"Content-Type": "application/json"}, signal: token.signal,
-            body: JSON.stringify({date: ratingDate, voterId, rating: Number(button.dataset.rating)})});
+          const data = await fetchJson("/api/meal-rating", {method: "POST", headers: {"Content-Type": "application/json", "X-CSRF-Token": csrf}, signal: token.signal,
+            body: JSON.stringify({date: ratingDate, rating: Number(button.dataset.rating)})});
           if (!live()) return;
           updateMealRatingPanel(panel, data); showStatus("");
         } catch (error) { if (live()) showStatus(error.message || "평가를 저장하지 못했습니다. 다시 선택해 주세요."); }
@@ -957,7 +940,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
       <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
       <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr${data.preview && index > 0 ? ' class="preview-obscured" aria-hidden="true"' : ''}><th scope="row">${index + 1}</th>${days.map(day => {
         const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong>${item.teacher ? `<span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>` : ""}${item.location ? `<span class="weekly-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 8c0 4-5.5 8.5-5.5 8.5S4.5 12 4.5 8a5.5 5.5 0 1 1 11 0Z"/><circle cx="10" cy="8" r="1.75"/></svg><span class="sr-only">수업 위치: </span>${escapeHtml(item.location)}</span>` : ""}</div>` : '<span class="no-lesson" aria-label="수업 없음"></span>'}</td>`;
+        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong>${item.teacher ? `<span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>` : ""}${item.location ? `<span class="weekly-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 8c0 4-5.5 8.5-5.5 8.5S4.5 12 4.5 8a5.5 5.5 0 1 1 11 0Z"/><circle cx="10" cy="8" r="1.75"/></svg>${escapeHtml(item.location)}</span>` : ""}</div>` : '<span class="no-lesson" aria-label="수업 없음"></span>'}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>` + gate;
   }
 

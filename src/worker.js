@@ -1,4 +1,4 @@
-import {authHandler, memberSession} from "./auth.js";
+import {authHandler, memberSession, sessionCsrfValid, memberRatingKey} from "./auth.js";
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
@@ -783,17 +783,7 @@ function validMealRatingDate(value) {
   return validDate(value);
 }
 
-function validMealVoterId(value) {
-  return typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-}
-
-async function hashMealVoterId(value) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value.toLowerCase()));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function readMealRatingSummary(date, voterKey, env) {
+async function readMealRatingSummary(date, voterKey, env, session) {
   const aggregate = await env.DB.prepare(
     "SELECT rating, COUNT(*) AS vote_count FROM meal_ratings WHERE date = ? GROUP BY rating"
   ).bind(date).all();
@@ -826,7 +816,9 @@ async function readMealRatingSummary(date, voterKey, env) {
     total,
     average: total ? Math.round((weightedTotal / total) * 10) / 10 : null,
     myRating,
-    canVote: date === dateParam(kstToday())
+    canVote: !!session && date === dateParam(kstToday()),
+    requiresLogin: !session,
+    csrf: session?.csrf || null
   });
 }
 
@@ -841,12 +833,15 @@ async function handleMealRating(request, url, env) {
       return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
     }
 
-    const voterId = request.headers.get("X-Meal-Voter") || url.searchParams.get("voter") || "";
-    const voterKey = validMealVoterId(voterId) ? await hashMealVoterId(voterId) : null;
-    return readMealRatingSummary(date, voterKey, env);
+    const session = await memberSession(request, env);
+    const voterKey = session ? memberRatingKey(session.id) : null;
+    return readMealRatingSummary(date, voterKey, env, session);
   }
 
   if (request.method === "POST") {
+    const session = await memberSession(request, env);
+    if (!session) return json({ok: false, error: "로그인 후 평가할 수 있습니다."}, 401);
+    if (!sessionCsrfValid(request, session)) return json({ok: false, error: "페이지를 새로고침한 후 다시 평가해 주세요."}, 403);
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin) return json({ok: false, error: "허용되지 않은 요청 출처입니다."}, 403);
     if (request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
@@ -866,21 +861,17 @@ async function handleMealRating(request, url, env) {
     }
 
     const date = typeof body.date === "string" ? body.date : "";
-    const voterId = typeof body.voterId === "string" ? body.voterId : "";
     const rating = body.rating;
 
     if (!validMealRatingDate(date)) {
       return json({ ok: false, error: "날짜 형식이 올바르지 않습니다." }, 400);
-    }
-    if (!validMealVoterId(voterId)) {
-      return json({ ok: false, error: "평가 기기 정보가 올바르지 않습니다." }, 400);
     }
     if (typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
       return json({ ok: false, error: "평가 등급이 올바르지 않습니다." }, 400);
     }
 
     if (date !== dateParam(kstToday())) return json({ok: false, error: "오늘 급식에만 평가를 등록할 수 있습니다."}, 403);
-    const voterKey = await hashMealVoterId(voterId);
+    const voterKey = memberRatingKey(session.id);
     const voterLimit = await env.RATING_VOTER_LIMITER.limit({key: `${date}:${voterKey}`});
     if (!voterLimit.success) return json({ok: false, error: "평가를 너무 자주 바꾸고 있습니다. 잠시 후 다시 시도해 주세요."}, 429, {"Retry-After": "60"});
     const mealUrl = new URL(url);
@@ -893,7 +884,7 @@ async function handleMealRating(request, url, env) {
       "ON CONFLICT(date, voter_key) DO UPDATE SET rating = excluded.rating, updated_at = CURRENT_TIMESTAMP"
     ).bind(date, voterKey, rating).run();
 
-    return readMealRatingSummary(date, voterKey, env);
+    return readMealRatingSummary(date, voterKey, env, session);
   }
 
   return json({ ok: false, error: "지원하지 않는 요청 방식입니다." }, 405, {

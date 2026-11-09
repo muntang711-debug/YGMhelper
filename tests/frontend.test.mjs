@@ -22,7 +22,7 @@ async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1',width=1024,t
   w.eval(script);await flush();return {w,document:w.document,calls};
 }
 function defaultResponse(url){
-  if(url.startsWith('/api/meal-rating'))return Response.json({ok:true,total:0,counts:{},myRating:null,average:null,canVote:true});
+  if(url.startsWith('/api/meal-rating'))return Response.json({ok:true,total:0,counts:{},myRating:null,average:null,canVote:true,csrf:"fixture-csrf"});
   if(url.startsWith('/api/meal?'))return Response.json({ok:true,date:new URL(url,'https://test').searchParams.get('date'),items:['비타민C100음료 (12)','우유 (선택)'],calories:'100 Kcal'});
   if(url.startsWith('/api/classes'))return Response.json({ok:true,classes:[1,2]});
   const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'국어',teacher:'교사*'}]};});
@@ -30,18 +30,26 @@ function defaultResponse(url){
 }
 function clickDate(document,param){document.querySelector('.date-trigger').click();let button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);if(!button){document.querySelector('[data-cal-nav="1"]').click();button=document.querySelector(`[data-date="${param}"]:not(:disabled)`);}assert(button,'selectable date exists');button.click();}
 
-test('blocked storage still renders data and stable rating identity',async t=>{
+test('blocked storage still renders data and submits session CSRF without an anonymous identity',async t=>{
   const {document,calls}=await boot(t,null,{deniedStorage:true});
   assert.equal(document.querySelector('.meal-name').textContent,'비타민C100음료');
   assert.equal(document.querySelector('.meal-allergen-button').textContent,'12');
-  const initial=calls.find(c=>c.url.startsWith('/api/meal-rating')).options.headers['X-Meal-Voter'];
+  assert.equal(calls.find(c=>c.url.startsWith('/api/meal-rating')).options.headers['X-Meal-Voter'],undefined);
   document.querySelector('.meal-rating-option').click();await flush();
-  const post=calls.find(c=>c.options.method==='POST');assert.equal(JSON.parse(post.options.body).voterId,initial);
+  const post=calls.find(c=>c.options.method==='POST');assert.equal(JSON.parse(post.options.body).voterId,undefined);assert.equal(post.options.headers['X-CSRF-Token'],'fixture-csrf');
 });
 test('empty invalid-class response does not loop',async t=>{
   const {calls,document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[],items:[],invalidClass:true}):defaultResponse(url),{savedClass:'99'});
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
   assert.match(document.querySelector('#weekly-timetable').textContent,/시간표가 없습니다/);
+});
+
+test('guests see rating counts and a login link without being able to submit',async t=>{
+ const {document,calls}=await boot(t,url=>url.startsWith('/api/meal-rating')?Response.json({ok:true,total:2,counts:{4:2},average:4,myRating:null,canVote:false,requiresLogin:true,csrf:null}):defaultResponse(url));
+ assert.equal(document.querySelector('.rating-count').textContent,'2표');
+ assert.equal(document.querySelector('.rating-login').hidden,false);
+ for(const button of document.querySelectorAll('.meal-rating-option')){assert.equal(button.disabled,true);button.click();}
+ await flush();assert.equal(calls.some(c=>c.options.method==='POST'),false);
 });
 test('invalid class switches to a valid class and retries only once',async t=>{
   const {calls}=await boot(t,url=>url.startsWith('/api/timetable')&&url.includes('class=99')?Response.json({ok:true,classes:[1,2],items:[],invalidClass:true}):defaultResponse(url),{savedClass:'99'});
@@ -207,5 +215,5 @@ test('weekend meal does not request or render rating controls',async t=>{
 test('lesson locations have a custom map-pin icon and accessible label',async t=>{
  const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'과학',location:'과학실'}]};});
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,classes:[1,2],days}):defaultResponse(url));
- assert.equal(document.querySelectorAll('.weekly-location svg').length,5);assert.match(document.querySelector('.weekly-location').textContent,/수업 위치: 과학실/);
+ assert.equal(document.querySelectorAll('.weekly-location svg').length,5);assert.equal(document.querySelector('.weekly-location').textContent,'과학실');
 });

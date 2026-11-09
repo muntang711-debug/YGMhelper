@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import iconv from 'iconv-lite';
+import {createHash} from 'node:crypto';
 import worker from '../src/worker.js';
 import {dateParam, kstToday, selectableRange} from '../public/js/common.js';
 import {readBounded, SECURITY_HEADERS} from '../src/http.js';
@@ -20,7 +21,15 @@ function environment(t){
     DB:{prepare(sql){return {bind(...args){return {async all(){return {results:db.prepare(sql).all(...args)};},async first(){return db.prepare(sql).get(...args)||null;},async run(){return db.prepare(sql).run(...args);}};}};}},
     ASSETS:{async fetch(){return new Response('not found',{status:404});}}};
 }
-function request(route,body,headers={}){return new Request('https://ygmhelper.xyz'+route,body===undefined?{headers}:{method:'POST',headers:{'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.1',...headers},body:JSON.stringify(body)});}
+const authSchema=(await Promise.all(['0001_members.sql','0002_email_auth.sql','0003_session_preferences.sql'].map(name=>fs.readFile(new URL('../auth-migrations/'+name,import.meta.url),'utf8')))).join('\n');
+const sessionToken='a'.repeat(64),csrf='c'.repeat(64);
+function ratingEnvironment(t){
+ const env=environment(t);env.sqlite.exec(authSchema);
+ env.sqlite.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at,email,email_verified) VALUES (?,?,?,?,?,?,?,?)').run('member-1','student','unused','unused','test',Date.now(),'student@example.com',1);
+ for(const token of [sessionToken,'b'.repeat(64)])env.sqlite.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen,persistent) VALUES (?,?,?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'member-1',csrf,Date.now()+3600000,Date.now(),0);
+ return {...env,AUTH_DB:env.DB,MEMBERSHIP_ENABLED:'true'};
+}
+function request(route,body,headers={}){return new Request('https://ygmhelper.xyz'+route,body===undefined?{headers:{Cookie:'__Host-ygm_session='+sessionToken,...headers}}:{method:'POST',headers:{Cookie:'__Host-ygm_session='+sessionToken,'X-CSRF-Token':csrf,'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.1',...headers},body:JSON.stringify(body)});}
 function vote(overrides={}){return {date:today,voterId:voter,rating:4,...overrides};}
 function quiet(t){t.mock.method(console,'log',()=>{});t.mock.method(console,'warn',()=>{});t.mock.method(console,'error',()=>{});}
 function mockMeal(t,payload=neis){t.mock.method(globalThis,'fetch',async()=>Response.json(payload));}
@@ -63,22 +72,37 @@ test('HTTPS and canonical redirects preserve method-compatible status and query'
   assert.equal(r.status,308);assert.equal(r.headers.get('Location'),'https://ygmhelper.xyz/api/meal?date='+today);
   const www=await worker.fetch(new Request('https://www.ygmhelper.xyz/a?b=c'),env);assert.equal(www.headers.get('Location'),'https://ygmhelper.xyz/a?b=c');
 });
-test('rating baseline, normalized UUID upsert, and personal summary',async t=>{
-  quiet(t);mockMeal(t);const env=environment(t);
+test('rating identity comes from the member session regardless of supplied voter IDs',async t=>{
+  quiet(t);mockMeal(t);const env=ratingEnvironment(t);
   assert.equal((await worker.fetch(request('/api/meal-rating?date='+today),env)).status,200);
   for(const [voterId,rating]of [[voter,4],[voter.toUpperCase(),2]])assert.equal((await worker.fetch(request('/api/meal-rating',vote({voterId,rating})),env)).status,200);
   assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,1);
   const r=await worker.fetch(request('/api/meal-rating?date='+today,undefined,{'X-Meal-Voter':voter.toUpperCase()}),env);
   const body=await r.json();assert.equal(body.myRating,2);assert.equal(body.total,1);assert.equal(body.average,2);
+  assert.equal((await worker.fetch(request('/api/meal-rating',vote({voterId:'forged-device',rating:5}),{Cookie:'__Host-ygm_session='+'b'.repeat(64)}),env)).status,200);
+  assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,1);
+  assert.equal(env.sqlite.prepare('SELECT rating FROM meal_ratings').get().rating,5);
+});
+
+test('guests can read aggregates but cannot vote or obtain personal ratings',async t=>{
+ quiet(t);mockMeal(t);const env=ratingEnvironment(t);
+ await worker.fetch(request('/api/meal-rating',vote()),env);
+ const r=await worker.fetch(request('/api/meal-rating?date='+today,undefined,{Cookie:'','X-Meal-Voter':voter}),env);
+ assert.equal(r.status,200);const data=await r.json();assert.equal(data.total,1);assert.equal(data.myRating,null);assert.equal(data.canVote,false);assert.equal(data.requiresLogin,true);assert.equal(data.csrf,null);
+ for(const cookie of ['', '__Host-ygm_session=invalid', '__Host-ygm_session='+'f'.repeat(64)])assert.equal((await worker.fetch(request('/api/meal-rating',vote(),{Cookie:cookie}),env)).status,401);
+ assert.equal((await worker.fetch(request('/api/meal-rating',vote(),{'X-CSRF-Token':''}),env)).status,403);
+ env.sqlite.exec('UPDATE member_sessions SET expires_at=0');
+ assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,401);
+ assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,1);
 });
 test('future and missing meals cannot be rated',async t=>{
-  quiet(t);const env=environment(t);mockMeal(t,{RESULT:{CODE:'INFO-200'}});
+  quiet(t);const env=ratingEnvironment(t);mockMeal(t,{RESULT:{CODE:'INFO-200'}});
   assert.equal((await worker.fetch(request('/api/meal-rating',vote({date:'20990101'})),env)).status,403);
   assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,422);
   assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,0);
 });
 test('rating limits are enforced before writes',async t=>{
-  quiet(t);mockMeal(t);const env=environment(t);
+  quiet(t);mockMeal(t);const env=ratingEnvironment(t);
   for(let i=0;i<5;i++)assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,200);
   const r=await worker.fetch(request('/api/meal-rating',vote()),env);assert.equal(r.status,429);assert.equal(r.headers.get('Retry-After'),'60');
   env.RATING_IP_LIMITER={async limit(){return {success:false};}};
@@ -86,14 +110,14 @@ test('rating limits are enforced before writes',async t=>{
   assert.equal(env.sqlite.prepare('SELECT COUNT(*) AS n FROM meal_ratings').get().n,1);
 });
 test('oversized, invalid media, cross-origin and invalid rating requests',async t=>{
-  quiet(t);const env=environment(t);
+  quiet(t);const env=ratingEnvironment(t);
   assert.equal((await worker.fetch(request('/api/meal-rating',vote({extra:'x'.repeat(3000)})),env)).status,413);
   assert.equal((await worker.fetch(request('/api/meal-rating',vote(),{'Content-Type':'text/plain'}),env)).status,415);
   assert.equal((await worker.fetch(request('/api/meal-rating',vote(),{Origin:'https://example.com'}),env)).status,403);
   for(const rating of [0,6,'3',2.5])assert.equal((await worker.fetch(request('/api/meal-rating',vote({rating})),env)).status,400);
 });
 test('HEAD has no body; database exception stays private and logs no raw identifiers',async t=>{
-  quiet(t);const env=environment(t);const errors=[];t.mock.method(console,'error',x=>errors.push(x));
+  quiet(t);const env=ratingEnvironment(t);const errors=[];t.mock.method(console,'error',x=>errors.push(x));
   const h=await worker.fetch(new Request('https://ygmhelper.xyz/api/meal-rating?date='+today,{method:'HEAD'}),env);assert.equal(h.status,200);assert.equal(await h.text(),'');
   env.DB.prepare=()=>{throw Error('private SQL with '+voter);};
   const r=await worker.fetch(request('/api/meal-rating?date='+today+'&voter='+voter),env);

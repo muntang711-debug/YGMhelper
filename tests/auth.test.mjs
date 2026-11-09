@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
-import {authHandler,memberSession,passwordHash} from '../src/auth.js';
+import {authHandler,memberSession,passwordHash,memberRatingKey} from '../src/auth.js';
 import worker from '../src/worker.js';
 const schema=(await fs.readFile(new URL('../auth-migrations/0001_members.sql',import.meta.url),'utf8'))+(await fs.readFile(new URL('../auth-migrations/0002_email_auth.sql',import.meta.url),'utf8'));
 const sessionSchema=await fs.readFile(new URL('../auth-migrations/0003_session_preferences.sql',import.meta.url),'utf8');
@@ -62,8 +62,13 @@ test('mail failure rolls signup back and unverified accounts can resend',async t
 });
 test('logout and deletion enforce CSRF; deletion removes email tokens too',async t=>{
  const c=setup(t);const r=await register(c),b=await r.json(),cookie=r.headers.get('Set-Cookie').split(';')[0];assert.equal((await authHandler(req('logout',{}, {Cookie:cookie}),c.env)).status,403);
+ c.env.AUTH_DB=c.env.DB;c.db.exec(await fs.readFile(new URL('../migrations/0001_meal_ratings.sql',import.meta.url),'utf8'));
+ const ratingKey=memberRatingKey(c.db.prepare('SELECT id FROM members').get().id);
+ for(const key of [ratingKey,'other-member'])c.db.prepare('INSERT INTO meal_ratings (date,voter_key,rating) VALUES (?,?,?)').run('20261109',key,4);
  assert.equal((await authHandler(req('delete',{password:'incorrect-password'},{Cookie:cookie,'X-CSRF-Token':b.csrf}),c.env)).status,403);
+ assert.equal(c.db.prepare('SELECT COUNT(*) n FROM meal_ratings').get().n,2);
  assert.equal((await authHandler(req('delete',{password},{Cookie:cookie,'X-CSRF-Token':b.csrf}),c.env)).status,200);assert.equal(c.db.prepare('SELECT COUNT(*) n FROM members').get().n,0);
+ assert.deepEqual(c.db.prepare('SELECT voter_key FROM meal_ratings').all().map(x=>x.voter_key),['other-member']);
 });
 test('10–64 password bounds are enforced before hashing and email delivery',async t=>{
  const c=setup(t);for(const length of [9,65])assert.equal((await authHandler(req('signup',{...signup(),password:'a'.repeat(length)}),c.env)).status,400);

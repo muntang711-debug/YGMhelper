@@ -3,36 +3,24 @@ const cards=document.querySelector('#meal-order');
 const error=document.querySelector('#student-error');
 const loading=document.querySelector('#student-loading');
 const submit=form.querySelector('[type="submit"]');
-let order=[1,2,3],csrf=null,busy=false,locked=false,dragged=null;
-function lockForm(){locked=true;form.querySelectorAll('input,button').forEach(el=>el.disabled=true);cards.querySelectorAll('.grade-card').forEach(el=>el.draggable=false);cards.querySelectorAll('.grade-grip').forEach(el=>{el.tabIndex=-1;el.setAttribute('aria-disabled','true');});}
+let order=[1,2,3],csrf=null,busy=false,locked=false,selected=null,pointer=null,suppressClick=false;
+function lockForm(){locked=true;form.querySelectorAll('input,button').forEach(el=>el.disabled=true);}
 function clearError(){error.hidden=true;form.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid'));}
 function render(){
- cards.innerHTML=order.map((grade,index)=>`<div class="grade-card" draggable="true" data-grade="${grade}"><div class="grade-grip" tabindex="0" role="button" aria-label="${grade}학년 카드 이동. 좌우 방향키로 이동"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/></svg><strong>${grade}학년</strong></div></div>`).join('');
+ const before=new Map([...cards.querySelectorAll('[data-grade]')].map(el=>[Number(el.dataset.grade),el.getBoundingClientRect().left]));
+ cards.innerHTML=order.map((grade,index)=>'<div class="grade-card" data-grade="'+grade+'"><button type="button" class="grade-grip" aria-label="'+grade+'학년 카드 이동. 좌우 방향키로 이동" aria-pressed="'+(selected===grade)+'" '+(locked?'disabled':'')+'>'+grade+'학년</button></div>'+(index<2?'<svg class="order-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>':'')).join('');
+ if(!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)for(const el of cards.querySelectorAll('[data-grade]')){const from=before.get(Number(el.dataset.grade));if(from!==undefined&&el.animate)el.animate([{transform:'translateX('+(from-el.getBoundingClientRect().left)+'px)'},{transform:'translateX(0)'}],{duration:180,easing:'ease-out'});}
 }
-function move(grade,index){
- if(busy||locked)return;
- const from=order.indexOf(grade);if(from<0||index<0||index>=order.length||from===index)return;
- order.splice(from,1);order.splice(index,0,grade);clearError();render();
- cards.querySelector(`[data-grade="${grade}"] .grade-grip`).focus({preventScroll:true});
-}
-cards.addEventListener('click',event=>{const button=event.target.closest('[data-move]');if(button){const grade=Number(button.closest('[data-grade]').dataset.grade);move(grade,order.indexOf(grade)+Number(button.dataset.move));}});
-cards.addEventListener('keydown',event=>{if(!event.target.matches('.grade-grip')||!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const grade=Number(event.target.closest('[data-grade]').dataset.grade);move(grade,order.indexOf(grade)+(event.key==='ArrowLeft'?-1:1));});
-cards.addEventListener('dragstart',event=>{if(busy||locked){event.preventDefault();return;}dragged=Number(event.target.closest('[data-grade]')?.dataset.grade);event.dataTransfer.setData('text/plain',String(dragged));event.dataTransfer.effectAllowed='move';});
-cards.addEventListener('dragover',event=>{if(dragged){event.preventDefault();event.dataTransfer.dropEffect='move';}});
-cards.addEventListener('drop',event=>{event.preventDefault();const target=event.target.closest('[data-grade]');if(target&&dragged)move(dragged,order.indexOf(Number(target.dataset.grade)));dragged=null;});
-cards.addEventListener('dragend',()=>{dragged=null;});
-let touch=null;
-cards.addEventListener('pointerdown',event=>{
- if(event.pointerType==='mouse'||busy||locked||!event.target.closest('.grade-grip'))return;
- const grip=event.target.closest('.grade-grip');touch={id:event.pointerId,grade:Number(grip.closest('[data-grade]').dataset.grade),x:event.clientX};grip.setPointerCapture(event.pointerId);grip.closest('[data-grade]').classList.add('is-dragging');
-});
-cards.addEventListener('pointermove',event=>{
- if(!touch||event.pointerId!==touch.id)return;event.preventDefault();touch.x=event.clientX;
- const target=nearestCard(touch.x);cards.querySelectorAll('.grade-card').forEach(card=>card.classList.toggle('is-drop-target',card===target));
-});
-function nearestCard(x){return [...cards.children].reduce((best,card)=>{const r=card.getBoundingClientRect(),b=best.getBoundingClientRect();return Math.abs(x-r.left-r.width/2)<Math.abs(x-b.left-b.width/2)?card:best;},cards.firstElementChild);}
-cards.addEventListener('pointerup',event=>{if(!touch||event.pointerId!==touch.id)return;const current=touch;touch=null;const target=nearestCard(event.clientX);move(current.grade,order.indexOf(Number(target.dataset.grade)));cards.querySelectorAll('.grade-card').forEach(card=>card.classList.remove('is-dragging','is-drop-target'));});
-cards.addEventListener('pointercancel',()=>{touch=null;cards.querySelectorAll('.grade-card').forEach(card=>card.classList.remove('is-dragging','is-drop-target'));});
+function move(grade,index){if(busy||locked)return;const from=order.indexOf(grade);if(from<0||index<0||index>=3||from===index)return;order.splice(from,1);order.splice(index,0,grade);selected=null;clearError();render();}
+function focusGrade(grade){cards.querySelector('[data-grade="'+grade+'"] .grade-grip').focus({preventScroll:true});}
+function nearestIndex(x){const r=cards.getBoundingClientRect(),width=cards.querySelector('[data-grade]').offsetWidth||r.width/3;return Math.max(0,Math.min(2,Math.round((x-r.left-width/2)/((r.width-width)/2))));}
+ cards.addEventListener('dragstart',event=>event.preventDefault());
+ cards.addEventListener('click',event=>{if(busy||locked||suppressClick)return;const card=event.target.closest('[data-grade]');if(!card)return;const grade=Number(card.dataset.grade);if(selected===null){selected=grade;render();}else{const first=order.indexOf(selected),second=order.indexOf(grade);[order[first],order[second]]=[order[second],order[first]];selected=null;clearError();render();}focusGrade(grade);});
+ cards.addEventListener('keydown',event=>{if(!event.target.matches('.grade-grip')||!['ArrowLeft','ArrowRight','Escape'].includes(event.key))return;event.preventDefault();const grade=Number(event.target.closest('[data-grade]').dataset.grade);if(event.key==='Escape'){selected=null;render();}else move(grade,order.indexOf(grade)+(event.key==='ArrowLeft'?-1:1));focusGrade(grade);});
+ cards.addEventListener('pointerdown',event=>{const card=event.target.closest('[data-grade]');if(!card||busy||locked||event.button>0)return;pointer={id:event.pointerId,grade:Number(card.dataset.grade),x:event.clientX,y:event.clientY,dragging:false};});
+ cards.addEventListener('pointermove',event=>{if(!pointer||pointer.id!==event.pointerId)return;const dx=event.clientX-pointer.x,dy=event.clientY-pointer.y;if(!pointer.dragging){if(Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy))return;pointer.dragging=true;cards.setPointerCapture(event.pointerId);}event.preventDefault();move(pointer.grade,nearestIndex(event.clientX));});
+ function endPointer(event){if(!pointer||pointer.id!==event.pointerId)return;const current=pointer;pointer=null;if(current.dragging){suppressClick=true;setTimeout(()=>{suppressClick=false;},0);if(cards.hasPointerCapture(event.pointerId))cards.releasePointerCapture(event.pointerId);focusGrade(current.grade);}}
+ cards.addEventListener('pointerup',endPointer);cards.addEventListener('pointercancel',endPointer);
 form.addEventListener('change',clearError);
 function showError(message){error.textContent=message;error.hidden=false;for(const section of form.querySelectorAll('.quiz-question')){section.classList.remove('is-invalid');void section.offsetWidth;section.classList.add('is-invalid');}}
 async function api(path,body){

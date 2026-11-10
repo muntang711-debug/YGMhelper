@@ -25,6 +25,20 @@ test('school quiz cards can be arranged with the keyboard without native validat
  const {w,d}=await boot(t);d.querySelector('[data-grade="2"] .grade-grip').dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
  assert.equal(d.querySelector('[data-grade]').dataset.grade,'2');assert.equal(d.activeElement.closest('[data-grade]').dataset.grade,'2');assert.equal(d.querySelector('form').noValidate,true);
 });
+test('grade names are separated by arrows and can be swapped by tapping without native drag ghosts',async t=>{
+ const {w,d}=await boot(t);assert.equal(d.querySelectorAll('.order-arrow').length,2);assert.equal(d.querySelector('[draggable="true"]'),null);
+ d.querySelector('[data-grade="1"] button').click();d.querySelector('[data-grade="2"] button').click();
+ assert.deepEqual([...d.querySelectorAll('[data-grade]')].map(el=>Number(el.dataset.grade)),[2,1,3]);
+ const event=new w.Event('dragstart',{bubbles:true,cancelable:true});d.querySelector('[data-grade]').dispatchEvent(event);assert.equal(event.defaultPrevented,true);
+});
+test('pointer dragging reorders inside the row while its container retains capture',async t=>{
+ const {w,d}=await boot(t),row=d.querySelector('#meal-order');row.getBoundingClientRect=()=>({left:0,width:300});
+ let captured=false;row.setPointerCapture=()=>{captured=true;};row.hasPointerCapture=()=>captured;row.releasePointerCapture=()=>{captured=false;};
+ const event=(type,x)=>{const e=new w.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{pointerId:1,button:0,clientX:x,clientY:10});return e;};
+ d.querySelector('[data-grade="1"] button').dispatchEvent(event('pointerdown',50));row.dispatchEvent(event('pointermove',250));
+ assert.equal(captured,true);assert.deepEqual([...row.querySelectorAll('[data-grade]')].map(el=>Number(el.dataset.grade)),[2,3,1]);
+ row.dispatchEvent(event('pointerup',250));assert.equal(captured,false);assert.equal(row.querySelector('[draggable="true"]'),null);
+});
 test('exhausted student verification stays disabled after the response and on a new page load',async t=>{
  const {w,d,calls}=await boot(t,{locked:true});d.querySelector('[name="building"][value="east"]').click();d.querySelector('[name="floor"][value="4"]').click();
  d.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,0));

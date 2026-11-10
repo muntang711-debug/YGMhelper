@@ -1,10 +1,16 @@
 .student-content { max-width:480px; }
+.meal-order { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border:0; border-radius:0; overflow:visible; background:transparent; }
+.meal-order .grade-card { flex:1; border:0; background:transparent; }
+.meal-order .grade-grip { width:100%; min-height:48px; padding:10px 4px; border:0; border-radius:6px; background:transparent; color:var(--text); font:inherit; font-size:16px; font-weight:600; touch-action:pan-y; cursor:grab; }
+.meal-order .grade-grip[aria-pressed="true"] { background:var(--accent-soft); box-shadow:inset 0 -2px var(--text); }
+.meal-order .grade-grip:disabled { opacity:.45; cursor:default; }
+.order-arrow { flex:0 0 22px; width:22px; height:22px; fill:none; stroke:var(--text-soft); stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
+.meal-order .grade-card:has(.grade-grip:not(:disabled)):hover { background:transparent; }
+@media (hover:hover) and (pointer:fine) { .meal-order .grade-grip:not(:disabled):hover { background:var(--surface-muted); } }
 .quiz-question { padding:0 0 28px; margin:0 0 28px; border:0; border-bottom:1px solid var(--line); }
 .quiz-question h2 { margin:0 0 8px; font-size:16px; font-weight:600; letter-spacing:-.02em; }
 .quiz-question > p { margin:0 0 18px; color:var(--text-soft); font-size:13px; line-height:1.6; }
-.meal-order { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:hidden; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
 .grade-card { min-width:0; transition:background-color .15s; }
-.grade-card + .grade-card { border-left:1px solid var(--line); }
 .grade-grip { display:flex; align-items:center; justify-content:center; gap:10px; min-height:58px; padding:12px 8px; cursor:grab; touch-action:none; user-select:none; }
 .grade-grip svg { flex:0 0 12px; width:12px; height:16px; stroke:var(--text-soft); stroke-width:3; stroke-linecap:round; }
 .grade-grip strong { color:var(--text); font-size:15px; font-weight:500; }

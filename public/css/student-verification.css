@@ -1,41 +1,39 @@
-.student-content { max-width: 480px; }
-.student-intro { color: var(--text-soft); line-height: 1.7; margin: 14px 0 8px; }
-.student-note, .quiz-hint { color: var(--text-soft); font-size: 12px; line-height: 1.6; }
-.student-note { margin: 0 0 28px; }
-.quiz-question { margin: 0 0 20px; padding: 18px 14px; border: 1px solid var(--line); border-radius: 12px; }
-.quiz-question h2 { font-size: 17px; margin: 0 0 8px; }
-.quiz-question > p { color: var(--text-soft); font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
-.quiz-question > .quiz-hint { margin: 12px 0 0; font-size: 12px; }
-.meal-order { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-.grade-card { min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-.grade-grip { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; cursor: grab; touch-action: none; user-select: none; }
-.grade-grip svg { width: 18px; height: 18px; stroke: var(--text-soft); stroke-width: 3; stroke-linecap: round; }
-.grade-grip strong { color: var(--text); font-size: 16px; font-weight: 600; }
-.grade-moves { display: flex; justify-content: center; border-top: 1px solid var(--line); }
-.grade-moves button { display: grid; place-items: center; min-width: 36px; min-height: 40px; border: 0; background: transparent; color: var(--text); cursor: pointer; padding: 0; flex: 1; }
-.grade-moves button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.grade-moves button:disabled { color: var(--text-soft); opacity: .3; cursor: default; }
-.grade-card.is-dragging { opacity: .5; }
-.grade-grip { min-height: 112px; justify-content: center; gap: 14px; }
-.grade-grip:active { cursor: grabbing; }
-.grade-card.is-drop-target { border-color: var(--text); }
-.grade-card, .quiz-choices span { transition: background-color .15s, border-color .15s; }
-@media (hover: hover) and (pointer: fine) {
- .grade-card:has(.grade-grip:not([aria-disabled="true"])):hover { background: var(--surface-muted); border-color: var(--text-soft); }
- .quiz-choices label:hover input:not(:disabled) + span { background: var(--surface-muted); border-color: var(--text-soft); }
- .quiz-choices label:hover input:checked:not(:disabled) + span { border-color: var(--text); }
+.student-content { max-width:480px; }
+.quiz-question { padding:0 0 28px; margin:0 0 28px; border:0; border-bottom:1px solid var(--line); }
+.quiz-question h2 { margin:0 0 8px; font-size:16px; font-weight:600; letter-spacing:-.02em; }
+.quiz-question > p { margin:0 0 18px; color:var(--text-soft); font-size:13px; line-height:1.6; }
+.meal-order { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:hidden; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+.grade-card { min-width:0; transition:background-color .15s; }
+.grade-card + .grade-card { border-left:1px solid var(--line); }
+.grade-grip { display:flex; align-items:center; justify-content:center; gap:10px; min-height:58px; padding:12px 8px; cursor:grab; touch-action:none; user-select:none; }
+.grade-grip svg { flex:0 0 12px; width:12px; height:16px; stroke:var(--text-soft); stroke-width:3; stroke-linecap:round; }
+.grade-grip strong { color:var(--text); font-size:15px; font-weight:500; }
+.grade-grip:active { cursor:grabbing; }
+.grade-grip[aria-disabled="true"] { opacity:.45; cursor:default; }
+.grade-card.is-dragging { opacity:.5; }
+.grade-card.is-drop-target { background:var(--accent-soft); box-shadow:inset 0 -2px var(--text); }
+.quiz-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; min-width:0; border:0; padding:0; margin:20px 0 0; }
+.quiz-choices.floors { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.quiz-choices legend { padding:0; margin-bottom:10px; font-size:12px; color:var(--text-soft); }
+.quiz-choices label { position:relative; min-width:0; cursor:pointer; }
+.quiz-choices label + label { margin-left:-1px; }
+.quiz-choices input { position:absolute; opacity:0; width:1px; height:1px; }
+.quiz-choices span { display:grid; place-items:center; min-height:44px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:14px; transition:background-color .15s,color .15s; }
+.quiz-choices label:first-of-type span { border-radius:6px 0 0 6px; }
+.quiz-choices label:last-of-type span { border-radius:0 6px 6px 0; }
+.quiz-choices input:checked + span { position:relative; border-color:var(--text); background:var(--text); color:var(--surface); font-weight:500; }
+.quiz-choices input:disabled + span { opacity:.45; cursor:default; }
+.quiz-choices input:focus-visible + span { position:relative; z-index:1; outline:2px solid var(--accent); outline-offset:2px; }
+.grade-grip:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+.quiz-hint { color:var(--text-soft); font-size:12px; line-height:1.6; }
+.quiz-error { color:var(--auth-error,#b42332); font-size:13px; line-height:1.6; }
+.quiz-question.is-invalid .meal-order,.quiz-question.is-invalid .quiz-choices span { border-color:var(--auth-error,#b42332); }
+.quiz-question.is-invalid { animation:quiz-shake .3s ease; }
+.student-back { display:inline-block; margin-top:22px; color:var(--text-soft); font-size:13px; text-underline-offset:3px; }
+@media (hover:hover) and (pointer:fine) {
+ .grade-card:has(.grade-grip:not([aria-disabled="true"])):hover { background:var(--surface-muted); }
+ .quiz-choices label:hover input:not(:checked):not(:disabled) + span { background:var(--surface-muted); }
+ .student-back:hover { color:var(--text); }
 }
-@media (prefers-reduced-motion: reduce) { .grade-card, .quiz-choices span { transition: none; } }
-.quiz-choices { border: 0; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; min-width: 0; }
-.quiz-choices.floors { grid-template-columns: repeat(5,minmax(0,1fr)); }
-.quiz-choices legend { margin-bottom: 10px; padding: 0; font-size: 13px; color: var(--text-soft); }
-.quiz-choices label { position: relative; min-width: 0; cursor: pointer; }
-.quiz-choices input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.quiz-choices span { display: grid; place-items: center; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 14px; }
-.quiz-choices input:checked + span { border-color: var(--text); background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--text); font-weight: 600; }
-.quiz-choices input:focus-visible + span, .grade-grip:focus-visible, .grade-moves button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.quiz-error { font-size: 13px; color: var(--danger, #c83838); line-height: 1.6; }
-.quiz-question.is-invalid { border-color: var(--danger, #c83838); animation: quiz-shake .3s ease; }
-.student-back { display: inline-block; margin-top: 22px; color: var(--text-soft); font-size: 13px; text-underline-offset: 3px; }
-@keyframes quiz-shake { 25%,75% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
-@media (prefers-reduced-motion: reduce) { .quiz-question.is-invalid { animation: none; } }
+@keyframes quiz-shake { 25%,75% { transform:translateX(-3px); } 50% { transform:translateX(3px); } }
+@media (prefers-reduced-motion:reduce) { .grade-card,.quiz-choices span { transition:none; } .quiz-question.is-invalid { animation:none; } }

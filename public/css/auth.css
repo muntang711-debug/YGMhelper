@@ -69,6 +69,18 @@
 .mail-help { margin-top: 24px; color: var(--text-soft); font-size: 13px; line-height: 1.7; }
 .mail-help summary { cursor: pointer; }
 
+.auth-submit, .account-logout, .auth-links a, .auth-content .primary-link, .check-mark { transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s; }
+@media (hover: hover) and (pointer: fine) {
+ .auth-submit:not(:disabled):not([aria-busy="true"]):hover { background: var(--accent); color: var(--accent-contrast); }
+ .auth-submit.danger:not(:disabled):hover { background: var(--auth-error); border-color: var(--auth-error); color: var(--surface-solid); }
+ .account-logout:not(:disabled):hover, .auth-content .primary-link:hover { background: var(--surface-muted); border-color: var(--text-soft); }
+ .auth-links a:hover, .auth-content .auth-bottom a:hover, .student-back:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
+ .check-label:hover input:not(:disabled) + .check-mark { border-color: var(--text); box-shadow: 0 0 0 3px var(--accent-soft); }
+ .mail-help summary:hover { color: var(--text); }
+}
+.auth-submit:not(:disabled):active, .account-logout:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--text-soft); }
+@media (prefers-reduced-motion: reduce) { .auth-submit, .account-logout, .auth-links a, .auth-content .primary-link, .check-mark { transition: none; } }
+
 /* Shared form rhythm; account settings expand into columns on desktop. */
 .auth-page { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; letter-spacing: -.015em; }
 .auth-content { width: min(100%,460px); margin: 36px auto 60px; }

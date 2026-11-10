@@ -24,3 +24,10 @@
 .admin-seed-label { display: block; margin: 16px 0 8px; font-size: 13px; color: var(--text-soft); }
 #otp-seed { width: 100%; font: inherit; font-size: 13px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); }
 .admin-content [hidden] { display: none !important; }
+.admin-content button:not(.auth-submit) { transition: background-color .15s, border-color .15s; }
+@media (hover: hover) and (pointer: fine) {
+ .admin-content button:not(.auth-submit):not(:disabled):hover { background: var(--surface-muted); border-color: var(--text-soft); }
+ .admin-content button[aria-pressed="true"]:not(:disabled):hover { border-color: var(--text); background: var(--accent-soft); }
+}
+.admin-content button:not(.auth-submit):not(:disabled):active { box-shadow: inset 0 0 0 1px var(--text-soft); }
+@media (prefers-reduced-motion: reduce) { .admin-content button:not(.auth-submit) { transition: none; } }

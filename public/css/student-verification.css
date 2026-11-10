@@ -19,6 +19,13 @@
 .grade-grip { min-height: 112px; justify-content: center; gap: 14px; }
 .grade-grip:active { cursor: grabbing; }
 .grade-card.is-drop-target { border-color: var(--text); }
+.grade-card, .quiz-choices span { transition: background-color .15s, border-color .15s; }
+@media (hover: hover) and (pointer: fine) {
+ .grade-card:has(.grade-grip:not([aria-disabled="true"])):hover { background: var(--surface-muted); border-color: var(--text-soft); }
+ .quiz-choices label:hover input:not(:disabled) + span { background: var(--surface-muted); border-color: var(--text-soft); }
+ .quiz-choices label:hover input:checked:not(:disabled) + span { border-color: var(--text); }
+}
+@media (prefers-reduced-motion: reduce) { .grade-card, .quiz-choices span { transition: none; } }
 .quiz-choices { border: 0; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; min-width: 0; }
 .quiz-choices.floors { grid-template-columns: repeat(5,minmax(0,1fr)); }
 .quiz-choices legend { margin-bottom: 10px; padding: 0; font-size: 13px; color: var(--text-soft); }

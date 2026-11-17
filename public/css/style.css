@@ -55,6 +55,14 @@
   --radius-md: 14px;
   --scrollbar-thumb: rgba(21, 24, 29, .20);
 }
+.section-heading > div:first-child:has(.timetable-switch) { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.timetable-switch { display:inline-flex; border:1px solid var(--line); border-radius:7px; padding:3px; gap:2px; }
+.timetable-switch button { background:transparent; color:var(--text-soft); font:inherit; font-size:12px; padding:7px 10px; border-radius:4px; cursor:pointer; }
+.timetable-switch button[aria-pressed="true"] { background:var(--surface-muted); color:var(--text); font-weight:600; }
+.timetable-switch button:disabled { opacity:.45; cursor:default; }
+.timetable-switch button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.custom-select[hidden] { display:none !important; }
+@media (hover:hover) and (pointer:fine) { .timetable-switch button:not(:disabled):hover { color:var(--text); background:var(--surface-muted); } }
 
 :root[data-theme="dark"] {
   color-scheme: dark;

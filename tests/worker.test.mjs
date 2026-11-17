@@ -44,7 +44,7 @@ function mockComci(t,data){
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
   const token='a1'.repeat(32);
   const wrapped=`<script>window.__HourRequestToken="${token}";</script>/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;
-  t.mock.method(globalThis,'fetch',async (url,options)=>{if(new URL(String(url)).pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});calls.push(String(url));if(new URL(String(url)).pathname==='/st')return new Response(iconv.encode(wrapped,'euc-kr'));assert.equal(options.headers['X-Hour-Token'],token);assert.equal(options.cf.cacheTtl,0);return String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',12345]]}):Response.json(data);});
+  t.mock.method(globalThis,'fetch',async (url,options)=>{if(new URL(String(url)).pathname==='/hub/SchoolSchedule')return Response.json({RESULT:{CODE:'INFO-200'}});calls.push(String(url));if(new URL(String(url)).pathname==='/st')return new Response(iconv.encode(wrapped,'euc-kr'));assert.equal(options.headers['X-Hour-Token'],token);assert.equal(options.cf.cacheTtl,0);return String(url).includes('991l')?Response.json({학교검색:[[0,'서울','용곡중학교',40807]]}):Response.json(data);});
   return calls;
 }
 
@@ -106,10 +106,22 @@ test('unverified members can read ratings but only verified students can submit'
  env.sqlite.prepare('UPDATE members SET student_verified_at=?').run(Date.now());
  assert.equal((await worker.fetch(request('/api/meal-rating',vote()),env)).status,200);
 });
+test('teacher timetable requires student verification and uses only live daily lessons for school 40807',async t=>{
+ quiet(t);const env=ratingEnvironment(t),data=comciData();mockComci(t,data);
+ const path='/api/teacher-timetable?date='+monday+'&teacher=1';
+ assert.equal((await worker.fetch(request(path,undefined,{Cookie:''}),env)).status,401);
+ env.sqlite.exec('UPDATE members SET student_verified_at=NULL');assert.equal((await worker.fetch(request(path),env)).status,403);
+ env.sqlite.prepare('UPDATE members SET student_verified_at=?').run(Date.now());
+ const r=await worker.fetch(request(path),env);assert.equal(r.status,200);const body=await r.json();assert.equal(body.schoolCode,40807);assert.equal(body.mode,'teacher');assert.equal(body.days.length,5);
+ assert.equal(body.days[0].items[0].subject,'국어');assert.match(body.days[0].items[0].classLabel,/1-1/);assert.equal(body.days[0].items.length,1);
+ assert.equal((await worker.fetch(request(path.replace('teacher=1','teacher=999')),env)).status,400);
+ data.자료104[1][1][1]=[0];data.자료104[1][2][1]=[0];data.자료104[2][1][1]=[0];data.자료104[2][2][1]=[0];for(let n=1;n<=3;n++)data.자료104[3][n][1]=[0];mockComci(t,data);
+ const empty=await (await worker.fetch(request(path),env)).json();assert.deepEqual(empty.days[0].items,[]);
+});
 
 test('full teacher names are filtered on the server until student verification, including weekly responses',async t=>{
  quiet(t);const env=ratingEnvironment(t),data=comciData();data.자료101=['','교사*','실명교'];mockComci(t,data);
- const month=Number(monday.slice(4,6));env.TEACHER_NAME_MAP=JSON.stringify({schoolCode:12345,year:Number(monday.slice(0,4))-(month<3?1:0),semester:month>=3&&month<=7?1:2,teachers:{1:{masked:'교사*',full:'교사명'}}});
+ const month=Number(monday.slice(4,6));env.TEACHER_NAME_MAP=JSON.stringify({schoolCode:40807,year:Number(monday.slice(0,4))-(month<3?1:0),semester:month>=3&&month<=7?1:2,teachers:{1:{masked:'교사*',full:'교사명'}}});
  env.sqlite.exec('UPDATE members SET student_verified_at=NULL');
  const route='/api/timetable?date='+monday+'&grade=1&class=1&view=week';
  const masked=await (await worker.fetch(request(route),env)).json();

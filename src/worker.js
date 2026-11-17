@@ -741,6 +741,36 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
   });
 }
 
+async function handleTeacherTimetable(url, env) {
+  const date=url.searchParams.get('date')||'',week=validDate(date)?comciganWeekForDate(date):null;
+  const requested=url.searchParams.get('teacher')||'';
+  if(week===null||!validDate(date)||!/^\d{0,3}$/.test(requested))return json({ok:false,error:'조회 날짜와 선생님을 확인해 주세요.'},400);
+  const data=await fetchComciganWeek(week);
+  if(data.school.code!==40807)throw new HttpError('COMCIGAN_ERROR','학교 코드를 확인하지 못했습니다.');
+  const names=readTeacherNames(env.TEACHER_NAME_MAP,date,40807);
+  const teachers=data.teachers.flatMap((name,id)=>id&&name?[{id:String(id),name:teacherDisplayName(name,id,names)}]:[]);
+  const selected=requested||teachers[0]?.id;
+  if(!teachers.some(t=>t.id===selected))return json({ok:false,error:'선생님을 찾을 수 없습니다.'},400);
+  const monday=new Date(utcDayValue(dateParts(date))),weekday=monday.getUTCDay();monday.setUTCDate(monday.getUTCDate()-(weekday===0?6:weekday-1));
+  const days=Array.from({length:5},(_,i)=>{const d=new Date(monday);d.setUTCDate(d.getUTCDate()+i);return {date:dateParam(d),items:[]};});
+  for(let day=1;day<=5;day++){
+    const periods=new Map();
+    for(let grade=1;grade<=3;grade++)for(const classNumber of classNumbersFromComcigan(data,String(grade))){
+      const daily=data.dailyTimetable?.[grade]?.[classNumber]?.[day],original=data.originalTimetable?.[grade]?.[classNumber]?.[day];
+      if(daily&&(!Array.isArray(daily)||!Number.isInteger(Number(daily[0]))||Number(daily[0])<0||Number(daily[0])>16||daily.length>17))throw new HttpError('COMCIGAN_INVALID_RESPONSE','교사 시간표 형식을 확인하지 못했습니다.');
+      for(let period=1;period<=Number(daily?.[0]||0);period++){
+        const lesson=decodeComciganLesson(daily[period],data.subjects,data.teachers);if(String(lesson.teacherId)!==selected||!lesson.subject)continue;
+        if(!periods.has(period))periods.set(period,{period,subjects:new Set(),classes:new Set(),locations:new Set(),changed:false});
+        const item=periods.get(period);item.subjects.add(lesson.subject);item.classes.add(`${grade}-${classNumber}`);
+        const location=decodeComciganLocation(data.locationMatrix?.[grade]?.[classNumber]?.[day]?.[period]);if(location)item.locations.add(location);
+        item.changed ||= Boolean(lesson.changed||daily[period]!==original?.[period]);
+      }
+    }
+    days[day-1].items=[...periods.values()].sort((a,b)=>a.period-b.period).map(item=>({period:item.period,subject:[...item.subjects].join(' / '),classLabel:[...item.classes].join(', '),location:[...item.locations].join(' / '),changed:item.changed}));
+  }
+  return json({ok:true,date,school:data.school.name,schoolCode:40807,mode:'teacher',teachers,teacherId:selected,teacherName:teachers.find(t=>t.id===selected).name,weekStart:days[0].date,days,source:'comcigan'});
+}
+
 async function handleMeal(url, env) {
   const date = url.searchParams.get("date") || "";
 
@@ -919,7 +949,7 @@ export default {
         response = await authHandler(request, env, ctx);
       } else if (isApi) {
         const rating = url.pathname === "/api/meal-rating";
-        const paths = ["/api/meal", "/api/classes", "/api/timetable", "/api/meal-rating"];
+        const paths = ["/api/meal", "/api/classes", "/api/timetable", "/api/meal-rating", "/api/teacher-timetable"];
         const allowed = rating ? ["GET", "HEAD", "POST"] : ["GET", "HEAD"];
         if (!paths.includes(url.pathname)) {
           response = json({ok: false, error: "API 경로를 찾을 수 없습니다."}, 404);
@@ -929,6 +959,10 @@ export default {
           const effectiveRequest = request.method === "HEAD" ? new Request(request, {method: "GET"}) : request;
           if (rating) response = await handleMealRating(effectiveRequest, url, env);
           else if (url.pathname === "/api/meal") response = await handleMeal(url, env);
+          else if (url.pathname === "/api/teacher-timetable") {
+            const session=await memberSession(request,env);
+            response=!session?json({ok:false,error:'로그인 후 이용해 주세요.'},401):!isVerifiedStudent(session)?json({ok:false,error:'학생 인증 후 이용할 수 있습니다.'},403):await handleTeacherTimetable(url,env);
+          }
           else {
             const session = await memberSession(request, env);
             const timetableEnv = {...env, TEACHER_NAMES_VERIFIED: isVerifiedStudent(session)};

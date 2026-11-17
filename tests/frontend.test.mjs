@@ -43,6 +43,12 @@ test('empty invalid-class response does not loop',async t=>{
   assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,1);
   assert.match(document.querySelector('#weekly-timetable').textContent,/시간표가 없습니다/);
 });
+test('verified students can switch to teacher timetable and select a teacher with the shared dropdown',async t=>{
+ const {w,document,calls}=await boot(t,url=>url.startsWith('/api/teacher-timetable')?Response.json({ok:true,mode:'teacher',teacherId:'1',teacherName:'교사명',teachers:[{id:'1',name:'교사명'}],days:Array.from({length:5},(_,i)=>({date:'2026110'+(2+i),items:[{period:1,subject:'과학',classLabel:'1-1'}]}))}):defaultResponse(url));
+ const toggle=document.querySelector('[data-timetable-mode="teacher"]');assert.equal(toggle.disabled,true);
+ w.dispatchEvent(new w.CustomEvent('membership-state',{detail:{studentVerified:true}}));assert.equal(toggle.disabled,false);toggle.click();await flush();
+ assert(calls.some(c=>c.url.startsWith('/api/teacher-timetable')));assert.equal(document.querySelector('[data-select="grade"]').hidden,true);assert.equal(document.querySelector('[data-select="teacher"]').hidden,false);assert.match(document.querySelector('#weekly-timetable').textContent,/과학/);assert.match(document.querySelector('#weekly-timetable').textContent,/1-1/);
+});
 
 test('guests see rating counts and a login link without being able to submit',async t=>{
  const {document,calls}=await boot(t,url=>url.startsWith('/api/meal-rating')?Response.json({ok:true,total:2,counts:{4:2},average:4,myRating:null,canVote:false,requiresLogin:true,csrf:null}):defaultResponse(url));

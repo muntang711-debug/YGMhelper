@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {decodeComciganPage} from '../src/comcigan.js';
+import iconv from 'iconv-lite';
 
 const encode = (text, key) => Array.from({length:text.length}, (_, i) =>
   (text.charCodeAt(i) ^ ((key + i * 13) & 255)).toString(16).padStart(4, '0')).join('');
@@ -13,6 +14,15 @@ test('Comcigan wrapper decodes Korean and resets XOR position for each block', (
 test('plain Comcigan pages remain supported', () => {
   const page = "sc_data('123_ ./36179?991l";
   assert.equal(decodeComciganPage(page), page);
+});
+test('per-string Base64 XOR EUC-KR layer is decoded as data with a rotating literal key',async()=>{
+ const {comciganTransport,decodeComciganText}=await import('../src/comcigan.js');
+ const source="function Qfixture(value) {if(value==undefined || value==='') return '';var key=String.fromCharCode(13,27,44);var b=atob(value);return new TextDecoder('euc-kr',{fatal:true}).decode(b);}";
+ const key=comciganTransport(source).textKey;assert.deepEqual(key,[13,27,44]);
+ const bytes=iconv.encode('용곡중학교 40807','euc-kr');const encoded=Buffer.from(bytes.map((b,i)=>b^key[i%key.length])).toString('base64');
+ assert.equal(decodeComciganText(encoded,key),'용곡중학교 40807');assert.equal(decodeComciganText('',key),'');assert.equal(decodeComciganText(0,key),0);assert.equal(decodeComciganText('legacy',null),'legacy');
+ assert.throws(()=>decodeComciganText('not-base64!',key));assert.throws(()=>decodeComciganText('a'.repeat(4097),key));
+ assert.throws(()=>comciganTransport(source.replace('13,27,44','999,27,44')));
 });
 test('request token is read only from a bounded literal assignment', async () => {
   const {comciganTransport}=await import('../src/comcigan.js');

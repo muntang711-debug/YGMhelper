@@ -39,7 +39,14 @@ export function comciganTransport(html) {
  const version=html.match(/function\s+QAjaxTimetable\b[\s\S]*?['"]_(enc[25])['"]/)?.[1]||'enc2';
  const encryptedSchoolSearch=/function\s+school_ra\([^)]*\)\s*\{[\s\S]*?url\s*:\s*['"][^'"]+['"]\s*\+\s*\w+\s*\+\s*['"]_enc2['"]/.test(html);
  const requestToken=html.match(/window\.__HourRequestToken\s*=\s*['"]([A-Za-z0-9_-]{32,256})['"]/)?.[1]||null;
- return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null,schoolSearchSuffix:packed?'_'+version:encryptedSchoolSearch?'_enc2':'',packedSchoolSearch:!!packed,endpoint:packed?.[1],searchPrefix:packed?.[2],payloadSuffix:key?'_'+version:'',requestToken};
+ const textMatch=html.match(/function\s+[\w$]+\([^)]*\)\s*\{[^{}]{0,200}?String\.fromCharCode\(([\d,\s]+)\)[\s\S]{0,800}?TextDecoder\(['"]euc-kr['"]/);
+ const textKey=textMatch?textMatch[1].split(',').map(x=>Number(x.trim())):null;
+ if(textKey&&(textKey.length>64||textKey.some(x=>!Number.isInteger(x)||x<0||x>255)))throw new HttpError('COMCIGAN_ERROR','컴시간 문자열 형식을 확인하지 못했습니다.');
+ return {schoolDivisor:selector?Number(selector[1]):null,schoolOffset:selector?Number(selector[2]):3,encryptionKey:key||null,schoolSearchSuffix:packed?'_'+version:encryptedSchoolSearch?'_enc2':'',packedSchoolSearch:!!packed,endpoint:packed?.[1],searchPrefix:packed?.[2],payloadSuffix:key?'_'+version:'',requestToken,textKey};
+}
+export function decodeComciganText(value,key){
+ if(!key||typeof value!=='string'||value==='')return value;
+ try{if(value.length>4096)throw Error();const text=atob(value);if(btoa(text)!==value)throw Error();const bytes=Uint8Array.from(text,(c,i)=>c.charCodeAt(0)^key[i%key.length]);return new TextDecoder('euc-kr',{fatal:true}).decode(bytes);}catch{throw new HttpError('COMCIGAN_ERROR','컴시간 문자열을 해석하지 못했습니다.');}
 }
 export async function decodeComciganPayload(text, keyHex) {
  text=text.replace(/\0+$/g,'');

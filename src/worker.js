@@ -3,7 +3,7 @@ import {adminHandler} from "./admin.js";
 import {readTeacherNames, teacherDisplayName} from "./teacher-names.js";
 import { validDate, dateParam, kstToday } from "../public/js/common.js";
 import { HttpError, readBounded, SECURITY_HEADERS } from "./http.js";
-import { decodeComciganPage, comciganTransport, decodeComciganPayload } from "./comcigan.js";
+import { decodeComciganPage, comciganTransport, decodeComciganPayload, decodeComciganText } from "./comcigan.js";
 
 const SCHOOL = {
   officeCode: "B10",
@@ -233,7 +233,7 @@ async function getComciganCodes(refresh = false) {
   const code0 = html.match(/sc_data\('([0-9]+)_/)?.[1];
   const teacherCode = html.match(/Q성명\(자료\.자료(\d+)/)?.[1];
   const subjectCode = html.match(/자료\.자료(\d+)\[sb\]/)?.[1];
-  const updateCode = html.match(/=H시간표\.자료(\d+)/)?.[1];
+  const updateCode = html.match(/=H시간표\.자료(\d+)/)?.[1] || html.match(/수정일:\s*['"]\s*\+\s*[\w$]+\(\s*H시간표\.자료(\d+)\s*\)/)?.[1];
   const changedCode = html.match(/일일자료=Q자료\(자료\.자료(\d+)/)?.[1];
   const originalCode = html.match(/원자료=Q자료\(자료\.자료(\d+)/)?.[1];
 
@@ -280,7 +280,7 @@ async function resolveComciganSchool(codes) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간 학교 검색 응답을 해석하지 못했습니다.");
   }
 
-  const schools = Array.isArray(payload?.학교검색) ? payload.학교검색 : [];
+  const schools = Array.isArray(payload?.학교검색) ? payload.학교검색.map(row=>Array.isArray(row)?row.map((value,i)=>i?decodeComciganText(value,codes.textKey):value):row) : [];
   const exactMatches = schools.filter(
     (school) => school?.[1] === SCHOOL.region && school?.[2] === SCHOOL.name
   );
@@ -450,8 +450,10 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간 시간표 응답을 해석하지 못했습니다.");
   }
 
-  const teachers = response[`자료${codes.teacherCode}`];
-  const subjects = response[`자료${codes.subjectCode}`];
+  const decodeNames=value=>Array.isArray(value)?value.map(text=>decodeComciganText(text,codes.textKey)):value;
+  const teachers = decodeNames(response[`자료${codes.teacherCode}`]);
+  const subjects = decodeNames(response[`자료${codes.subjectCode}`]);
+  response[`자료${codes.updateCode}`]=decodeComciganText(response[`자료${codes.updateCode}`],codes.textKey);
   const dailyTimetable = response[`자료${codes.changedCode}`];
   const originalTimetable = response[`자료${codes.originalCode}`];
   const locationMatrix = response[`자료${codes.locationCode}`];

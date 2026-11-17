@@ -40,7 +40,7 @@ function comciData(){
 }
 function mockComci(t,data){
   const calls=[];
-  const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] =H시간표.자료103 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
+  const html="./36179?991l sc_data('123_ Q성명(자료.자료101 자료.자료102[sb] '수정일: '+QnmsbChange(H시간표.자료103) 일일자료=Q자료(자료.자료104 원자료=Q자료(자료.자료105";
   const hex=Array.from({length:html.length},(_,i)=>(html.charCodeAt(i)^((100+i*13)&255)).toString(16).padStart(4,'0')).join('');
   const token='a1'.repeat(32);
   const wrapped=`<script>window.__HourRequestToken="${token}";</script>/* hour-obfuscated-v2 */(function(a,k){})([[0,"${hex}"]],100);`;

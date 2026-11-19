@@ -68,9 +68,8 @@ function WeeklyTimetable({data, selectedDate, grade, className}) {
 
 export function mountWeeklyTimetable(container) {
   const root = createRoot(container);
-  return function render(props, loading = false) {
+  return function render(props) {
     container.classList.toggle('is-preview', !!props?.data.preview);
-    flushSync(() => root.render(props ? <WeeklyTimetable {...props} />
-      : loading ? <p className="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p> : null));
+    flushSync(() => root.render(props ? <WeeklyTimetable {...props} /> : null));
   };
 }

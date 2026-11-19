@@ -1307,6 +1307,18 @@ body.modal-open {
 .weekly-table th span { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; font-variant-numeric: tabular-nums; opacity: .75; }
 .weekly-table tbody th { color: var(--text-soft); font-size: 11px; font-weight: 500; }
 .weekly-table td { height: 54px; padding: 3px; vertical-align: middle; }
+.weekly-skeleton-table i {
+  display: block;
+  width: min(60%, 42px);
+  height: 8px;
+  margin: 0 auto;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+.weekly-skeleton-table i + i { width: min(40%, 28px); height: 6px; margin-top: 6px; }
+.weekly-skeleton-table thead i { height: 10px; }
+.weekly-skeleton-table thead i + i { height: 8px; }
+[data-theme="dark"] .weekly-skeleton-table thead i { background: rgb(255 255 255 / 20%); }
 
 .weekly-table tbody tr:last-child > * { border-bottom: 0; }
 .weekly-table thead .is-selected { background: color-mix(in srgb, var(--text) 12%, var(--surface-solid)); }

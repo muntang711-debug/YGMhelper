@@ -147,18 +147,18 @@ test('weekly table renders five dates, changed lessons, safe text and selected d
  assert(calls.some(c=>c.url.includes('view=week')));
  assert.equal(document.querySelector('#timetable-card'),null);
  assert.equal(document.querySelector('.period-card'),null);
- assert.equal(document.querySelectorAll('.weekly-table thead th').length,6);
- assert.equal(document.querySelectorAll('.weekly-table td').length,5);
- assert.equal(document.querySelector('.weekly-table img'),null);
- assert.match(document.querySelector('.weekly-table').textContent,/<img src=x>/);
- assert.equal(document.querySelectorAll('.weekly-table td.is-changed').length,1);
+ assert.equal(document.querySelectorAll('#weekly-timetable .weekly-table thead th').length,6);
+ assert.equal(document.querySelectorAll('#weekly-timetable .weekly-table td').length,5);
+ assert.equal(document.querySelector('#weekly-timetable .weekly-table img'),null);
+ assert.match(document.querySelector('#weekly-timetable .weekly-table').textContent,/<img src=x>/);
+ assert.equal(document.querySelectorAll('#weekly-timetable .weekly-table td.is-changed').length,1);
  assert.equal(document.querySelectorAll('.weekly-change').length,0);
- assert.equal(document.querySelector('.weekly-table td.is-changed').getAttribute('aria-label'),'변경된 수업');
- assert.match(document.querySelector('.weekly-table').textContent,/김민수/);
+ assert.equal(document.querySelector('#weekly-timetable .weekly-table td.is-changed').getAttribute('aria-label'),'변경된 수업');
+ assert.match(document.querySelector('#weekly-timetable .weekly-table').textContent,/김민수/);
  assert.equal(document.querySelector('.weekly-hint'),null);
  document.querySelector('.date-trigger').click();document.querySelector('.calendar-day[tabindex="0"]').dispatchEvent(new document.defaultView.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
  clickDate(document,days[1].date);await flush();
- assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+Number(days[1].date.slice(4,6))+'.'+Number(days[1].date.slice(6,8)));
+ assert.equal(document.querySelector('#weekly-timetable .weekly-table thead .is-selected').textContent,'화'+Number(days[1].date.slice(4,6))+'.'+Number(days[1].date.slice(6,8)));
 });
 
 test('weekly timetable error offers one retry and restores the table',async t=>{
@@ -181,8 +181,24 @@ test('refresh reloads the visible mobile timetable without requesting hidden mea
  document.querySelector('#refresh-timetable').click();await flush();
  const added=calls.slice(before);
  assert.equal(added.filter(c=>c.url.startsWith('/api/timetable')).length,1);
+ assert(added.some(c=>c.url.startsWith('/api/timetable') && c.url.includes('&fresh=1')));
  assert.equal(added.filter(c=>c.url.startsWith('/api/meal?')).length,0);
  assert.equal(document.querySelector('#refresh-timetable').disabled,false);
+});
+
+test('timetable shows a five-day skeleton until the mobile request resolves',async t=>{
+ let finish;
+ const {document}=await boot(t,url=>url.startsWith('/api/timetable?')?new Promise(resolve=>{finish=()=>resolve(defaultResponse(url));}):defaultResponse(url),{width:390});
+ const skeleton=document.querySelector('#weekly-skeleton');
+ assert(skeleton.hidden);
+ document.querySelector('[data-view="timetable"]').click();
+ assert(!skeleton.hidden);
+ assert.equal(skeleton.querySelectorAll('thead th').length,6);
+ assert.equal(skeleton.querySelectorAll('tbody td').length,35);
+ finish();await flush();
+ assert(skeleton.hidden);
+ assert(!document.querySelector('#weekly-timetable').hidden);
+ assert(document.querySelector('#weekly-timetable .weekly-table'));
 });
 
 test('refresh stays busy until the request fails and then becomes usable again',async t=>{
@@ -209,7 +225,7 @@ test('changing a date within the loaded week only updates the selection',async t
  const monday=new Date(fixtureRange().minDate);monday.setUTCDate(monday.getUTCDate()+1);
  clickDate(document,helpers.dateParam(monday));await flush();
  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before);
- assert.equal(document.querySelector('.weekly-table thead .is-selected').textContent,'화'+(monday.getUTCMonth()+1)+'.'+monday.getUTCDate());
+ assert.equal(document.querySelector('#weekly-timetable .weekly-table thead .is-selected').textContent,'화'+(monday.getUTCMonth()+1)+'.'+monday.getUTCDate());
  document.querySelector('#refresh-timetable').click();await flush();
  assert.equal(calls.filter(c=>c.url.startsWith('/api/timetable')).length,before+1);
 });
@@ -217,12 +233,12 @@ test('changing a date within the loaded week only updates the selection',async t
 test('guest preview renders NEIS table geometry with obscured lower rows and overlay signup links',async t=>{
  const days=Array.from({length:5},(_,i)=>{const d=new Date(fixtureRange().minDate);d.setUTCDate(d.getUTCDate()+i);return {date:helpers.dateParam(d),items:[{period:1,subject:'NEIS 미리보기'}]};});
  const {document}=await boot(t,url=>url.startsWith('/api/timetable')?Response.json({ok:true,preview:true,classes:[1,2],days,items:days[0].items}):defaultResponse(url));
- assert.equal(document.querySelectorAll('.weekly-table tbody tr').length,7);
+ assert.equal(document.querySelectorAll('#weekly-timetable .weekly-table tbody tr').length,7);
  assert(document.querySelector('#weekly-timetable').classList.contains('is-preview'));
  assert.equal(document.querySelectorAll('.preview-obscured[aria-hidden="true"]').length,6);
  assert.equal(document.querySelector('.membership-gate a').getAttribute('href'),'/login.html');
- assert.equal(document.querySelectorAll('.weekly-table td').length,35);
- assert.equal(document.querySelector('.weekly-table').textContent.includes('교사'),false);
+ assert.equal(document.querySelectorAll('#weekly-timetable .weekly-table td').length,35);
+ assert.equal(document.querySelector('#weekly-timetable .weekly-table').textContent.includes('교사'),false);
 });
 
 test('weekend meal does not request or render rating controls',async t=>{

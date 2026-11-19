@@ -916,6 +916,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
   }
 
   const weeklyContainer = document.getElementById("weekly-timetable");
+  const weeklySkeleton = document.getElementById("weekly-skeleton");
   let timetableModule;
   let renderTimetable;
 
@@ -928,11 +929,19 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
 
   function renderWeeklyTimetable(data) {
     renderTimetable({data, selectedDate: formatDateParam(state.date), grade: state.grade, className: state.className});
+    weeklySkeleton.hidden = true;
+    weeklyContainer.hidden = false;
   }
 
   function showTimetableLoading() {
-    if (renderTimetable) renderTimetable(null, true);
-    else weeklyContainer.innerHTML = '<p class="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p>';
+    if (!weeklySkeleton.firstChild) {
+      const headers = '<th><i></i><i></i></th>'.repeat(5);
+      const cells = '<td><i></i><i></i></td>'.repeat(5);
+      const rows = Array.from({length: 7}, (_, i) => `<tr><th scope="row">${i + 1}</th>${cells}</tr>`).join('');
+      weeklySkeleton.innerHTML = `<table class="weekly-table weekly-skeleton-table" aria-hidden="true"><thead><tr><th>교시</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    weeklyContainer.hidden = true;
+    weeklySkeleton.hidden = false;
   }
 
   let classSelect = null;
@@ -1050,6 +1059,7 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     } catch (error) {
       if (!token.current()) return;
 
+      weeklySkeleton.hidden = true;
       if (renderTimetable) renderTimetable(null);
       else weeklyContainer.replaceChildren();
       document.querySelector(".weekly-section").hidden = true;

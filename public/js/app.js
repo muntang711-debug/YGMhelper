@@ -1036,12 +1036,12 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     let success = false;
     try {
       const path = teacherMode ? "/api/teacher-timetable?date=" + formatDateParam(date) + "&teacher=" + encodeURIComponent(state.teacherId) : "/api/timetable?date=" + formatDateParam(date) + "&grade=" + grade + "&class=" + className + "&view=week";
-      const [data, view] = await Promise.all([fetchJson(path, {signal: token.signal}), loadTimetableModule()]);
+      const [data, view] = await Promise.all([fetchJson(force ? path + "&fresh=1" : path, {signal: token.signal}), loadTimetableModule()]);
       if (!token.current()) return;
       if (teacherMode) { state.teacherId = data.teacherId; teacherSelect.setOptions(data.teachers.map(t=>({value:t.id,label:t.name})),data.teacherId); }
       if (!teacherMode && data.classes?.length) applyClassOptions(data.classes, true, date, grade);
       if (!teacherMode && state.className !== className && !retry) {
-        token.finish(true); await loadTimetable({retry: true}); return;
+        token.finish(true); await loadTimetable({force, retry: true}); return;
       }
 
       renderTimetable ??= view.mountWeeklyTimetable(weeklyContainer);

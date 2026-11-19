@@ -53,6 +53,7 @@
     }
   },
   "vars": {
+    "COMCIGAN_SCHOOL_CODE": "40807",
     "MEMBERSHIP_ENABLED": "true",
     "REGISTRATION_OPEN": "true",
     "TURNSTILE_HOSTNAMES": "ygmhelper.xyz",

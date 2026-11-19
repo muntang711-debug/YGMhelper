@@ -166,6 +166,7 @@ function extractRows(payload, serviceKey) {
 
 const COMCIGAN_URL = "http://comci.net:4082";
 const COMCIGAN_CACHE_TTL = 30;
+const COMCIGAN_CURRENT_WEEK_TTL = 15;
 
 let comciganCodeCache = null;
 let comciganCodeCacheExpiresAt = 0;
@@ -412,35 +413,48 @@ function decodeComciganLocation(value) {
   return location.replace(/^\d+$/, "").trim();
 }
 
-async function fetchComciganWeek(weekNum) {
+async function fetchComciganWeek(weekNum, env, fresh = false) {
+  const configuredCode = Number(env.COMCIGAN_SCHOOL_CODE);
+  const schoolCode = Number.isSafeInteger(configuredCode) && configuredCode > 0 ? configuredCode : null;
+  const weekKey = `${schoolCode || 'discovery'}-${dateParam(kstToday())}-${weekNum}`;
+  const ttl = weekNum === 0 ? (schoolCode ? COMCIGAN_CURRENT_WEEK_TTL : 0) : COMCIGAN_CACHE_TTL;
+  const cached = comciganWeekCache.get(weekKey);
+  if (!fresh && cached?.expiresAt > Date.now()) return cached.value;
+
+  // An earlier request completing after a refresh must not replace its snapshot.
+  const entry = {expiresAt: 0};
+  for (const [key, candidate] of comciganWeekCache) {
+    if (candidate.expiresAt && candidate.expiresAt <= Date.now()) comciganWeekCache.delete(key);
+  }
+  if (ttl) comciganWeekCache.set(weekKey, entry);
   try {
-    return await fetchComciganWeekOnce(weekNum);
-  } catch (error) {
-    if (!(error instanceof HttpError) || !["COMCIGAN_ERROR", "COMCIGAN_HTTP_ERROR"].includes(error.code)) throw error;
-    // Comcigan rotates its endpoint and field codes. Rediscover once on mismatch.
-    return fetchComciganWeekOnce(weekNum, true);
+    let value;
+    try {
+      value = await fetchComciganWeekOnce(weekNum, {schoolCode, fresh});
+    } catch (error) {
+      if (!(error instanceof HttpError) || !["COMCIGAN_ERROR", "COMCIGAN_HTTP_ERROR"].includes(error.code)) throw error;
+      // Rediscover the endpoint and check the school by name if the fast path fails.
+      value = await fetchComciganWeekOnce(weekNum, {refresh: true, fresh: true});
+    }
+    if (ttl && (!schoolCode || value.school.code === schoolCode) && comciganWeekCache.get(weekKey) === entry) {
+      entry.value = value;
+      entry.expiresAt = Date.now() + ttl * 1000;
+    }
+    return value;
+  } finally {
+    if (!entry.expiresAt && comciganWeekCache.get(weekKey) === entry) comciganWeekCache.delete(weekKey);
   }
 }
 
-async function fetchComciganWeekOnce(weekNum, refresh = false) {
-  const weekKey = `${dateParam(kstToday())}-${weekNum}`;
-  // The current week's Comcigan data can change after publication.
-  // Never serve an in-process or edge-cached copy for the current week.
-  if (weekNum !== 0 && !refresh) {
-    const cached = comciganWeekCache.get(weekKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
-    }
-  }
-
+async function fetchComciganWeekOnce(weekNum, {refresh = false, fresh = false, schoolCode} = {}) {
   const codes = await getComciganCodes(refresh);
-  const school = await resolveComciganSchool(codes);
+  const school = schoolCode ? {code: schoolCode, name: SCHOOL.name} : await resolveComciganSchool(codes);
 
   const payload = `${codes.code0}_${school.code}_0_${weekNum + 1}${codes.payloadSuffix}`;
   const encoded = btoa(payload);
   const upstream = await fetchComciganText(
     `${COMCIGAN_URL}/${codes.endpoint}?${encoded}`,
-    { cacheTtl: codes.requestToken || weekNum === 0 ? 0 : COMCIGAN_CACHE_TTL, requestToken: codes.requestToken }
+    { cacheTtl: fresh || codes.requestToken || weekNum === 0 ? 0 : COMCIGAN_CACHE_TTL, requestToken: codes.requestToken }
   );
 
   let response;
@@ -465,7 +479,7 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
     throw new HttpError("COMCIGAN_ERROR", "컴시간 시간표 데이터가 예상한 형식이 아닙니다.");
   }
 
-  const value = {
+  return {
     school,
     response,
     teachers,
@@ -476,15 +490,6 @@ async function fetchComciganWeekOnce(weekNum, refresh = false) {
     codes
   };
 
-  if (weekNum !== 0) {
-    comciganWeekCache.clear();
-    comciganWeekCache.set(weekKey, {
-      value,
-      expiresAt: Date.now() + COMCIGAN_CACHE_TTL * 1000
-    });
-  }
-
-  return value;
 }
 
 function classNumbersFromComcigan(data, grade) {
@@ -534,7 +539,7 @@ async function handleClasses(url, env) {
   }
 
   const weekNum = requestedWeek;
-  const data = await fetchComciganWeek(weekNum);
+  const data = await fetchComciganWeek(weekNum, env, url.searchParams.get('fresh') === '1');
   const classes = classNumbersFromComcigan(data, grade);
 
   return json({
@@ -602,7 +607,7 @@ async function handleTimetable(url, env) {
       const items = [...periods].sort(([a],[b]) => a-b).map(([period, subjects]) => ({period, subject: [...subjects].join(" / "), changed: false}));
       days.push({ok: true, date: target, grade, class: className, school: SCHOOL.name, classes, items, source: "neis", available: items.length > 0});
     } else {
-      comcigan ||= await fetchComciganWeek(comciganWeekForDate(date));
+      comcigan ||= await fetchComciganWeek(comciganWeekForDate(date), env, url.searchParams.get('fresh') === '1');
       const dayUrl = new URL(url); dayUrl.searchParams.delete("view"); dayUrl.searchParams.set("date", target);
       const response = await handleComciganTimetable(dayUrl, env, comcigan);
       if (!response.ok) return response;
@@ -664,7 +669,7 @@ async function handleComciganTimetable(url, env, sharedWeek = null) {
     });
   }
 
-  const data = sharedWeek || await fetchComciganWeek(weekNum);
+  const data = sharedWeek || await fetchComciganWeek(weekNum, env, url.searchParams.get('fresh') === '1');
   const classes = classNumbersFromComcigan(data, grade);
   const dayIndex = getComciganDayIndex(date);
   const gradeNumber = Number(grade);
@@ -745,7 +750,7 @@ async function handleTeacherTimetable(url, env) {
   const date=url.searchParams.get('date')||'',week=validDate(date)?comciganWeekForDate(date):null;
   const requested=url.searchParams.get('teacher')||'';
   if(week===null||!validDate(date)||!/^\d{0,3}$/.test(requested))return json({ok:false,error:'조회 날짜와 선생님을 확인해 주세요.'},400);
-  const data=await fetchComciganWeek(week);
+  const data=await fetchComciganWeek(week,env,url.searchParams.get('fresh')==='1');
   if(data.school.code!==40807)throw new HttpError('COMCIGAN_ERROR','학교 코드를 확인하지 못했습니다.');
   const names=readTeacherNames(env.TEACHER_NAME_MAP,date,40807);
   const teachers=data.teachers.flatMap((name,id)=>id&&name?[{id:String(id),name:teacherDisplayName(name,id,names)}]:[]);

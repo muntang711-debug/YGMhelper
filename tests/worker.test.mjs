@@ -169,6 +169,20 @@ test('Comcigan EUC-KR discovery and decoded lessons',async t=>{
   quiet(t);mockComci(t,comciData());const r=await worker.fetch(request('/api/timetable?date='+monday+'&grade=1&class=1'),environment(t));
   assert.equal(r.status,200);const data=await r.json();assert.equal(data.school,'용곡중학교');assert.deepEqual(data.items.map(i=>i.subject),['국어','수학']);
 });
+test('configured school skips search, reuses a current-week snapshot and refreshes from upstream on demand',async t=>{
+  quiet(t);const env={...environment(t),COMCIGAN_SCHOOL_CODE:'40807'}, data=comciData();
+  const calls=mockComci(t,data);const route='/api/timetable?date='+monday+'&grade=1&class=1&view=week';
+  const load=async suffix=>{const response=await worker.fetch(request(route+suffix),env);assert.equal(response.status,200);return response.json();};
+  assert.equal((await load('')).days[0].items.length,2);
+  assert.equal(calls.filter(url=>!new URL(url).pathname.endsWith('/st')).length,1);
+  assert(!calls.some(url=>url.includes('991l')));
+  data.자료104[1][1][1]=[0];
+  assert.equal((await load('')).days[0].items.length,2);
+  assert.equal(calls.filter(url=>!new URL(url).pathname.endsWith('/st')).length,1);
+  assert.deepEqual((await load('&fresh=1')).days[0].items,[]);
+  assert.equal(calls.filter(url=>!new URL(url).pathname.endsWith('/st')).length,2);
+  assert.deepEqual((await load('')).days[0].items,[]);
+});
 test('malformed Comcigan lookup and excessive class/period counts reject',async t=>{
   quiet(t);const env=environment(t);
   for(const mutate of [d=>delete d.자료101,d=>d.학급수[1]=100000,d=>d.자료104[1][1][1][0]=100000]){

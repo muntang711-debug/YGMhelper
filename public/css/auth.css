@@ -42,7 +42,6 @@
 #form-status:empty { margin: 0 0 18px; }
 .auth-bottom { margin: 22px 0 0; font-size: 13px; text-align: center; }
 .auth-bottom a { margin-left: 8px; font-weight: 600; }
-.recovery-note { margin-top: 16px; text-align: center; }
 .delete-section { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 24px; font-size: 13px; line-height: 1.7; }
 .danger { background: #a72d38; color: #fff; }
 .auth-content h2 { font-size: 18px; margin-top: 30px; }

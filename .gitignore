@@ -9,3 +9,4 @@ node_modules/
 /analysis/
 /worker-configuration.d.ts
 /.test-results/
+/.generated/

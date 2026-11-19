@@ -915,38 +915,24 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     setupMealRating(data.date || formatDateParam(state.date));
   }
 
-  function normalizeTeacherName(value) {
-    return String(value || "").trim();
+  const weeklyContainer = document.getElementById("weekly-timetable");
+  let timetableModule;
+  let renderTimetable;
+
+  function loadTimetableModule() {
+    return timetableModule ??= import("./weekly-timetable.jsx").catch(error => {
+      timetableModule = undefined;
+      throw error;
+    });
   }
 
   function renderWeeklyTimetable(data) {
-    const container = document.getElementById("weekly-timetable");
+    renderTimetable({data, selectedDate: formatDateParam(state.date), grade: state.grade, className: state.className});
+  }
 
-    const days = Array.isArray(data.days) ? data.days : [];
-    container.classList.toggle('is-preview', !!data.preview);
-    const gate = data.preview ? '<div class="membership-gate"><h3>최신 시간표 확인하기</h3><p>로그인하고 컴시간 시간표를 확인하세요.</p><a class="primary-link" href="/login.html">로그인</a><a href="/signup.html">회원가입</a></div>' : "";
-    if (data.preview && !days.some(day => day.items?.length)) {
-      container.innerHTML = '<p class="weekly-message">NEIS 미리보기 자료가 없습니다.</p>' + gate; return;
-    }
-    if (days.length !== 5) {
-
-      container.innerHTML = '<p class="weekly-message">주간 시간표가 없습니다.</p>';
-      return;
-    }
-    const shortDate = value => Number(value.slice(4, 6)) + "." + Number(value.slice(6, 8));
-
-    const periods = Math.max(data.preview ? 7 : 0, ...days.flatMap(day => (day.items || []).map(item => Number(item.period))));
-    if (!periods) {
-      container.innerHTML = '<p class="weekly-message">' + (data.mode === 'teacher' ? '선택한 선생님의 수업이 없습니다.' : '선택한 학급의 주간 시간표가 없습니다.') + '</p>';
-      return;
-    }
-    const labels = ["월", "화", "수", "목", "금"];
-    container.innerHTML = `<table class="weekly-table"><caption class="sr-only">${data.mode === "teacher" ? escapeHtml(data.teacherName) + " 교사 주간 시간표" : escapeHtml(state.grade) + "학년 " + escapeHtml(state.className) + "반 주간 시간표"}</caption>
-      <thead><tr><th scope="col">교시</th>${days.map((day, index) => `<th scope="col" class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}">${labels[index]}<span>${shortDate(day.date)}</span></th>`).join("")}</tr></thead>
-      <tbody>${Array.from({length: Math.min(periods, 16)}, (_, index) => `<tr${data.preview && index > 0 ? ' class="preview-obscured" aria-hidden="true"' : ''}><th scope="row">${index + 1}</th>${days.map(day => {
-        const item = day.items?.find(item => Number(item.period) === index + 1);
-        return `<td class="${day.date === formatDateParam(state.date) ? "is-selected" : ""}${item?.changed ? " is-changed" : ""}"${item?.changed ? ' aria-label="변경된 수업"' : ""}>${item ? `<div class="weekly-lesson"><strong>${escapeHtml(item.subject || "수업 정보 없음")}</strong>${item.classLabel ? `<span>${escapeHtml(item.classLabel)}</span>` : ""}${item.teacher ? `<span>${escapeHtml(normalizeTeacherName(item.teacher))}</span>` : ""}${item.location ? `<span class="weekly-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 8c0 4-5.5 8.5-5.5 8.5S4.5 12 4.5 8a5.5 5.5 0 1 1 11 0Z"/><circle cx="10" cy="8" r="1.75"/></svg>${escapeHtml(item.location)}</span>` : ""}</div>` : '<span class="no-lesson" aria-label="수업 없음"></span>'}</td>`;
-      }).join("")}</tr>`).join("")}</tbody></table>` + gate;
+  function showTimetableLoading() {
+    if (renderTimetable) renderTimetable(null, true);
+    else weeklyContainer.innerHTML = '<p class="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p>';
   }
 
   let classSelect = null;
@@ -1046,11 +1032,11 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
     if (closedReason && !teacherMode) void loadClassOptions();
 
 
-    document.getElementById("weekly-timetable").innerHTML = '<p class="weekly-message" role="status">주간 시간표를 불러오는 중입니다.</p>';
+    showTimetableLoading();
     let success = false;
     try {
       const path = teacherMode ? "/api/teacher-timetable?date=" + formatDateParam(date) + "&teacher=" + encodeURIComponent(state.teacherId) : "/api/timetable?date=" + formatDateParam(date) + "&grade=" + grade + "&class=" + className + "&view=week";
-      const data = await fetchJson(path, {signal: token.signal});
+      const [data, view] = await Promise.all([fetchJson(path, {signal: token.signal}), loadTimetableModule()]);
       if (!token.current()) return;
       if (teacherMode) { state.teacherId = data.teacherId; teacherSelect.setOptions(data.teachers.map(t=>({value:t.id,label:t.name})),data.teacherId); }
       if (!teacherMode && data.classes?.length) applyClassOptions(data.classes, true, date, grade);
@@ -1058,12 +1044,14 @@ import { civilDate, kstToday, dateParam, selectableRange, parseMealText, createS
         token.finish(true); await loadTimetable({retry: true}); return;
       }
 
+      renderTimetable ??= view.mountWeeklyTimetable(weeklyContainer);
       displayedTimetable = {key: teacherMode ? "teacher-" + classOptionsCacheKey(date,"teacher") + "-" + state.teacherId : weekKey, data};
       renderWeeklyTimetable(data); success = true;
     } catch (error) {
       if (!token.current()) return;
 
-      document.getElementById("weekly-timetable").innerHTML = "";
+      if (renderTimetable) renderTimetable(null);
+      else weeklyContainer.replaceChildren();
       document.querySelector(".weekly-section").hidden = true;
       showLoadError("timetable", () => loadTimetable({force: true}));
     } finally { token.finish(success); }

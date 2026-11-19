@@ -5,14 +5,16 @@
   "version": "1.0.0",
   "scripts": {
     "deploy": "npm run verify && wrangler deploy",
-    "dev": "wrangler dev",
-    "check": "wrangler deploy --dry-run",
+    "dev": "npm run build && wrangler dev",
+    "check": "npm run build && wrangler deploy --dry-run",
     "test": "node --test tests/*.test.mjs",
     "verify": "node --check src/auth-email.js && node --check src/totp.js && node --check src/admin.js && node --check public/js/admin.js && node --check src/auth.js && node --check public/js/site-theme.js && node --check public/js/student-verification.js && node --check public/js/auth.js && node --check public/js/membership.js && node --check src/worker.js && node --check src/http.js && node --check src/comcigan.js && node --check public/js/app.js && node --check public/js/common.js && npm test && npm run check",
     "db:init": "wrangler d1 migrations apply DB --local && wrangler d1 migrations apply AUTH_DB --local",
-    "types": "wrangler types"
+    "types": "wrangler types",
+    "build": "node scripts/build-assets.mjs"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
     "iconv-lite": "^0.7.3",
     "jsdom": "^27.0.1",
     "wrangler": "4.155.0"
@@ -22,6 +24,8 @@
   },
   "dependencies": {
     "@noble/hashes": "2.0.1",
-    "qrcode": "1.5.4"
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   }
 }

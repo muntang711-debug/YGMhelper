@@ -439,13 +439,6 @@ a { color: inherit; }
   margin-bottom: 18px;
 }
 
-.section-kicker {
-  margin: 0 0 7px;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .15em;
-}
 
 .section-heading h2 {
   margin: 0;
@@ -474,12 +467,6 @@ a { color: inherit; }
   padding: 30px;
 }
 
-.meal-date-label {
-  margin: 0 0 24px;
-  color: var(--text-soft);
-  font-size: 13px;
-  font-weight: 600;
-}
 
 .meal-content {
   display: flex;
@@ -487,12 +474,6 @@ a { color: inherit; }
   gap: 30px;
 }
 
-.meal-title {
-  min-width: 52px;
-  margin: 0;
-  font-size: 17px;
-  font-weight: 800;
-}
 
 .meal-list {
   display: grid;
@@ -706,12 +687,6 @@ a { color: inherit; }
   line-height: 1;
 }
 
-.allergen-description {
-  margin: 15px 0 18px;
-  color: var(--text-soft);
-  font-size: 13px;
-  line-height: 1.6;
-}
 
 .allergen-list {
   display: grid;
@@ -765,112 +740,19 @@ body.modal-open {
   overflow: hidden;
 }
 
-.timetable-card {
-  min-height: 340px;
-  padding: 20px;
-}
 
-.timetable-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
 
-.period-card {
-  min-height: 72px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-  padding: 13px 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-solid);
-  box-shadow: 0 8px 28px rgba(18, 25, 38, .05);
-  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
-}
 
-.period-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
-  box-shadow: 0 12px 34px rgba(18, 25, 38, .075);
-  transform: translateY(-1px);
-}
 
-.period-card-number {
-  width: fit-content;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 800;
-  white-space: nowrap;
-}
 
-.period-card-main {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
 
-.period-card-subject-row {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.period-card-subject {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -.025em;
-}
 
-.period-card-changed {
-  flex: 0 0 auto;
-  padding: 3px 7px;
-  border-radius: 7px;
-  background: #e5b900;
-  color: #fff;
-  font-size: 10px;
-  line-height: 1.1;
-  font-weight: 900;
-  letter-spacing: -.01em;
-}
 
-[data-theme="dark"] .period-card-changed {
-  background: #d9b52e;
-  color: #211d10;
-}
 
-.period-card-teacher {
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.2;
-  font-weight: 700;
-}
 
-.period-card-location {
-  color: #356acb;
-  font-size: 12px;
-  line-height: 1.2;
-  font-weight: 800;
-}
 
-.period-card.is-changed {
-  background: #fff3bf;
-  border-color: #f0d66f;
-}
 
-[data-theme="dark"] .period-card.is-changed {
-  background: #4a421f;
-  border-color: #8f7f2c;
-}
 
 .status-message {
   margin: 0 0 14px;
@@ -1108,29 +990,10 @@ body.modal-open {
     padding: 46px 26px;
   }
 
-  .timetable-card {
-    min-height: 360px;
-    padding: 16px;
-  }
 
-  .timetable-list {
-    grid-template-columns: 1fr;
-  }
 
-  .period-card {
-    min-height: 68px;
-    gap: 12px;
-    padding: 12px 14px;
-  }
 
-  .period-card-number {
-    padding: 6px 9px;
-    font-size: 13px;
-  }
 
-  .period-card-subject {
-    font-size: 17px;
-  }
 
   .loading-state { padding: 30px 25px; }
 
@@ -1157,16 +1020,6 @@ body.modal-open {
 }
 
 
-.period-card {
-  opacity: 0;
-  animation: timetable-card-in .46s cubic-bezier(.22, 1, .36, 1) calc(var(--item-index, 0) * 68ms) forwards;
-  will-change: transform, opacity;
-}
-@keyframes timetable-card-in {
-  from { opacity: 0; transform: translate3d(0, 20px, 0) scale(.985); }
-  60% { opacity: 1; }
-  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-}
 
 /* Unified interaction motion */
 .meal-allergen-button,
@@ -1423,7 +1276,6 @@ body.modal-open {
 
 @media (prefers-reduced-motion: reduce) {
   .date-picker,
-  .period-card,
   .date-picker .calendar-head,
   .date-picker .calendar-weekdays,
   .date-picker .calendar-grid,
@@ -1444,17 +1296,6 @@ body.modal-open {
 }
 
 
-/* The individual lessons provide the timetable's surfaces. */
-.data-card.timetable-card {
-  padding: 0;
-  min-height: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  border-radius: 0;
-  overflow: visible;
-}
 .weekly-section { margin-top: 0; }
 .weekly-scroll { max-width: 100%; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--surface-solid); }
 .weekly-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; text-align: center; }
@@ -1519,13 +1360,6 @@ body.modal-open {
   line-height: 1.25;
   font-weight: 800;
   letter-spacing: -.035em;
-}
-.meal-rating-description {
-  margin: 6px 0 0;
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.5;
-  font-weight: 500;
 }
 .meal-rating-summary {
   flex: 0 0 auto;

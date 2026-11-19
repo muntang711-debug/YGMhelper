@@ -2,17 +2,24 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {JSDOM} from 'jsdom';
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
 import * as helpers from '../public/js/common.js';
 
 const html=await fs.readFile(new URL('../public/index.html',import.meta.url),'utf8');
-const script=(await fs.readFile(new URL('../public/js/app.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
+const {outputFiles:[bundle]} = await build({
+  entryPoints:[fileURLToPath(new URL('../public/js/app.js',import.meta.url))],
+  bundle:true, write:false, format:'iife', target:'es2022',
+  define:{'process.env.NODE_ENV':'"production"'}
+});
+const script = bundle.text;
 const fixtureRange=()=>helpers.selectableRange(helpers.civilDate(2026,10,5));
 const flush=()=>new Promise(resolve=>setTimeout(resolve,20));
 async function boot(t,fetchImpl,{deniedStorage=false,savedClass='1',width=1024,today='2026-11-05T03:00:00Z'}={}){
   t.mock.timers.enable({apis:['Date'],now:new Date(today)});
   const dom=new JSDOM(html,{url:'https://ygmhelper.xyz/',runScripts:'outside-only',pretendToBeVisual:true});
   t.after(()=>dom.window.close());const w=dom.window;
-  Object.assign(w,helpers);
+  w.Date=Date;
   Object.defineProperty(w,'innerWidth',{value:width,configurable:true});
   w.matchMedia=query=>({matches:query.includes('prefers-reduced-motion'),addEventListener(){}});
   const calls=[];

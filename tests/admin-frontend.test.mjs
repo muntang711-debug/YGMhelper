@@ -21,6 +21,24 @@ test('admin actions carry CSRF and network controls remain inside the protected 
  const action=calls.find(c=>c.url.endsWith('/member'));assert.equal(action.options.headers['X-CSRF-Token'],'fixture');assert.equal(JSON.parse(action.options.body).action,'reset-attempts');
  d.querySelector('[data-section="ip-blocks"]').click();await new Promise(r=>setTimeout(r,0));[...d.querySelectorAll('#admin-list button')].find(b=>b.textContent==='차단 해제').click();await new Promise(r=>setTimeout(r,0));assert(calls.some(c=>c.url.endsWith('/unblock-ip')));
 });
+test('OTP enrollment renders pixels and rejects markup before inserting it in the document',async t=>{
+ const {w,d}=await boot(t,{authenticated:true});
+ const container=d.querySelector('#otp-qr');
+ const reveal=d.querySelector('#otp-reveal');
+ function setupResponse(qr){w.fetch=async()=>Response.json({ok:true,qr,secret:'fixture'});}
+ setupResponse({size:21,bits:'1'+'0'.repeat(440)});
+ reveal.click();
+ await new Promise(r=>setTimeout(r,0));
+ assert.equal(container.querySelector('svg').namespaceURI,'http://www.w3.org/2000/svg');
+ assert.equal(container.querySelector('path').getAttribute('d'),'M4 4h1v1h-1z');
+ assert.equal(d.querySelector('#otp-enrollment').hidden,false);
+ setupResponse('<svg onload="throw Error()"></svg>');
+ reveal.click();
+ await new Promise(r=>setTimeout(r,0));
+ assert.equal(container.childElementCount,0);
+ assert.equal(d.querySelector('#otp-enrollment').hidden,true);
+ assert.equal(d.querySelector('#otp-seed').value,'');
+});
 test('public and member pages contain no route to the administrator page',async()=>{
  for(const page of ['index','account']){const html=await fs.readFile(new URL('../public/'+page+'.html',import.meta.url),'utf8');const dom=new JSDOM(html);assert.equal(dom.window.document.querySelector('a[href*="admin"]'),null);dom.window.close();}
 });

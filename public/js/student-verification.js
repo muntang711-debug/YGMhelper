@@ -37,5 +37,5 @@ form.addEventListener('submit',async event=>{
  finally{busy=false;submit.disabled=locked;submit.removeAttribute('aria-busy');}
 });
 render();
-try{const session=await api('session');if(!session.user)location.replace('/login.html');else if(session.user.studentVerified)location.replace('/account.html');else{csrf=session.csrf;submit.disabled=!csrf;loading.hidden=true;if(session.user.studentVerificationBlocked){lockForm();showError('추가 인증 시도가 차단되었습니다. 이 네트워크에서는 회원가입도 할 수 없습니다.');}} }
+try{const session=await api('session');if(!session.user)location.replace('/login.html');else if(session.user.studentVerified)location.replace('/account.html');else{csrf=session.csrf;submit.disabled=!csrf;loading.hidden=true;if(session.user.studentVerificationBlocked){lockForm();showError('이 계정의 추가 인증 시도가 차단되었습니다.');}} }
 catch{loading.textContent='로그인 상태를 불러오지 못했습니다. 새로고침해 주세요.';}

@@ -13,27 +13,51 @@ const adminSchema=await fs.readFile(new URL('../auth-migrations/0006_admin.sql',
 const password='a-long-local-test-password';
 function setup(t){
  const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(schema);db.exec(sessionSchema);db.exec(awaitStudentSchema);db.exec(quizLimitsSchema);db.exec(adminSchema);t.after(()=>db.close());
- const DB={prepare(sql){const args=[];const s={bind(...a){args.push(...a);return s;},async first(){return db.prepare(sql).get(...args)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...args).changes}};}};return s;},async batch(stmts){db.exec('BEGIN');try{const r=await Promise.all(stmts.map(s=>s.run()));db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
+ const DB={
+  prepare(sql){
+   const args=[];
+   return {
+    bind(...a){args.push(...a);return this;},
+    async first(){return db.prepare(sql).get(...args)||null;},
+    run(){
+     const statement=db.prepare(sql);
+     if(statement.columns().length)return {results:statement.all(...args)};
+     return {meta:{changes:statement.run(...args).changes}};
+    }
+   };
+  },
+  async batch(stmts){
+   db.exec('BEGIN');
+   try{const results=stmts.map(statement=>statement.run());db.exec('COMMIT');return results;}
+   catch(error){db.exec('ROLLBACK');throw error;}
+  }
+ };
  const used=new Set(),mails=[];let bots=0;
  t.mock.method(globalThis,'fetch',async(url,opts)=>{if(!String(url).includes('siteverify'))throw Error('unexpected upstream');bots++;const token=new URLSearchParams(opts.body).get('response');if(used.has(token))return Response.json({success:false});used.add(token);return Response.json({success:true,hostname:'localhost',action:token.split(':')[0]});});
  const env={DB,MEMBERSHIP_ENABLED:'true',REGISTRATION_OPEN:'true',TURNSTILE_SECRET:'fixture',TURNSTILE_HOSTNAMES:'localhost',NEIS_API_KEY:'fixture',AUTH_ORIGIN:'https://localhost',EMAIL:{async send(m){mails.push(m);return {messageId:'fixture'};}}};
  return {db,env,mails,get bots(){return bots;}};
 }
 function req(action,body={},extra={}){return new Request('https://localhost/api/auth/'+action,{method:'POST',headers:{Origin:'https://localhost','Content-Type':'application/json',...extra},body:JSON.stringify(body)});}
-const signup=(token='signup:1')=>({username:'student_1',email:'student@example.com',password,age14:true,privacy:true,betaReset:true,consentVersion:'2026-11-06-email-beta',turnstile:token});
+const signup=(token='signup:1')=>({username:'student_1',email:'student@example.com',age14:true,privacy:true,betaReset:true,consentVersion:'2026-11-06-email-beta',turnstile:token});
 const tokenOf=mail=>mail.text.match(/#token=([a-f0-9]{64})/)[1];
-async function register(ctx){assert.equal((await authHandler(req('signup',signup()),ctx.env)).status,200);assert.equal((await authHandler(req('verify',{token:tokenOf(ctx.mails[0])}),ctx.env)).status,200);return authHandler(req('login',{username:'student_1',password,turnstile:'login:first'}),ctx.env);}
+async function register(ctx){assert.equal((await authHandler(req('signup',signup()),ctx.env)).status,200);assert.equal((await authHandler(req('verify',{password,token:tokenOf(ctx.mails[0])}),ctx.env)).status,200);return authHandler(req('login',{username:'student_1',password,turnstile:'login:first'}),ctx.env);}
 
-test('signup requires email proof, stores token hashes only, and verification cannot be replayed',async t=>{
- const c=setup(t);const r=await authHandler(req('signup',signup()),c.env);assert.equal(r.status,200);assert.match(r.headers.get('Set-Cookie'),/^__Host-ygm_verify=/);assert.equal((await r.json()).verificationRequired,true);
- const member=c.db.prepare('SELECT * FROM members').get();assert.notEqual(member.password_hash,password);assert.equal(member.email_verified,0);
- assert.equal((await authHandler(req('login',{username:'student_1',password,turnstile:'login:unverified'}),c.env)).status,403);
+test('email proof is required to set a password, legacy pending credentials are replaced and verification cannot be replayed',async t=>{
+ const c=setup(t),pendingPassword='a-legacy-pending-password';
+ const r=await authHandler(req('signup',{...signup(),password:pendingPassword}),c.env);assert.equal(r.status,200);assert.match(r.headers.get('Set-Cookie'),/^__Host-ygm_verify=/);assert.equal((await r.json()).verificationRequired,true);
+ const member=c.db.prepare('SELECT * FROM members').get();assert.equal(member.password_hash,'');assert.equal(member.salt,'');assert.equal(member.email_verified,0);
+ const salt='c'.repeat(64);
+ c.db.prepare('UPDATE members SET password_hash=?,salt=?').run(await passwordHash(pendingPassword,salt),salt);
  const token=tokenOf(c.mails[0]);assert.notEqual(c.db.prepare('SELECT token_hash FROM auth_tokens').get().token_hash,token);assert(!c.mails[0].text.includes(password));
- assert.equal((await authHandler(req('verify',{token}),c.env)).status,200);assert.equal((await authHandler(req('verify',{token}),c.env)).status,400);
+ assert.equal((await authHandler(req('verify',{token}),c.env)).status,400);
+ assert.equal(c.db.prepare('SELECT email_verified FROM members').get().email_verified,0);
+ assert.equal((await authHandler(req('login',{username:'student_1',password:pendingPassword,turnstile:'login:unverified'}),c.env)).status,403);
+ assert.equal((await authHandler(req('verify',{token,password}),c.env)).status,200);assert.equal((await authHandler(req('verify',{token,password}),c.env)).status,400);
+ assert.equal((await authHandler(req('login',{username:'student_1',password:pendingPassword,turnstile:'login:legacy'}),c.env)).status,401);
  const login=await authHandler(req('login',{username:'student_1',password,turnstile:'login:verified'}),c.env);assert.equal(login.status,200);assert.match(login.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Strict/);
 });
 test('expired verification and reset links fail closed',async t=>{
- const c=setup(t);await authHandler(req('signup',signup()),c.env);const token=tokenOf(c.mails[0]);c.db.exec('UPDATE auth_tokens SET expires_at=0');assert.equal((await authHandler(req('verify',{token}),c.env)).status,400);assert.equal(c.db.prepare('SELECT email_verified FROM members').get().email_verified,0);
+ const c=setup(t);await authHandler(req('signup',signup()),c.env);const token=tokenOf(c.mails[0]);c.db.exec('UPDATE auth_tokens SET expires_at=0');assert.equal((await authHandler(req('verify',{token,password}),c.env)).status,400);assert.equal(c.db.prepare('SELECT email_verified FROM members').get().email_verified,0);
  c.db.exec('UPDATE members SET email_verified=1');await authHandler(req('forgot',{email:'student@example.com',turnstile:'forgot:expired'}),c.env);
  const resetToken=tokenOf(c.mails[1]);c.db.exec('UPDATE auth_tokens SET expires_at=0');
  assert.equal((await authHandler(req('reset',{token:resetToken,password:'another-long-password'}),c.env)).status,400);
@@ -44,7 +68,7 @@ test('consent, email, origin and reused CAPTCHA are checked',async t=>{
  assert.equal((await authHandler(req('signup',{...signup(),age14:false}),c.env)).status,400);
  assert.equal((await authHandler(req('signup',signup()),c.env)).status,403);
  assert.equal((await authHandler(req('signup',{...signup('signup:2'),privacy:false}),c.env)).status,400);
- assert.equal((await authHandler(req('signup',{...signup('signup:3'),password:'short'}),c.env)).status,400);
+ assert.equal((await authHandler(req('signup',{...signup('signup:3'),betaReset:false}),c.env)).status,400);
 });
 test('password reset is single-use, invalidates all sessions, and never auto logs in',async t=>{
  const c=setup(t);const login=await register(c);const cookie=login.headers.get('Set-Cookie').split(';')[0];assert(await memberSession(new Request('https://localhost',{headers:{Cookie:cookie}}),c.env));
@@ -62,7 +86,7 @@ test('mail failure rolls signup back and unverified accounts can resend',async t
  const c=setup(t);c.env.EMAIL.send=async()=>{throw Error('fixture');};assert.equal((await authHandler(req('signup',signup()),c.env)).status,503);assert.equal(c.db.prepare('SELECT COUNT(*) n FROM members').get().n,0);
  c.env.EMAIL.send=async m=>{c.mails.push(m);};assert.equal((await authHandler(req('signup',signup('signup:again')),c.env)).status,200);
  c.db.exec('UPDATE auth_tokens SET issued_at=0');assert.equal((await authHandler(req('resend',{email:'student@example.com',turnstile:'resend:1'}),c.env)).status,200);assert.equal(c.mails.length,2);
- assert.equal((await authHandler(req('verify',{token:tokenOf(c.mails[0])}),c.env)).status,400);assert.equal((await authHandler(req('verify',{token:tokenOf(c.mails[1])}),c.env)).status,200);
+ assert.equal((await authHandler(req('verify',{password,token:tokenOf(c.mails[0])}),c.env)).status,400);assert.equal((await authHandler(req('verify',{password,token:tokenOf(c.mails[1])}),c.env)).status,200);
 });
 test('logout and deletion enforce CSRF; deletion removes email tokens too',async t=>{
  const c=setup(t);const r=await register(c),b=await r.json(),cookie=r.headers.get('Set-Cookie').split(';')[0];assert.equal((await authHandler(req('logout',{}, {Cookie:cookie}),c.env)).status,403);
@@ -74,16 +98,38 @@ test('logout and deletion enforce CSRF; deletion removes email tokens too',async
  assert.equal((await authHandler(req('delete',{password},{Cookie:cookie,'X-CSRF-Token':b.csrf}),c.env)).status,200);assert.equal(c.db.prepare('SELECT COUNT(*) n FROM members').get().n,0);
  assert.deepEqual(c.db.prepare('SELECT voter_key FROM meal_ratings').all().map(x=>x.voter_key),['other-member']);
 });
-test('10–64 password bounds are enforced before hashing and email delivery',async t=>{
- const c=setup(t);for(const length of [9,65])assert.equal((await authHandler(req('signup',{...signup(),password:'a'.repeat(length)}),c.env)).status,400);
- assert.equal(c.bots,0);assert.equal(c.mails.length,0);
- assert.equal((await authHandler(req('signup',{...signup('signup:ten'),password:'a'.repeat(10)}),c.env)).status,200);
- assert.equal((await authHandler(req('signup',{...signup('signup:sixtyfour'),username:'student_2',email:'two@example.com',password:'b'.repeat(64)}),c.env)).status,200);
+test('verification enforces 10–64 password bounds without consuming the link for invalid input',async t=>{
+ const c=setup(t);
+ assert.equal((await authHandler(req('signup',signup()),c.env)).status,200);
+ const token=tokenOf(c.mails[0]);
+ for(const length of [9,65])assert.equal((await authHandler(req('verify',{token,password:'a'.repeat(length)}),c.env)).status,400);
+ assert.equal((await authHandler(req('verify',{token,password:'a'.repeat(10)}),c.env)).status,200);
+ assert.equal((await authHandler(req('signup',{...signup('signup:2'),username:'student_2',email:'two@example.com'}),c.env)).status,200);
+ assert.equal((await authHandler(req('verify',{token:tokenOf(c.mails[1]),password:'b'.repeat(64)}),c.env)).status,200);
 });
 test('session expiry and account rate limits are enforced',async t=>{
  const c=setup(t),r=await register(c),cookie=r.headers.get('Set-Cookie').split(';')[0];c.db.exec('UPDATE member_sessions SET expires_at=0');assert.equal(await memberSession(new Request('https://localhost',{headers:{Cookie:cookie}}),c.env),null);
  for(let i=0;i<10;i++)await authHandler(req('login',{username:'target',password,turnstile:'login:limit'+i}),c.env);
- const before=c.bots;assert.equal((await authHandler(req('login',{username:'target',password,turnstile:'login:last'}),c.env)).status,429);assert.equal(c.bots,before);
+ const before=c.bots;assert.equal((await authHandler(req('login',{username:'target',password,turnstile:'login:last'}),c.env)).status,429);assert.equal(c.bots,before+1);
+});
+test('failed bot checks use IP quotas without consuming login or recovery quotas for the account',async t=>{
+ const c=setup(t);
+ assert.equal((await register(c)).status,200);
+ const login={username:'student_1',password};
+ const recovery={email:'student@example.com'};
+ for(let i=0;i<10;i++){
+  const headers={'CF-Connecting-IP':`192.0.2.${i+1}`};
+  assert.equal((await authHandler(req('login',{...login,turnstile:`signup:login-${i}`},headers),c.env)).status,403);
+  assert.equal((await authHandler(req('forgot',{...recovery,turnstile:`signup:forgot-${i}`},headers),c.env)).status,403);
+ }
+ assert.equal((await authHandler(req('login',{...login,turnstile:'login:legitimate'}),c.env)).status,200);
+ assert.equal((await authHandler(req('forgot',{...recovery,turnstile:'forgot:legitimate'}),c.env)).status,200);
+ assert.equal(c.mails.length,2);
+ const headers={'CF-Connecting-IP':'192.0.2.99'};
+ for(let i=0;i<5;i++)assert.equal((await authHandler(req('forgot',recovery,headers),c.env)).status,403);
+ const before=c.bots;
+ assert.equal((await authHandler(req('forgot',{...recovery,turnstile:'forgot:ip-limited'},headers),c.env)).status,429);
+ assert.equal(c.bots,before);
 });
 test('guest preview contains full public NEIS week but no Comcigan or teacher names',async t=>{
  const {env}=setup(t);const {dateParam,selectableRange}=await import('../public/js/common.js');const date=dateParam(selectableRange().minDate);let calls=[];
@@ -120,13 +166,14 @@ test('student quiz attempts cannot be bypassed by changing session or returning 
  for(let i=0;i<4;i++)assert.equal((await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)).status,400);
  assert.equal((await authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)).status,429);
  c.db.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen) VALUES (?,?,?,?,?)').run(createHash('sha256').update('f'.repeat(64)).digest('hex'),'quiz-member','e'.repeat(64),Date.now()+3600000,Date.now());
- assert.equal((await authHandler(req('student-verify',quizAnswer(),{...headers,Cookie:'__Host-ygm_session='+'f'.repeat(64)}),c.env)).status,429);
+ const otherNetwork={'CF-Connecting-IP':'192.0.2.99'};
+ assert.equal((await authHandler(req('student-verify',quizAnswer(),{...headers,...otherNetwork,Cookie:'__Host-ygm_session='+'f'.repeat(64)}),c.env)).status,429);
  assert.equal(c.db.prepare('SELECT student_verified_at FROM members').get().student_verified_at,null);
  assert.equal(c.db.prepare('SELECT student_quiz_attempts FROM members').get().student_quiz_attempts,5);
  assert.equal(c.db.prepare('SELECT COUNT(*) AS n FROM student_quiz_ip_blocks').get().n,1);
  const botCalls=c.bots;
  assert.equal((await authHandler(req('signup',signup()),c.env)).status,403);assert.equal(c.bots,botCalls);
- assert.equal((await authHandler(req('signup',{}, {'CF-Connecting-IP':'192.0.2.99'}),c.env)).status,400);
+ assert.equal((await authHandler(req('signup',signup(),otherNetwork),c.env)).status,200);
  const session=await authHandler(new Request('https://localhost/api/auth/session',{headers}),c.env);assert.equal((await session.json()).user.studentVerified,false);
 });
 
@@ -139,12 +186,16 @@ test('a correct fifth answer succeeds without blocking the network',async t=>{
 });
 test('parallel quiz guesses stop at five and the network block also applies to another existing account',async t=>{
  const c=setup(t),headers=quizSession(c);
- await Promise.all(Array.from({length:12},()=>authHandler(req('student-verify',{...quizAnswer(),floor:5},headers),c.env)));
+ await Promise.all(Array.from({length:12},(_,i)=>authHandler(req('student-verify',{...quizAnswer(),floor:5},{...headers,'CF-Connecting-IP':`192.0.2.${i+1}`}),c.env)));
  assert.equal(c.db.prepare('SELECT student_quiz_attempts FROM members').get().student_quiz_attempts,5);
+ const blocks=c.db.prepare('SELECT ip_hash FROM student_quiz_ip_blocks').all();
+ assert.equal(blocks.length,1);
+ const blockedIp=Array.from({length:12},(_,i)=>`192.0.2.${i+1}`).find(ip=>createHash('sha256').update('student-quiz-ip:'+ip).digest('hex')===blocks[0].ip_hash);
+ assert(blockedIp);
  const token='8'.repeat(64),now=Date.now();
  c.db.prepare('INSERT INTO members (id,username,password_hash,salt,consent_version,created_at,email,email_verified) VALUES (?,?,?,?,?,?,?,?)').run('other-member','other_student','unused','unused','test',now,'other@example.com',1);
  c.db.prepare('INSERT INTO member_sessions (token_hash,member_id,csrf,expires_at,last_seen) VALUES (?,?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'other-member','e'.repeat(64),now+3600000,now);
- const otherHeaders={...headers,Cookie:'__Host-ygm_session='+token};
+ const otherHeaders={...headers,'CF-Connecting-IP':blockedIp,Cookie:'__Host-ygm_session='+token};
  assert.equal((await authHandler(req('student-verify',quizAnswer(),otherHeaders),c.env)).status,429);
  const s=await (await authHandler(new Request('https://localhost/api/auth/session',{headers:otherHeaders}),c.env)).json();assert.equal(s.user.studentVerificationBlocked,true);
  assert.equal(c.db.prepare("SELECT student_quiz_attempts FROM members WHERE id='other-member'").get().student_quiz_attempts,0);
@@ -153,13 +204,13 @@ test('parallel quiz guesses stop at five and the network block also applies to a
 
 test('verification auto signs in only the browser that started signup',async t=>{
  const c=setup(t);const signupResponse=await authHandler(req('signup',signup()),c.env);const browser=signupResponse.headers.get('Set-Cookie').split(';')[0];
- const r=await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:browser}),c.env);const b=await r.json();assert.equal(b.autoLogin,true);
+ const r=await authHandler(req('verify',{password,token:tokenOf(c.mails[0])},{Cookie:browser}),c.env);const b=await r.json();assert.equal(b.autoLogin,true);
  const sessionCookie=r.headers.getSetCookie().find(v=>v.startsWith('__Host-ygm_session='));assert(sessionCookie);assert(!sessionCookie.includes('Max-Age='));
  assert.equal((await memberSession(new Request('https://localhost',{headers:{Cookie:sessionCookie.split(';')[0]}}),c.env)).username,'student_1');
- assert.equal((await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:browser}),c.env)).status,400);
+ assert.equal((await authHandler(req('verify',{password,token:tokenOf(c.mails[0])},{Cookie:browser}),c.env)).status,400);
 });
 test('a different browser verifies email but never receives an automatic session',async t=>{
- const c=setup(t);await authHandler(req('signup',signup()),c.env);const r=await authHandler(req('verify',{token:tokenOf(c.mails[0])},{Cookie:'__Host-ygm_verify='+'f'.repeat(64)}),c.env);
+ const c=setup(t);await authHandler(req('signup',signup()),c.env);const r=await authHandler(req('verify',{password,token:tokenOf(c.mails[0])},{Cookie:'__Host-ygm_verify='+'f'.repeat(64)}),c.env);
  assert.equal((await r.json()).autoLogin,false);assert(!r.headers.get('Set-Cookie').includes('__Host-ygm_session'));
  assert.equal(c.db.prepare('SELECT count(*) n FROM member_sessions').get().n,0);
 });

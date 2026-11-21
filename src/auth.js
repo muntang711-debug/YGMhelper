@@ -25,8 +25,7 @@ export const memberRatingKey = id => digest(`member:${id}`);
 export const isVerifiedStudent = session => Number(session?.student_verified_at) > 0;
 const studentIpKey = request => digest('student-quiz-ip:'+(request.headers.get('CF-Connecting-IP')||'local'));
 const studentIpBlocked = async (request,env) => !!await env.DB.prepare('SELECT ip_hash FROM student_quiz_ip_blocks WHERE ip_hash=?').bind(studentIpKey(request)).first();
-const blockStudentIp = async (request,env,memberId) => env.DB.prepare('INSERT OR IGNORE INTO student_quiz_ip_blocks (ip_hash,blocked_at,member_id) VALUES (?,?,?)').bind(studentIpKey(request),Date.now(),memberId).run();
-const studentLocked = () => reply({ok:false,error:'학생 인증 기회를 모두 사용했습니다. 이 네트워크에서는 추가 인증과 회원가입을 할 수 없습니다.',code:'STUDENT_VERIFICATION_LOCKED'},429);
+const studentLocked = (error = '학생 인증 기회를 모두 사용했습니다.') => reply({ok:false,error,code:'STUDENT_VERIFICATION_LOCKED'},429);
 async function limit(env,key,max,period=900000) {
  const now=Date.now(),bucket=Math.floor(now/period);
  const row=await env.DB.prepare('INSERT INTO auth_attempts (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(digest(key+':'+bucket),now+period).first();
@@ -77,16 +76,25 @@ export async function authHandler(request,env,ctx) {
   if(!session)return fail('로그인 후 학생 인증을 진행해 주세요.',401);
   if(!sessionCsrfValid(request,session))return fail('페이지를 새로고침한 후 다시 시도해 주세요.',403);
   if(isVerifiedStudent(session))return reply({ok:true,studentVerified:true});
-  if(await studentIpBlocked(request,env))return studentLocked();
-  if(session.student_quiz_attempts>=5){await blockStudentIp(request,env,session.id);return studentLocked();}
+  if(session.student_quiz_attempts>=5)return studentLocked();
+  if(await studentIpBlocked(request,env))return studentLocked('이 네트워크에서는 학생 인증을 할 수 없습니다.');
   let answers;try{answers=JSON.parse(env.STUDENT_QUIZ_ANSWERS);}catch{return fail('학생 인증을 준비 중입니다. 잠시 후 다시 시도해 주세요.',503);}
   if(!Array.isArray(answers.mealOrder)||answers.mealOrder.length!==3||[...answers.mealOrder].sort().join(',')!=='1,2,3'||!['main','east','cheongsol'].includes(answers.building)||!Number.isInteger(answers.floor)||answers.floor<1||answers.floor>5)return fail('학생 인증을 준비 중입니다.',503);
   if(!Array.isArray(body.mealOrder)||body.mealOrder.length!==3||[...body.mealOrder].sort().join(',')!=='1,2,3'||!body.mealOrder.every(Number.isInteger)||!['main','east','cheongsol'].includes(body.building)||!Number.isInteger(body.floor)||body.floor<1||body.floor>5)return fail('두 문제의 답을 모두 선택해 주세요.');
   if(!await limit(env,'student-ip:'+ip,60,3600000))return fail('인증 요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
   const correct=equal(JSON.stringify(body.mealOrder),JSON.stringify(answers.mealOrder))&&body.building===answers.building&&body.floor===answers.floor;
-  const result=await env.DB.prepare('UPDATE members SET student_quiz_attempts=student_quiz_attempts+1,student_verified_at=CASE WHEN ? THEN ? ELSE student_verified_at END WHERE id=? AND email_verified=1 AND student_quiz_attempts<5 AND student_verified_at IS NULL RETURNING student_quiz_attempts,student_verified_at').bind(correct?1:0,Date.now(),session.id).first();
-  if(!result){const current=await env.DB.prepare('SELECT student_verified_at FROM members WHERE id=?').bind(session.id).first();if(isVerifiedStudent(current))return reply({ok:true,studentVerified:true});await blockStudentIp(request,env,session.id);return studentLocked();}
-  if(!correct){if(result.student_quiz_attempts>=5){await blockStudentIp(request,env,session.id);return studentLocked();}return fail('정답이 일치하지 않습니다. 두 문제의 답을 다시 확인해 주세요.');}
+  const now=Date.now();
+  const attempt=env.DB.prepare('UPDATE members SET student_quiz_attempts=student_quiz_attempts+1,student_verified_at=CASE WHEN ? THEN ? ELSE student_verified_at END WHERE id=? AND email_verified=1 AND student_quiz_attempts<5 AND student_verified_at IS NULL RETURNING student_quiz_attempts').bind(correct?1:0,now,session.id);
+  let result;
+  if(correct)result=await attempt.first();
+  else{
+   // Only the transaction that records the fifth failed attempt may block this IP.
+   const block=env.DB.prepare('INSERT OR IGNORE INTO student_quiz_ip_blocks (ip_hash,blocked_at,member_id) SELECT ?,?,id FROM members WHERE id=? AND email_verified=1 AND student_quiz_attempts=4 AND student_verified_at IS NULL').bind(studentIpKey(request),now,session.id);
+   const [,updated]=await env.DB.batch([block,attempt]);
+   result=updated.results[0];
+  }
+  if(!result){const current=await env.DB.prepare('SELECT student_verified_at FROM members WHERE id=?').bind(session.id).first();if(isVerifiedStudent(current))return reply({ok:true,studentVerified:true});return studentLocked();}
+  if(!correct){if(result.student_quiz_attempts===5)return studentLocked('학생 인증 기회를 모두 사용했습니다. 이 네트워크에서는 추가 인증과 회원가입을 할 수 없습니다.');return fail('정답이 일치하지 않습니다. 두 문제의 답을 다시 확인해 주세요.');}
   return reply({ok:true,studentVerified:true});
  }
  if(action==='signup'&&await studentIpBlocked(request,env))return reply({ok:false,error:'현재 네트워크에서는 회원가입을 할 수 없습니다. 문의: support@ygmhelper.xyz',code:'STUDENT_VERIFICATION_LOCKED'},403);
@@ -104,15 +112,20 @@ export async function authHandler(request,env,ctx) {
   return reply({ok:true},200,{'Set-Cookie':cookie('')});
  }
  if(action==='verify'){
-  if(!validToken(body.token))return fail('인증 링크가 올바르지 않습니다.');const hash=digest(body.token),now=Date.now();
-  const proof=await env.DB.prepare('SELECT browser_hash FROM auth_tokens WHERE token_hash=?').bind(hash).first();
-  const row=await env.DB.prepare("UPDATE members SET email_verified=1 WHERE email_verified=0 AND id=(SELECT member_id FROM auth_tokens WHERE token_hash=? AND kind='verify' AND expires_at>?) RETURNING id").bind(hash,now).first();
-  if(!row)return fail('만료되었거나 이미 사용한 인증 링크입니다. 다시 인증 메일을 요청해 주세요.');
+  if(!validToken(body.token))return fail('인증 링크가 올바르지 않습니다.');
+  if(!validNewPassword(body.password))return fail('비밀번호를 10~64자로 입력해 주세요.',400,'password');
+  const tokenHash=digest(body.token);
+  const invalidLink=()=>fail('만료되었거나 이미 사용한 인증 링크입니다. 다시 인증 메일을 요청해 주세요.');
+  const proof=await env.DB.prepare("SELECT browser_hash FROM auth_tokens WHERE token_hash=? AND kind='verify' AND expires_at>?").bind(tokenHash,Date.now()).first();
+  if(!proof)return invalidLink();
+  const salt=random(),hash=await passwordHash(body.password,salt);
+  // Recheck the token in the same statement that activates the account and sets its password.
+  const row=await env.DB.prepare("UPDATE members SET email_verified=1,password_hash=?,salt=? WHERE email_verified=0 AND id=(SELECT member_id FROM auth_tokens WHERE token_hash=? AND kind='verify' AND expires_at>?) RETURNING id,username").bind(hash,salt,tokenHash,Date.now()).first();
+  if(!row)return invalidLink();
   await env.DB.prepare("DELETE FROM auth_tokens WHERE member_id=? AND kind='verify'").bind(row.id).run();
   const browser=readCookie(request,'__Host-ygm_verify');
   if(validToken(browser)&&proof?.browser_hash&&equal(digest(browser),proof.browser_hash)){
-   const member=await env.DB.prepare('SELECT id,username FROM members WHERE id=?').bind(row.id).first();
-   const response=await createSession(request,env,member,false,{verified:true,autoLogin:true});response.headers.append('Set-Cookie',verificationCookie(''));return response;
+   const response=await createSession(request,env,row,false,{verified:true,autoLogin:true});response.headers.append('Set-Cookie',verificationCookie(''));return response;
   }
   return reply({ok:true,verified:true,autoLogin:false},200,{'Set-Cookie':verificationCookie('')});
  }
@@ -130,8 +143,9 @@ export async function authHandler(request,env,ctx) {
  if(action==='forgot'||action==='resend'){
   const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
   if(!validEmail(email))return fail('이메일 주소를 확인해 주세요.',400,'email');
-  if(!await limit(env,'mail-ip:'+ip,5)||!await limit(env,'mail-email:'+email,3))return fail('메일 요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
+  if(!await limit(env,'mail-ip:'+ip,5))return fail('메일 요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
   if(!await verifyBot(body,request,env,action))return fail('로봇 확인을 다시 진행해 주세요.',403);
+  if(!await limit(env,'mail-email:'+email,3))return fail('메일 요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
   if(!env.EMAIL?.send)return fail('메일을 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.',503);
   const current=readCookie(request,'__Host-ygm_verify'),browser=validToken(current)?current:random();
   const task=(async()=>{const row=await env.DB.prepare('SELECT id,email,email_verified FROM members WHERE email=?').bind(email).first();if(row&&(action==='forgot'?row.email_verified===1:row.email_verified===0))await authMail(env,{...row,browserHash:action==='resend'?digest(browser):null},action==='forgot'?'reset':'verify');})();
@@ -139,21 +153,21 @@ export async function authHandler(request,env,ctx) {
  }
  const username=typeof body.username==='string'?body.username.trim().toLowerCase():'';
  if(!/^[a-z0-9_]{4,24}$/.test(username))return fail('아이디는 영문, 숫자, 밑줄 4~24자로 입력해 주세요.',400,'username');
- if(!validPassword(body.password))return fail('비밀번호를 입력해 주세요.',400,'password');
- if(action==='signup'&&!validNewPassword(body.password))return fail('비밀번호를 10자 이상 입력해 주세요.',400,'password');
+ if(action==='login'&&!validPassword(body.password))return fail('비밀번호를 입력해 주세요.',400,'password');
  const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
  if(action==='signup'&&!validEmail(email))return fail('이메일 주소를 확인해 주세요.',400,'email');
- if(!await limit(env,'account:'+username,10))return fail('잠시 후 다시 시도해 주세요.',429);
+ if(action==='signup'&&!await limit(env,'signup:'+ip,5))return fail('요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
  if(!await verifyBot(body,request,env,action))return fail('로봇 확인을 다시 진행해 주세요.',403);
+ if(action==='login'&&!await limit(env,'account:'+username,10))return fail('잠시 후 다시 시도해 주세요.',429);
  let row;
  if(action==='signup'){
   if(env.REGISTRATION_OPEN!=='true')return fail('회원가입을 준비 중입니다.',503);
   if(body.age14!==true||body.privacy!==true||body.betaReset!==true||body.consentVersion!==consentVersion)return fail('필수 동의 항목을 확인해 주세요.');
   if(!env.EMAIL?.send)return fail('메일을 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.',503);
-  if(!await limit(env,'signup:'+ip,5)||!await limit(env,'mail-email:'+email,3))return fail('요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
+  if(!await limit(env,'mail-email:'+email,3))return fail('요청이 많습니다. 잠시 후 다시 시도해 주세요.',429);
   const existing=await env.DB.prepare('SELECT id FROM members WHERE username=? OR email=?').bind(username,email).first();if(existing)return fail('이미 사용 중인 아이디 또는 이메일입니다. 미인증 계정은 인증 메일을 다시 요청해 주세요.',409);
-  const id=crypto.randomUUID(),salt=random(),hash=await passwordHash(body.password,salt);
-  const inserted=await env.DB.prepare('INSERT OR IGNORE INTO members (id,username,email,email_verified,password_hash,salt,consent_version,created_at) VALUES (?,?,?,0,?,?,?,?)').bind(id,username,email,hash,salt,consentVersion,Date.now()).run();
+  const id=crypto.randomUUID();
+  const inserted=await env.DB.prepare("INSERT OR IGNORE INTO members (id,username,email,email_verified,password_hash,salt,consent_version,created_at) VALUES (?,?,?,0,'','',?,?)").bind(id,username,email,consentVersion,Date.now()).run();
   if(!inserted.meta.changes)return fail('이미 사용 중인 아이디 또는 이메일입니다.',409);
   const browser=random();
   try{await authMail(env,{id,email,browserHash:digest(browser)},'verify');}catch{await env.DB.prepare('DELETE FROM auth_tokens WHERE member_id=?').bind(id).run();await env.DB.prepare('DELETE FROM members WHERE id=?').bind(id).run();return fail('인증 메일을 보내지 못했습니다. 잠시 후 다시 가입해 주세요.',503);}

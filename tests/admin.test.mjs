@@ -65,7 +65,8 @@ test('TOTP matches the official RFC test vectors and rejects malformed codes',as
 test('OTP enrollment requires an admin, confirms an app code, hides the seed after enrollment and prevents replay',async t=>{
  t.mock.timers.enable({apis:['Date'],now:1800000000000});const c=setup(t),headers=await login(c);
  assert.equal((await adminHandler(request('otp-setup',{}),c.env)).status,401);
- const enrollment=await (await adminHandler(request('otp-setup',{},headers),c.env)).json();assert.equal(enrollment.secret,seed);assert(enrollment.qr.startsWith('<svg'));assert(!enrollment.qr.includes('<script'));
+ const enrollment=await (await adminHandler(request('otp-setup',{},headers),c.env)).json();assert.equal(enrollment.secret,seed);
+ assert.equal(enrollment.qr.bits.length,enrollment.qr.size**2);assert.match(enrollment.qr.bits,/^[01]+$/);
  const code=await totpCode(seed,Math.floor(Date.now()/30000));assert.equal((await adminHandler(request('otp-confirm',{code},headers),c.env)).status,200);
  assert.equal((await adminHandler(request('otp-setup',{},headers),c.env)).status,409);
  assert.equal((await adminHandler(request('login',{method:'otp',code}),c.env)).status,401);

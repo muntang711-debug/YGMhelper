@@ -6,6 +6,32 @@ async function api(path,body){
  const data=await response.json();if(!response.ok||!data.ok){if(response.status===401&&csrf){csrf=null;showLogin();}throw new Error(data.error||'요청을 처리하지 못했습니다.');}return data;
 }
 function clearEnrollment(){$('#otp-qr').replaceChildren();$('#otp-seed').value='';$('#otp-confirm-code').value='';$('#otp-enrollment').hidden=true;}
+function renderOtpQr(qr){
+ const {size,bits}=qr||{};
+ if(!Number.isInteger(size)||size<21||size>177||(size-21)%4!==0||
+    typeof bits!=='string'||bits.length!==size*size||/[^01]/.test(bits)){
+  throw new Error('OTP 등록 QR 코드를 표시할 수 없습니다.');
+ }
+ const namespace='http://www.w3.org/2000/svg';
+ const svg=document.createElementNS(namespace,'svg');
+ svg.setAttribute('viewBox',`0 0 ${size+8} ${size+8}`);
+ svg.setAttribute('role','img');
+ svg.setAttribute('aria-label','OTP 등록 QR 코드');
+ svg.setAttribute('shape-rendering','crispEdges');
+ const background=document.createElementNS(namespace,'rect');
+ background.setAttribute('width','100%');
+ background.setAttribute('height','100%');
+ background.setAttribute('fill','white');
+ const modules=document.createElementNS(namespace,'path');
+ let path='';
+ for(let index=0;index<bits.length;index++){
+  if(bits[index]==='1')path+=`M${index%size+4} ${Math.floor(index/size)+4}h1v1h-1z`;
+ }
+ modules.setAttribute('d',path);
+ modules.setAttribute('fill','black');
+ svg.append(background,modules);
+ $('#otp-qr').replaceChildren(svg);
+}
 function chooseMethod(value){method=value;$('#admin-key-field').hidden=method!=='key';$('#admin-otp-field').hidden=method!=='otp';document.querySelectorAll('[data-method]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.method===method)));$('#admin-key').value='';$('#admin-otp').value='';status('',false,true);}
 function showLogin(){$('#admin-login').hidden=false;$('#admin-workspace').hidden=true;$('#admin-logout').hidden=true;clearEnrollment();}
 async function showWorkspace(){$('#admin-login').hidden=true;$('#admin-workspace').hidden=false;$('#admin-logout').hidden=false;$('#admin-key').value='';$('#admin-otp').value='';await load();}
@@ -51,7 +77,7 @@ async function load(){
 document.querySelectorAll('[data-section]').forEach(button=>button.addEventListener('click',()=>{if(busy)return;section=button.dataset.section;cursor='';document.querySelectorAll('[data-section]').forEach(el=>el.setAttribute('aria-pressed',String(el===button)));void load();}));
 $('#admin-refresh').addEventListener('click',()=>{cursor='';void load();});$('#admin-next').addEventListener('click',()=>{if(nextCursor&&!busy){cursor=nextCursor;void load();}});
 $('#admin-logout').addEventListener('click',async()=>{if(busy)return;try{await api('logout',{});csrf=null;showLogin();}catch(error){status(error.message,true);}});
-$('#otp-reveal').addEventListener('click',async()=>{if(busy)return;busy=true;try{const data=await api('otp-setup',{});$('#otp-qr').innerHTML=data.qr;$('#otp-seed').value=data.secret;$('#otp-enrollment').hidden=false;status('');}catch(error){status(error.message,true);}finally{busy=false;}});
+$('#otp-reveal').addEventListener('click',async()=>{if(busy)return;busy=true;try{const data=await api('otp-setup',{});renderOtpQr(data.qr);$('#otp-seed').value=data.secret;$('#otp-enrollment').hidden=false;status('');}catch(error){clearEnrollment();status(error.message,true);}finally{busy=false;}});
 $('#otp-confirm-form').addEventListener('submit',async event=>{event.preventDefault();if(busy)return;const code=$('#otp-confirm-code').value.trim();if(!/^\d{6}$/.test(code)){status('OTP 6자리를 입력해 주세요.',true);return;}busy=true;try{await api('otp-confirm',{code});busy=false;await load();status('OTP를 등록했습니다.');}catch(error){status(error.message,true);}finally{busy=false;$('#otp-confirm-code').value='';}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearEnrollment();});
 try{const data=await api('session');csrf=data.csrf;otpEnabled=data.otpEnabled;$('#admin-loading').hidden=true;if(data.authenticated)await showWorkspace();else{chooseMethod(otpEnabled?'otp':'key');showLogin();}}

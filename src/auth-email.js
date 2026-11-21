@@ -2,7 +2,7 @@ const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<'
 
 export function renderAuthEmail(kind,link,minutes) {
  const copy={
-  verify:{title:'이메일을 인증해 주세요',description:'아래 버튼을 누르면 가입이 완료됩니다.',detail:'가입한 브라우저에서 열면 바로 로그인됩니다.',button:'이메일 인증'},
+  verify:{title:'이메일을 인증해 주세요',description:'아래 버튼을 눌러 비밀번호를 설정하면 가입이 완료됩니다.',detail:'직접 가입을 요청한 경우에만 진행해 주세요.',button:'비밀번호 설정'},
   reset:{title:'비밀번호 재설정',description:'아래 버튼에서 새 비밀번호를 설정해 주세요.',detail:'변경이 완료되면 기존 로그인은 모두 해제됩니다.',button:'새 비밀번호 설정'},
   changed:{title:'비밀번호가 변경됐습니다',description:'새 비밀번호가 저장됐으며 기존 로그인은 모두 해제됐습니다.',detail:'직접 변경하지 않았다면 비밀번호 찾기를 진행하고 문의해 주세요.',button:'비밀번호 찾기'}
  }[kind];

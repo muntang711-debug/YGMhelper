@@ -29,10 +29,9 @@ async function createAdminSession(db,method){
  await db.batch([db.prepare('INSERT INTO admin_sessions (token_hash,csrf,expires_at,last_seen) VALUES (?,?,?,?)').bind(hash(token),csrf,now+3600000,now),audit(db,'login',method)]);
  return reply({ok:true,csrf},200,{'Set-Cookie':cookie(token)});
 }
-function qrSvg(uri){
- const qr=QRCode.create(uri,{errorCorrectionLevel:'M'}),size=qr.modules.size;let path='';
- for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(qr.modules.get(y,x))path+=`M${x+4} ${y+4}h1v1h-1z`;
- return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size+8} ${size+8}" role="img" aria-label="OTP 등록 QR 코드"><rect width="100%" height="100%" fill="white"/><path d="${path}" fill="black"/></svg>`;
+function qrMatrix(uri){
+ const {modules}=QRCode.create(uri,{errorCorrectionLevel:'M'});
+ return {size:modules.size,bits:Array.from(modules.data).join('')};
 }
 export async function adminHandler(request,env){
  const db=env.AUTH_DB;if(!db)return fail('관리자 저장소를 준비 중입니다.',503);
@@ -97,7 +96,7 @@ export async function adminHandler(request,env){
   if(await otpEnabled(env,db))return fail('OTP가 이미 등록되어 있습니다.',409);
   try{decodeBase32(env.ADMIN_TOTP_SECRET);}catch{return fail('OTP 설정을 준비 중입니다.',503);}
   const uri='otpauth://totp/YGMhelper:admin?secret='+env.ADMIN_TOTP_SECRET+'&issuer=YGMhelper&algorithm=SHA1&digits=6&period=30';
-  return reply({ok:true,secret:env.ADMIN_TOTP_SECRET,qr:qrSvg(uri)});
+  return reply({ok:true,secret:env.ADMIN_TOTP_SECRET,qr:qrMatrix(uri)});
  }
  if(action==='otp-confirm'){
   if(await throttled(request,db))return fail('시도가 많습니다. 잠시 후 다시 시도해 주세요.',429);

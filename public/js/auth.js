@@ -33,8 +33,8 @@ function validate(){
    if(!value.trim())error=input.name==='email'?'이메일을 입력해 주세요.':input.name==='username'?'아이디를 입력해 주세요.':input.name==='confirm'?'비밀번호를 다시 입력해 주세요.':'비밀번호를 입력해 주세요.';
    else if(input.name==='username'&&!/^[A-Za-z0-9_]{4,24}$/.test(value))error='영문, 숫자, 밑줄 4~24자로 입력해 주세요.';
    else if(input.name==='email'&&(input.validity.typeMismatch||value.length>254))error='이메일 주소를 확인해 주세요.';
-   else if(input.name==='password'&&['signup','reset'].includes(action)&&Array.from(value).length<10)error='비밀번호를 10자 이상 입력해 주세요.';
-   else if(input.name==='password'&&['signup','reset'].includes(action)&&Array.from(value).length>64)error='비밀번호가 너무 깁니다.';
+   else if(input.name==='password'&&['verify','reset'].includes(action)&&Array.from(value).length<10)error='비밀번호를 10자 이상 입력해 주세요.';
+   else if(input.name==='password'&&['verify','reset'].includes(action)&&Array.from(value).length>64)error='비밀번호가 너무 깁니다.';
    else if(input.name==='confirm'&&value!==form.elements.namedItem('password').value)error='비밀번호가 일치하지 않습니다.';
   }
   if(error){fieldError(input,error);first ||= input;}
@@ -83,6 +83,5 @@ async function main(){
   script.addEventListener('error',()=>message('로봇 확인을 불러오지 못했습니다.','error'));document.head.append(script);
  }
  enable();
- if(action==='verify')form.requestSubmit();
 }
 main().catch(e=>message(e.message,'error'));
